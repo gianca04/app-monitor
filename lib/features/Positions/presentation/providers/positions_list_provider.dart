@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/paginated_positions.dart';
+import '../../domain/entities/position.dart';
 import '../../domain/usecases/get_positions.dart';
 import '../../data/datasources/position_datasource.dart';
 import '../../data/repositories/position_repository_impl.dart';
@@ -75,18 +75,51 @@ class PositionsListNotifier extends StateNotifier<PositionsListState> {
   }
 
   Future<void> loadPositions() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, currentPage: 1, hasMorePages: true);
     try {
-      final positions = await getPositionsUseCase(
+      final paginatedPositions = await getPositionsUseCase(
         search: state.search,
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
         perPage: state.perPage,
-        page: state.currentPage,
+        page: 1,
       );
-      state = state.copyWith(isLoading: false, positions: positions);
+      state = state.copyWith(
+        isLoading: false,
+        positions: paginatedPositions.data,
+        currentPage: 1,
+        hasMorePages: paginatedPositions.currentPage < paginatedPositions.lastPage,
+        total: paginatedPositions.total,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMorePositions() async {
+    if (state.isLoadingMore || !state.hasMorePages) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final nextPage = state.currentPage + 1;
+      final paginatedPositions = await getPositionsUseCase(
+        search: state.search,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
+        perPage: state.perPage,
+        page: nextPage,
+      );
+
+      final newPositions = [...state.positions, ...paginatedPositions.data];
+      state = state.copyWith(
+        isLoadingMore: false,
+        positions: newPositions,
+        currentPage: nextPage,
+        hasMorePages: paginatedPositions.currentPage < paginatedPositions.lastPage,
+        total: paginatedPositions.total,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
 
@@ -101,12 +134,7 @@ class PositionsListNotifier extends StateNotifier<PositionsListState> {
   }
 
   void setPerPage(int perPage) {
-    state = state.copyWith(perPage: perPage, currentPage: 1);
-    loadPositions();
-  }
-
-  void setPage(int page) {
-    state = state.copyWith(currentPage: page);
+    state = state.copyWith(perPage: perPage);
     loadPositions();
   }
 }

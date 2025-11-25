@@ -2,12 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/positions_list_provider.dart';
 
-class PositionsListScreen extends ConsumerWidget {
+class PositionsListScreen extends ConsumerStatefulWidget {
   const PositionsListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PositionsListScreen> createState() => _PositionsListScreenState();
+}
+
+class _PositionsListScreenState extends ConsumerState<PositionsListScreen> {
+  final ScrollController _scrollController = ScrollController();
+  late VoidCallback _loadMoreCallback;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      _loadMoreCallback();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(positionsListProvider);
+
+    _loadMoreCallback = () {
+      if (!state.isLoadingMore && state.hasMorePages) {
+        ref.read(positionsListProvider.notifier).loadMorePositions();
+      }
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -25,10 +57,30 @@ class PositionsListScreen extends ConsumerWidget {
           ? const Center(child: CircularProgressIndicator())
           : state.error != null
               ? Center(child: Text('Error: ${state.error}'))
-              : state.positions == null
+              : state.positions.isEmpty
                   ? const Center(child: Text('No positions found'))
                   : Column(
                       children: [
+                        // Header with total count
+                        Container(
+                          padding: const EdgeInsets.all(16.0),
+                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total positions: ${state.total}',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${state.positions.length} loaded',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        ),
                         // Search and filters
                         Padding(
                           padding: const EdgeInsets.all(16.0),
@@ -102,12 +154,21 @@ class PositionsListScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        // List
+                        // List with infinite scroll
                         Expanded(
                           child: ListView.builder(
-                            itemCount: state.positions!.data.length,
+                            controller: _scrollController,
+                            itemCount: state.positions.length + (state.isLoadingMore && state.hasMorePages ? 1 : 0),
                             itemBuilder: (context, index) {
-                              final position = state.positions!.data[index];
+                              if (index == state.positions.length) {
+                                // Loading indicator at the end
+                                return const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Center(child: CircularProgressIndicator()),
+                                );
+                              }
+
+                              final position = state.positions[index];
                               return ListTile(
                                 title: Text(position.name),
                                 subtitle: Text('ID: ${position.id}'),
@@ -118,29 +179,6 @@ class PositionsListScreen extends ConsumerWidget {
                             },
                           ),
                         ),
-                        // Pagination
-                        if (state.positions!.lastPage > 1)
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.chevron_left),
-                                  onPressed: state.currentPage! > 1
-                                      ? () => ref.read(positionsListProvider.notifier).setPage(state.currentPage! - 1)
-                                      : null,
-                                ),
-                                Text('Page ${state.positions!.currentPage} of ${state.positions!.lastPage}'),
-                                IconButton(
-                                  icon: const Icon(Icons.chevron_right),
-                                  onPressed: state.currentPage! < state.positions!.lastPage
-                                      ? () => ref.read(positionsListProvider.notifier).setPage(state.currentPage! + 1)
-                                      : null,
-                                ),
-                              ],
-                            ),
-                          ),
                       ],
                     ),
     );
