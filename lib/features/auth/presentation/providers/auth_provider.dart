@@ -5,6 +5,7 @@ import '../../data/models/login_request.dart';
 import '../../data/models/login_response.dart';
 import '../../data/datasources/auth_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../domain/exceptions/auth_exceptions.dart';
 
 // Providers para dependencias
 final dioProvider = Provider((ref) => Dio());
@@ -41,7 +42,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final response = await loginUseCase(request);
       state = state.copyWith(isLoading: false, response: response);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      String errorMessage;
+      if (e is NetworkException) {
+        errorMessage = e.message;
+      } else if (e is ValidationException) {
+        errorMessage = e.formattedErrors;
+      } else if (e is InvalidCredentialsException) {
+        errorMessage = e.message;
+      } else if (e is AuthException) {
+        errorMessage = e.message;
+      } else {
+        errorMessage = 'Error desconocido';
+      }
+      state = state.copyWith(isLoading: false, error: errorMessage);
     }
   }
 }

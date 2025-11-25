@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import '../models/login_request.dart';
 import '../models/login_response.dart';
+import '../../domain/exceptions/auth_exceptions.dart';
+import 'package:monitor/core/constants/api_constants.dart';
 
 abstract class AuthDataSource {
   Future<LoginResponse> login(LoginRequest request);
@@ -15,7 +17,7 @@ class AuthDataSourceImpl implements AuthDataSource {
   Future<LoginResponse> login(LoginRequest request) async {
     try {
       final response = await dio.post(
-        'http://127.0.0.1:8000/api/login',
+        '${ApiConstants.baseUrl}${ApiConstants.loginEndpoint}',
         data: request.toJson(),
         options: Options(
           headers: {
@@ -27,7 +29,25 @@ class AuthDataSourceImpl implements AuthDataSource {
 
       return LoginResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Error en login');
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw NetworkException();
+      }
+
+      final data = e.response?.data;
+      if (data != null) {
+        if (data['errors'] != null) {
+          final errors = Map<String, List<String>>.from(data['errors']);
+          throw ValidationException(errors);
+        }
+        if (data['success'] == false && data['message'] == 'Credenciales inválidas') {
+          throw InvalidCredentialsException();
+        }
+      }
+
+      throw AuthException(data?['message'] ?? 'Error desconocido en login');
     }
   }
 }

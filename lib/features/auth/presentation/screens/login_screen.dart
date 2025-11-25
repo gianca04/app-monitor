@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.response != null && previous?.response == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login exitoso: ${next.response!.token}')),
+        );
+        context.go('/home');
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
@@ -84,14 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.read(authProvider.notifier).login(
         _emailController.text,
         _passwordController.text,
-      ).then((_) {
-        final state = ref.read(authProvider);
-        if (state.response != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login exitoso: ${state.response!.token}')),
-          );
-        }
-      });
+      );
     }
   }
 }
