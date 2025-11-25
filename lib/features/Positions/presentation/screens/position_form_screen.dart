@@ -50,6 +50,10 @@ class _PositionFormScreenState extends ConsumerState<PositionFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.positionId == null ? 'Add Position' : 'Edit Position'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -86,7 +90,7 @@ class _PositionFormScreenState extends ConsumerState<PositionFormScreen> {
         name: _nameController.text,
       );
       ref.read(positionsProvider.notifier).addPosition(position);
-      context.go('/positions');
+      context.pop();
     }
   }
 

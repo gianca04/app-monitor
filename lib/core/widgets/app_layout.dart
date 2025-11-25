@@ -63,6 +63,7 @@ class AppLayout extends ConsumerWidget {
       children: _menuItems
           .map(
             (item) => ListTile(
+              leading: _getIconForItem(item),
               onTap: () => _onMenuItemTap(context, ref, item),
               title: Text(item),
             ),
@@ -70,6 +71,25 @@ class AppLayout extends ConsumerWidget {
           .toList(),
     ),
   );
+
+  Icon _getIconForItem(String item) {
+    switch (item) {
+      case 'Work Reports':
+        return const Icon(Icons.work);
+      case 'Positions':
+        return const Icon(Icons.location_on);
+      case 'About':
+        return const Icon(Icons.info);
+      case 'Contact':
+        return const Icon(Icons.contact_mail);
+      case 'Settings':
+        return const Icon(Icons.settings);
+      case 'Sign Out':
+        return const Icon(Icons.logout);
+      default:
+        return const Icon(Icons.help);
+    }
+  }
 
   Widget _navBarItems(BuildContext context, WidgetRef ref) => Row(
     mainAxisAlignment: MainAxisAlignment.end,
@@ -95,6 +115,9 @@ class AppLayout extends ConsumerWidget {
       case 'Work Reports':
         GoRouter.of(context).go('/work-reports');
         break;
+      case 'Positions':
+        GoRouter.of(context).go('/positions');
+        break;
       case 'Sign Out':
         ref.read(authProvider.notifier).logout();
         break;
@@ -108,6 +131,7 @@ class AppLayout extends ConsumerWidget {
 
 final List<String> _menuItems = <String>[
   'Work Reports',
+  'Positions',
   'About',
   'Contact',
   'Settings',
