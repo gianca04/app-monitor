@@ -8,7 +8,7 @@ class AuthException implements Exception {
 }
 
 class NetworkException extends AuthException {
-  NetworkException() : super('Error de conexión. Verifica tu conexión a internet.');
+  NetworkException([String message = 'Error de conexión. Verifica tu conexión a internet.']) : super(message);
 }
 
 class ValidationException extends AuthException {

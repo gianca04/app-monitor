@@ -24,6 +24,8 @@ class AuthDataSourceImpl implements AuthDataSource {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
         ),
       );
 
@@ -33,7 +35,7 @@ class AuthDataSourceImpl implements AuthDataSource {
           e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
-        throw NetworkException();
+        throw NetworkException('No se pudo conectar al servidor. Verifica tu conexión y la dirección del servidor.');
       }
 
       final data = e.response?.data;

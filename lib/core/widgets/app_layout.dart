@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
-class AppLayout extends StatelessWidget {
+class AppLayout extends ConsumerWidget {
   final Widget child;
 
   AppLayout({super.key, required this.child});
@@ -9,7 +11,7 @@ class AppLayout extends StatelessWidget {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.of(context).size.width;
     final bool isLargeScreen = width > 800;
 
@@ -39,7 +41,7 @@ class AppLayout extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (isLargeScreen) Expanded(child: _navBarItems()),
+                if (isLargeScreen) Expanded(child: _navBarItems(context, ref)),
               ],
             ),
           ),
@@ -50,20 +52,18 @@ class AppLayout extends StatelessWidget {
             ),
           ],
         ),
-        drawer: isLargeScreen ? null : _drawer(),
+        drawer: isLargeScreen ? null : _drawer(context, ref),
         body: child, // Aquí se inyecta el contenido de la ruta
       ),
     );
   }
 
-  Widget _drawer() => Drawer(
+  Widget _drawer(BuildContext context, WidgetRef ref) => Drawer(
     child: ListView(
       children: _menuItems
           .map(
             (item) => ListTile(
-              onTap: () {
-                _scaffoldKey.currentState?.openEndDrawer();
-              },
+              onTap: () => _onMenuItemTap(context, ref, item),
               title: Text(item),
             ),
           )
@@ -71,13 +71,13 @@ class AppLayout extends StatelessWidget {
     ),
   );
 
-  Widget _navBarItems() => Row(
+  Widget _navBarItems(BuildContext context, WidgetRef ref) => Row(
     mainAxisAlignment: MainAxisAlignment.end,
     crossAxisAlignment: CrossAxisAlignment.center,
     children: _menuItems
         .map(
           (item) => InkWell(
-            onTap: () {},
+            onTap: () => _onMenuItemTap(context, ref, item),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: 24.0,
@@ -89,9 +89,25 @@ class AppLayout extends StatelessWidget {
         )
         .toList(),
   );
+
+  void _onMenuItemTap(BuildContext context, WidgetRef ref, String item) {
+    switch (item) {
+      case 'Work Reports':
+        GoRouter.of(context).go('/work-reports');
+        break;
+      case 'Sign Out':
+        ref.read(authProvider.notifier).logout();
+        break;
+      default:
+        // Handle other items
+        break;
+    }
+    _scaffoldKey.currentState?.openEndDrawer();
+  }
 }
 
 final List<String> _menuItems = <String>[
+  'Work Reports',
   'About',
   'Contact',
   'Settings',
@@ -100,18 +116,18 @@ final List<String> _menuItems = <String>[
 
 enum Menu { itemOne, itemTwo, itemThree }
 
-class _ProfileIcon extends StatelessWidget {
+class _ProfileIcon extends ConsumerWidget {
   const _ProfileIcon();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return PopupMenuButton<Menu>(
       icon: const Icon(Icons.person),
       offset: const Offset(0, 40),
       onSelected: (Menu item) {
         switch (item) {
           case Menu.itemThree:
-            context.go('/');
+            ref.read(authProvider.notifier).logout();
             break;
           default:
             break;

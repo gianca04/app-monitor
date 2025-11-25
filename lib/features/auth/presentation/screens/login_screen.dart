@@ -26,6 +26,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
+    if (authState.isChecking) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.response != null && previous?.response == null) {
         ScaffoldMessenger.of(context).showSnackBar(
