@@ -11,6 +11,27 @@ import '../../domain/exceptions/auth_exceptions.dart';
 // Providers para dependencias
 final dioProvider = Provider((ref) => Dio());
 final secureStorageProvider = Provider((ref) => const FlutterSecureStorage());
+
+// Dio provider con autenticación
+final authenticatedDioProvider = Provider((ref) {
+  final dio = Dio();
+  final secureStorage = ref.watch(secureStorageProvider);
+
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      final token = await secureStorage.read(key: 'auth_token');
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+      options.headers['Accept'] = 'application/json';
+      options.headers['Content-Type'] = 'application/json';
+      return handler.next(options);
+    },
+  ));
+
+  return dio;
+});
+
 final authDataSourceProvider = Provider((ref) => AuthDataSourceImpl(ref.watch(dioProvider)));
 final authRepositoryProvider = Provider((ref) => AuthRepositoryImpl(ref.watch(authDataSourceProvider)));
 final loginUseCaseProvider = Provider((ref) => LoginUseCase(ref.watch(authRepositoryProvider)));

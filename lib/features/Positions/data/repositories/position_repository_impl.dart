@@ -1,34 +1,35 @@
+import '../../domain/entities/paginated_positions.dart';
 import '../../domain/repositories/position_repository.dart';
-import '../datasources/position_local_datasource.dart';
-import '../models/position.dart';
+import '../datasources/position_datasource.dart';
 
 class PositionRepositoryImpl implements PositionRepository {
-  final PositionLocalDataSource localDataSource;
+  final PositionDataSource dataSource;
 
-  PositionRepositoryImpl(this.localDataSource);
-
-  @override
-  Future<List<Position>> getPositions() {
-    return localDataSource.getPositions();
-  }
+  PositionRepositoryImpl(this.dataSource);
 
   @override
-  Future<Position?> getPosition(int id) {
-    return localDataSource.getPosition(id);
-  }
-
-  @override
-  Future<void> savePosition(Position position) {
-    return localDataSource.savePosition(position);
-  }
-
-  @override
-  Future<void> deletePosition(int id) {
-    return localDataSource.deletePosition(id);
-  }
-
-  @override
-  Future<int> getNextId() {
-    return localDataSource.getNextId();
+  Future<PaginatedPositions> getPositions({
+    String? search,
+    String? sortBy,
+    String? sortOrder,
+    int? perPage,
+    int? page,
+  }) async {
+    final model = await dataSource.getPositions(
+      search: search,
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+      perPage: perPage,
+      page: page,
+    );
+    return PaginatedPositions(
+      data: model.data,
+      currentPage: model.currentPage,
+      lastPage: model.lastPage,
+      perPage: model.perPage,
+      total: model.total,
+      from: model.from,
+      to: model.to,
+    );
   }
 }

@@ -1,9 +1,11 @@
-import '../../data/models/position.dart';
+import '../entities/paginated_positions.dart';
 
 abstract class PositionRepository {
-  Future<List<Position>> getPositions();
-  Future<Position?> getPosition(int id);
-  Future<void> savePosition(Position position);
-  Future<void> deletePosition(int id);
-  Future<int> getNextId();
+  Future<PaginatedPositions> getPositions({
+    String? search,
+    String? sortBy,
+    String? sortOrder,
+    int? perPage,
+    int? page,
+  });
 }
