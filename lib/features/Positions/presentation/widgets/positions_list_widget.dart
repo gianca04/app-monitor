@@ -25,7 +25,8 @@ class _PositionsListWidgetState extends ConsumerState<PositionsListWidget> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    final state = ref.read(positionsListProvider);
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !state.isLoadingMore) {
       ref.read(positionsListProvider.notifier).loadMorePositions();
     }
   }
@@ -88,18 +89,30 @@ class _PositionsListWidgetState extends ConsumerState<PositionsListWidget> {
                 }
 
                 final position = state.positions!.data[index];
-                return ListTile(
-                  title: Text(position.name),
-                  subtitle: Text('ID: ${position.id}'),
-                  onTap: () {
-                    // Navigate to position details
-                  },
-                );
+                return PositionItem(position: position);
               },
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class PositionItem extends StatelessWidget {
+  final dynamic position;
+
+  const PositionItem({required this.position, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      key: ValueKey(position.id),
+      title: Text(position.name),
+      subtitle: Text('ID: ${position.id}'),
+      onTap: () {
+        // Navigate to position details
+      },
     );
   }
 }

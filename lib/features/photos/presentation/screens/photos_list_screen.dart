@@ -1,53 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/work_reports_provider.dart';
+import '../providers/photos_provider.dart';
 
-class WorkReportsListScreen extends ConsumerStatefulWidget {
-  const WorkReportsListScreen({super.key});
+class PhotosListScreen extends ConsumerStatefulWidget {
+  const PhotosListScreen({super.key});
 
   @override
-  ConsumerState<WorkReportsListScreen> createState() => _WorkReportsListScreenState();
+  ConsumerState<PhotosListScreen> createState() => _PhotosListScreenState();
 }
 
-class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
+class _PhotosListScreenState extends ConsumerState<PhotosListScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(workReportsProvider.notifier).loadWorkReports());
+    Future.microtask(() => ref.read(photosProvider.notifier).loadPhotos());
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(workReportsProvider);
+    final state = ref.watch(photosProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Work Reports')),
+      appBar: AppBar(title: const Text('Photos')),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.error != null
               ? Center(child: Text('Error: ${state.error}'))
               : ListView.builder(
-                  itemCount: state.reports.length,
+                  itemCount: state.photos.length,
                   itemBuilder: (context, index) {
-                    final report = state.reports[index];
+                    final photo = state.photos[index];
                     return ListTile(
-                      title: Text(report.name),
-                      subtitle: Text('${report.description}\n${report.reportDate}'),
+                      title: Text('Photo ${photo.id} - Work Report ${photo.workReportId}'),
+                      subtitle: Text('After: ${photo.afterWork.description}\nBefore: ${photo.beforeWork.description}'),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: const Icon(Icons.visibility),
-                            onPressed: () => context.go('/work-reports/${report.id}'),
+                            onPressed: () => context.go('/photos/${photo.id}'),
                           ),
                           IconButton(
                             icon: const Icon(Icons.edit),
-                            onPressed: () => context.go('/work-reports/${report.id}/edit'),
+                            onPressed: () => context.go('/photos/${photo.id}/edit'),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete),
-                            onPressed: () => _deleteReport(report.id!),
+                            onPressed: () => _deletePhoto(photo.id!),
                           ),
                         ],
                       ),
@@ -55,18 +55,18 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/work-reports/create'),
+        onPressed: () => context.go('/photos/create'),
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  void _deleteReport(int id) {
+  void _deletePhoto(int id) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Report'),
-        content: const Text('Are you sure you want to delete this report?'),
+        title: const Text('Delete Photo'),
+        content: const Text('Are you sure you want to delete this photo?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -74,7 +74,7 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
           ),
           TextButton(
             onPressed: () {
-              ref.read(workReportsProvider.notifier).deleteWorkReport(id);
+              ref.read(photosProvider.notifier).deletePhoto(id);
               Navigator.of(context).pop();
             },
             child: const Text('Delete'),

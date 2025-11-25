@@ -2,6 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/positions_list_provider.dart';
 
+const List<DropdownMenuItem<String>> _sortByItems = [
+  DropdownMenuItem(value: 'name', child: Text('Name')),
+  DropdownMenuItem(value: 'id', child: Text('ID')),
+  DropdownMenuItem(value: 'created_at', child: Text('Created At')),
+];
+
+const List<DropdownMenuItem<String>> _sortOrderItems = [
+  DropdownMenuItem(value: 'asc', child: Text('Ascending')),
+  DropdownMenuItem(value: 'desc', child: Text('Descending')),
+];
+
+const List<DropdownMenuItem<int>> _perPageItems = [
+  DropdownMenuItem(value: 5, child: Text('5')),
+  DropdownMenuItem(value: 10, child: Text('10')),
+  DropdownMenuItem(value: 15, child: Text('15')),
+  DropdownMenuItem(value: 20, child: Text('20')),
+];
+
 class FiltersWidget extends ConsumerWidget {
   const FiltersWidget({super.key});
 
@@ -21,11 +39,7 @@ class FiltersWidget extends ConsumerWidget {
               const SizedBox(width: 8),
               DropdownButton<String>(
                 value: state.sortBy,
-                items: const [
-                  DropdownMenuItem(value: 'name', child: Text('Name')),
-                  DropdownMenuItem(value: 'id', child: Text('ID')),
-                  DropdownMenuItem(value: 'created_at', child: Text('Created At')),
-                ],
+                items: _sortByItems,
                 onChanged: (value) {
                   if (value != null) {
                     ref.read(positionsListProvider.notifier).setSort(value, state.sortOrder!);
@@ -35,10 +49,7 @@ class FiltersWidget extends ConsumerWidget {
               const SizedBox(width: 16),
               DropdownButton<String>(
                 value: state.sortOrder,
-                items: const [
-                  DropdownMenuItem(value: 'asc', child: Text('Ascending')),
-                  DropdownMenuItem(value: 'desc', child: Text('Descending')),
-                ],
+                items: _sortOrderItems,
                 onChanged: (value) {
                   if (value != null) {
                     ref.read(positionsListProvider.notifier).setSort(state.sortBy!, value);
@@ -55,12 +66,7 @@ class FiltersWidget extends ConsumerWidget {
               const SizedBox(width: 8),
               DropdownButton<int>(
                 value: state.perPage,
-                items: const [
-                  DropdownMenuItem(value: 5, child: Text('5')),
-                  DropdownMenuItem(value: 10, child: Text('10')),
-                  DropdownMenuItem(value: 15, child: Text('15')),
-                  DropdownMenuItem(value: 20, child: Text('20')),
-                ],
+                items: _perPageItems,
                 onChanged: (value) {
                   if (value != null) {
                     ref.read(positionsListProvider.notifier).setPerPage(value);

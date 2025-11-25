@@ -78,6 +78,8 @@ class AppLayout extends ConsumerWidget {
         return const Icon(Icons.work);
       case 'Positions':
         return const Icon(Icons.location_on);
+      case 'Photos':
+        return const Icon(Icons.photo);
       case 'About':
         return const Icon(Icons.info);
       case 'Contact':
@@ -118,6 +120,9 @@ class AppLayout extends ConsumerWidget {
       case 'Positions':
         GoRouter.of(context).go('/positions');
         break;
+      case 'Photos':
+        GoRouter.of(context).go('/photos');
+        break;
       case 'Sign Out':
         ref.read(authProvider.notifier).logout();
         break;
@@ -132,6 +137,7 @@ class AppLayout extends ConsumerWidget {
 final List<String> _menuItems = <String>[
   'Work Reports',
   'Positions',
+  'Photos',
   'About',
   'Contact',
   'Settings',

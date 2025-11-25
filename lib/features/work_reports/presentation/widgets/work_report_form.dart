@@ -14,25 +14,32 @@ class WorkReportForm extends ConsumerStatefulWidget {
 
 class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _titleController;
+  late TextEditingController _nameController;
   late TextEditingController _descriptionController;
-  late TextEditingController _statusController;
-  DateTime _selectedDate = DateTime.now();
+  late TextEditingController _reportDateController;
+  late TextEditingController _startTimeController;
+  late TextEditingController _endTimeController;
+  late TextEditingController _suggestionsController;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.report?.title ?? '');
+    _nameController = TextEditingController(text: widget.report?.name ?? '');
     _descriptionController = TextEditingController(text: widget.report?.description ?? '');
-    _statusController = TextEditingController(text: widget.report?.status ?? 'pending');
-    _selectedDate = widget.report?.date ?? DateTime.now();
+    _reportDateController = TextEditingController(text: widget.report?.reportDate ?? '');
+    _startTimeController = TextEditingController(text: widget.report?.startTime ?? '');
+    _endTimeController = TextEditingController(text: widget.report?.endTime ?? '');
+    _suggestionsController = TextEditingController(text: widget.report?.suggestions ?? '');
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
+    _nameController.dispose();
     _descriptionController.dispose();
-    _statusController.dispose();
+    _reportDateController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    _suggestionsController.dispose();
     super.dispose();
   }
 
@@ -45,9 +52,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         child: Column(
           children: [
             TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
-              validator: (value) => value?.isEmpty ?? true ? 'Title is required' : null,
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
+              validator: (value) => value?.isEmpty ?? true ? 'Name is required' : null,
             ),
             TextFormField(
               controller: _descriptionController,
@@ -55,18 +62,21 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               validator: (value) => value?.isEmpty ?? true ? 'Description is required' : null,
             ),
             TextFormField(
-              controller: _statusController,
-              decoration: const InputDecoration(labelText: 'Status'),
-              validator: (value) => value?.isEmpty ?? true ? 'Status is required' : null,
+              controller: _reportDateController,
+              decoration: const InputDecoration(labelText: 'Report Date (YYYY-MM-DD)'),
+              validator: (value) => value?.isEmpty ?? true ? 'Report Date is required' : null,
             ),
-            Row(
-              children: [
-                Text('Date: ${_selectedDate.toString().split(' ')[0]}'),
-                IconButton(
-                  icon: const Icon(Icons.calendar_today),
-                  onPressed: _selectDate,
-                ),
-              ],
+            TextFormField(
+              controller: _startTimeController,
+              decoration: const InputDecoration(labelText: 'Start Time'),
+            ),
+            TextFormField(
+              controller: _endTimeController,
+              decoration: const InputDecoration(labelText: 'End Time'),
+            ),
+            TextFormField(
+              controller: _suggestionsController,
+              decoration: const InputDecoration(labelText: 'Suggestions'),
             ),
             ElevatedButton(
               onPressed: _submit,
@@ -78,28 +88,19 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     );
   }
 
-  Future<void> _selectDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
       final report = WorkReport(
         id: widget.report?.id,
-        title: _titleController.text,
+        name: _nameController.text,
         description: _descriptionController.text,
-        date: _selectedDate,
-        status: _statusController.text,
+        reportDate: _reportDateController.text,
+        startTime: _startTimeController.text.isEmpty ? null : _startTimeController.text,
+        endTime: _endTimeController.text.isEmpty ? null : _endTimeController.text,
+        resources: Resources(tools: '', personnel: '', materials: ''), // Default empty
+        suggestions: _suggestionsController.text,
+        signatures: Signatures(supervisor: null, manager: null), // Default null
+        timestamps: Timestamps(createdAt: '', updatedAt: ''), // Will be set by server
       );
 
       if (widget.report == null) {

@@ -18,13 +18,13 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
   @override
   Future<List<WorkReport>> getWorkReports() async {
     final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}');
-    return (response.data as List).map((json) => WorkReport.fromJson(json)).toList();
+    return (response.data['data'] as List).map((json) => WorkReport.fromJson(json)).toList();
   }
 
   @override
   Future<WorkReport> getWorkReport(int id) async {
     final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id');
-    return WorkReport.fromJson(response.data);
+    return WorkReport.fromJson(response.data['data']);
   }
 
   @override
@@ -33,7 +33,7 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}',
       data: report.toJson(),
     );
-    return WorkReport.fromJson(response.data);
+    return WorkReport.fromJson(response.data['data']);
   }
 
   @override
@@ -42,7 +42,7 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id',
       data: report.toJson(),
     );
-    return WorkReport.fromJson(response.data);
+    return WorkReport.fromJson(response.data['data']);
   }
 
   @override

@@ -8,10 +8,11 @@ import '../../domain/usecases/delete_work_report_usecase.dart';
 import '../../data/models/work_report.dart';
 import '../../data/datasources/work_reports_datasource.dart';
 import '../../data/repositories/work_reports_repository_impl.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 // Providers para dependencias
 final dioProvider = Provider((ref) => Dio());
-final workReportsDataSourceProvider = Provider((ref) => WorkReportsDataSourceImpl(ref.watch(dioProvider)));
+final workReportsDataSourceProvider = Provider((ref) => WorkReportsDataSourceImpl(ref.watch(authenticatedDioProvider)));
 final workReportsRepositoryProvider = Provider((ref) => WorkReportsRepositoryImpl(ref.watch(workReportsDataSourceProvider)));
 final getWorkReportsUseCaseProvider = Provider((ref) => GetWorkReportsUseCase(ref.watch(workReportsRepositoryProvider)));
 final getWorkReportUseCaseProvider = Provider((ref) => GetWorkReportUseCase(ref.watch(workReportsRepositoryProvider)));

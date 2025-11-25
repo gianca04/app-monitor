@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/positions_list_provider.dart';
@@ -11,42 +12,57 @@ class SearchBarWidget extends ConsumerStatefulWidget {
 
 class _SearchBarWidgetState extends ConsumerState<SearchBarWidget> {
   final TextEditingController _searchController = TextEditingController();
-  String? _currentSearchValue;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
-    // Initialize with current search value from provider
+    // Inicializar con el valor de búsqueda actual del provider
     final state = ref.read(positionsListProvider);
-    _currentSearchValue = state.search;
     _searchController.text = state.search ?? '';
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _performSearch() {
-    final searchValue = _searchController.text.trim();
-    final newSearchValue = searchValue.isEmpty ? null : searchValue;
+  void _onSearchChanged(String value) {
+    // Forzar la reconstrucción para actualizar la visibilidad de la 'X'
+    setState(() {});
 
-    // Only trigger search if value changed
-    if (newSearchValue != _currentSearchValue) {
-      _currentSearchValue = newSearchValue;
-      ref.read(positionsListProvider.notifier).setSearch(newSearchValue);
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      _debounceTimer?.cancel();
+      // Llama a setSearch(null) inmediatamente si está vacío
+      ref.read(positionsListProvider.notifier).setSearch(null);
+    } else {
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+        ref.read(positionsListProvider.notifier).setSearch(trimmed);
+      });
     }
   }
 
   void _clearSearch() {
+    _debounceTimer?.cancel();
+
+    // 1. Borra el texto localmente y fuerza la reconstrucción
     _searchController.clear();
-    _currentSearchValue = null;
+    setState(() {}); // 👈 ¡Añadido! Fuerza la actualización del UI.
+
+    // 2. Establece la búsqueda en null en el provider y recarga
     ref.read(positionsListProvider.notifier).setSearch(null);
   }
 
   @override
   Widget build(BuildContext context) {
+    // *** ELIMINAMOS EL 'ref.listen' para evitar la sobrescritura ***
+    // Si la 'X' funciona como se espera, este bloque es el causante del problema.
+    // Lo eliminamos para que el controlador local sea la fuente de verdad.
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -54,27 +70,27 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget> {
           Expanded(
             child: TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Search positions',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: _clearSearch,
+                        tooltip: 'Clear search',
+                      )
+                    : null,
               ),
-              onSubmitted: (_) => _performSearch(),
+              onChanged: _onSearchChanged,
             ),
           ),
           const SizedBox(width: 8),
           ElevatedButton.icon(
-            onPressed: _performSearch,
+            // El botón de búsqueda también usa _onSearchChanged
+            onPressed: () => _onSearchChanged(_searchController.text),
             icon: const Icon(Icons.search),
             label: const Text('Search'),
           ),
-          if (_currentSearchValue?.isNotEmpty == true) ...[
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: _clearSearch,
-              tooltip: 'Clear search',
-            ),
-          ],
         ],
       ),
     );
