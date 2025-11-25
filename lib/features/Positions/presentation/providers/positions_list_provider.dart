@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/position.dart';
+import '../../domain/entities/paginated_positions.dart';
 import '../../domain/usecases/get_positions.dart';
 import '../../data/datasources/position_datasource.dart';
 import '../../data/repositories/position_repository_impl.dart';
@@ -14,42 +14,36 @@ final getPositionsUseCaseProvider = Provider((ref) => GetPositionsUseCase(ref.wa
 class PositionsListState {
   final bool isLoading;
   final bool isLoadingMore;
-  final List<Position> positions;
+  final PaginatedPositions? positions;
   final String? error;
   final String? search;
   final String? sortBy;
   final String? sortOrder;
   final int? perPage;
-  final int currentPage;
-  final bool hasMorePages;
-  final int total;
+  final int? currentPage;
 
   PositionsListState({
     this.isLoading = false,
     this.isLoadingMore = false,
-    this.positions = const [],
+    this.positions,
     this.error,
     this.search,
     this.sortBy = 'name',
     this.sortOrder = 'asc',
     this.perPage = 15,
     this.currentPage = 1,
-    this.hasMorePages = true,
-    this.total = 0,
   });
 
   PositionsListState copyWith({
     bool? isLoading,
     bool? isLoadingMore,
-    List<Position>? positions,
+    PaginatedPositions? positions,
     String? error,
     String? search,
     String? sortBy,
     String? sortOrder,
     int? perPage,
     int? currentPage,
-    bool? hasMorePages,
-    int? total,
   }) {
     return PositionsListState(
       isLoading: isLoading ?? this.isLoading,
@@ -61,10 +55,11 @@ class PositionsListState {
       sortOrder: sortOrder ?? this.sortOrder,
       perPage: perPage ?? this.perPage,
       currentPage: currentPage ?? this.currentPage,
-      hasMorePages: hasMorePages ?? this.hasMorePages,
-      total: total ?? this.total,
     );
   }
+
+  bool get hasMorePages => positions != null && currentPage! < positions!.lastPage;
+  bool get hasData => positions != null && positions!.data.isNotEmpty;
 }
 
 class PositionsListNotifier extends StateNotifier<PositionsListState> {
@@ -75,22 +70,16 @@ class PositionsListNotifier extends StateNotifier<PositionsListState> {
   }
 
   Future<void> loadPositions() async {
-    state = state.copyWith(isLoading: true, error: null, currentPage: 1, hasMorePages: true);
+    state = state.copyWith(isLoading: true, error: null);
     try {
-      final paginatedPositions = await getPositionsUseCase(
+      final positions = await getPositionsUseCase(
         search: state.search,
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
         perPage: state.perPage,
-        page: 1,
+        page: state.currentPage,
       );
-      state = state.copyWith(
-        isLoading: false,
-        positions: paginatedPositions.data,
-        currentPage: 1,
-        hasMorePages: paginatedPositions.currentPage < paginatedPositions.lastPage,
-        total: paginatedPositions.total,
-      );
+      state = state.copyWith(isLoading: false, positions: positions);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -101,8 +90,8 @@ class PositionsListNotifier extends StateNotifier<PositionsListState> {
 
     state = state.copyWith(isLoadingMore: true);
     try {
-      final nextPage = state.currentPage + 1;
-      final paginatedPositions = await getPositionsUseCase(
+      final nextPage = state.currentPage! + 1;
+      final newPositions = await getPositionsUseCase(
         search: state.search,
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
@@ -110,13 +99,22 @@ class PositionsListNotifier extends StateNotifier<PositionsListState> {
         page: nextPage,
       );
 
-      final newPositions = [...state.positions, ...paginatedPositions.data];
+      // Combinar los datos existentes con los nuevos
+      final combinedData = [...state.positions!.data, ...newPositions.data];
+      final updatedPositions = PaginatedPositions(
+        data: combinedData,
+        currentPage: newPositions.currentPage,
+        lastPage: newPositions.lastPage,
+        perPage: newPositions.perPage,
+        total: newPositions.total,
+        from: newPositions.from,
+        to: newPositions.to,
+      );
+
       state = state.copyWith(
         isLoadingMore: false,
-        positions: newPositions,
+        positions: updatedPositions,
         currentPage: nextPage,
-        hasMorePages: paginatedPositions.currentPage < paginatedPositions.lastPage,
-        total: paginatedPositions.total,
       );
     } catch (e) {
       state = state.copyWith(isLoadingMore: false, error: e.toString());
@@ -124,17 +122,17 @@ class PositionsListNotifier extends StateNotifier<PositionsListState> {
   }
 
   void setSearch(String? search) {
-    state = state.copyWith(search: search);
+    state = state.copyWith(search: search, currentPage: 1);
     loadPositions();
   }
 
   void setSort(String sortBy, String sortOrder) {
-    state = state.copyWith(sortBy: sortBy, sortOrder: sortOrder);
+    state = state.copyWith(sortBy: sortBy, sortOrder: sortOrder, currentPage: 1);
     loadPositions();
   }
 
   void setPerPage(int perPage) {
-    state = state.copyWith(perPage: perPage);
+    state = state.copyWith(perPage: perPage, currentPage: 1);
     loadPositions();
   }
 }
