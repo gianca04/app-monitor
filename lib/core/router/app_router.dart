@@ -8,6 +8,8 @@ import '../../features/work_reports/presentation/screens/work_report_view_screen
 import '../../features/work_reports/presentation/screens/work_report_create_screen.dart';
 import '../../features/work_reports/presentation/screens/work_report_edit_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/Positions/presentation/screens/positions_list_screen.dart';
+import '../../features/Positions/presentation/screens/position_form_screen.dart';
 
 GoRouter appRouter(WidgetRef ref) {
   return GoRouter(
@@ -61,6 +63,21 @@ GoRouter appRouter(WidgetRef ref) {
             builder: (context, state) {
               final id = int.parse(state.pathParameters['id']!);
               return WorkReportEditScreen(id: id);
+            },
+          ),
+          GoRoute(
+            path: '/positions',
+            builder: (context, state) => const PositionsListScreen(),
+          ),
+          GoRoute(
+            path: '/positions/add',
+            builder: (context, state) => const PositionFormScreen(),
+          ),
+          GoRoute(
+            path: '/positions/edit/:id',
+            builder: (context, state) {
+              final id = int.parse(state.pathParameters['id']!);
+              return PositionFormScreen(positionId: id);
             },
           ),
         ],
