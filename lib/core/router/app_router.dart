@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../widgets/app_layout.dart';
 
 final appRouter = GoRouter(
   routes: [
@@ -8,9 +9,14 @@ final appRouter = GoRouter(
       path: '/',
       builder: (context, state) => const LoginScreen(),
     ),
-    GoRoute(
-      path: '/home',
-      builder: (context, state) => const HomeScreen(),
+    ShellRoute(
+      builder: (context, state, child) => AppLayout(child: child),
+      routes: [
+        GoRoute(
+          path: '/home',
+          builder: (context, state) => const HomeScreen(),
+        ),
+      ],
     ),
   ],
 );
