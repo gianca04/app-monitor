@@ -60,11 +60,11 @@
           "id": 488,
           "workReportId": 81,
           "afterWork": {
-            "photoUrl": "http://127.0.0.1:8000/storage/work-reports/photos/01KAKGPJCR1QNPXEYPK0CWZBJT.jpg",
+            "photoPath": "http://127.0.0.1:8000/storage/work-reports/photos/01KAKGPJCR1QNPXEYPK0CWZBJT.jpg",
             "description": "<p>TRAMO DE CANALIZADO ELECTRICO POR CORREGIR, TRAMO DE 20 METROS.</p>"
           },
           "beforeWork": {
-            "photoUrl": "http://127.0.0.1:8000/storage/work-reports/photos/01KAKGPJCMHKNHGYFGEJZ69GZ5.jpg",
+            "photoPath": "http://127.0.0.1:8000/storage/work-reports/photos/01KAKGPJCMHKNHGYFGEJZ69GZ5.jpg",
             "description": "<p>CANALIZADO ELECTRICO EXISTENTE CON TUBERÍA PVC</p>"
           },
           "timestamps": {
@@ -76,11 +76,11 @@
           "id": 489,
           "workReportId": 81,
           "afterWork": {
-            "photoUrl": "http://127.0.0.1:8000/storage/work-reports/photos/01KAKGSRS10DY9ZDT0NACRNBEN.jpg",
+            "photoPath": "http://127.0.0.1:8000/storage/work-reports/photos/01KAKGSRS10DY9ZDT0NACRNBEN.jpg",
             "description": "<p>Canalizado eléctrico alimenta a Laptops de exhibición.</p>"
           },
           "beforeWork": {
-            "photoUrl": "http://127.0.0.1:8000/storage/work-reports/photos/01KAKGSRRJQN7G6MBZ6Q979SHQ.jpg",
+            "photoPath": "http://127.0.0.1:8000/storage/work-reports/photos/01KAKGSRRJQN7G6MBZ6Q979SHQ.jpg",
             "description": "<p>Canalizado eléctrico alimenta a Laptops de exhibición.</p>"
           },
           "timestamps": {
@@ -152,11 +152,11 @@
           "id": 419,
           "workReportId": 69,
           "afterWork": {
-            "photoUrl": null,
+            "photoPath": null,
             "description": ""
           },
           "beforeWork": {
-            "photoUrl": "http://127.0.0.1:8000/storage/work-reports/photos/01K8VC2869C60BBX1N6VKVVN1F.jpg",
+            "photoPath": "http://127.0.0.1:8000/storage/work-reports/photos/01K8VC2869C60BBX1N6VKVVN1F.jpg",
             "description": "<p>EN PRIMER LUGAR SE VERIFICÓ TOMACORRIENTE, PARA CONFIRMAR EL ESTADO DE ELLA. LLEGANDO A DIAGNOSTICAR QUE EL TOMACORRIENTE SE ENCUENTRA EN BUEN ESTADO.&nbsp;</p>"
           },
           "timestamps": {
@@ -168,11 +168,11 @@
           "id": 420,
           "workReportId": 69,
           "afterWork": {
-            "photoUrl": "http://127.0.0.1:8000/storage/work-reports/photos/01K8VCACWCJ6R8N70H1Q6D84FQ.jpg",
+            "photoPath": "http://127.0.0.1:8000/storage/work-reports/photos/01K8VCACWCJ6R8N70H1Q6D84FQ.jpg",
             "description": "<p>EVIDENCIA FOTOGRÁFICA DEL CAMBIO DE ENCHUFE, SE SUMINISTRO ENCHUFE 25A 250V LEVITÓN, ADEMÁS SE INSTALÓ 2 METROS LINEALES DE CABLE VULCANIZADO 3X10 AWG COLOR NEGRO.&nbsp;</p>"
           },
           "beforeWork": {
-            "photoUrl": "http://127.0.0.1:8000/storage/work-reports/photos/01K8VCACVCMDNH44SHCD3VCSBA.jpg",
+            "photoPath": "http://127.0.0.1:8000/storage/work-reports/photos/01K8VCACVCMDNH44SHCD3VCSBA.jpg",
             "description": "<p>SE DIAGNOSTICÓ LAS CAUSAS DEL CORTO CIRCUITO EN VITRINA DE COMIDAS CALIENTES: ENCHUFE DE VITRINA ESTABA SUFALTADO Y HACÍA FALSO CONTACTO CON TOMACORRIENTE.&nbsp;</p>"
           },
           "timestamps": {

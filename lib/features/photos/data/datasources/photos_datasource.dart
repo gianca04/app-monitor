@@ -6,7 +6,7 @@ abstract class PhotosDataSource {
   Future<List<Photo>> getPhotos();
   Future<Photo> getPhoto(int id);
   Future<Photo> createPhoto(int workReportId, MultipartFile photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion);
-  Future<Photo> updatePhoto(int id, Photo photo);
+  Future<Photo> updatePhoto(int id, MultipartFile? photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion);
   Future<void> deletePhoto(int id);
 }
 
@@ -60,10 +60,18 @@ class PhotosDataSourceImpl implements PhotosDataSource {
   }
 
   @override
-  Future<Photo> updatePhoto(int id, Photo photo) async {
-    final response = await dio.put(
+  Future<Photo> updatePhoto(int id, MultipartFile? photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion) async {
+    final formData = FormData.fromMap({
+      '_method': 'PUT',
+      'descripcion': descripcion,
+      if (beforeWorkDescripcion != null) 'before_work_descripcion': beforeWorkDescripcion,
+      if (photo != null) 'photo': photo,
+      if (beforeWorkPhoto != null) 'before_work_photo': beforeWorkPhoto,
+    });
+
+    final response = await dio.post(
       '${ApiConstants.baseUrl}${ApiConstants.photosEndpoint}/$id',
-      data: photo.toJson(),
+      data: formData,
     );
     final replacedData = _replaceUrls(response.data);
     return Photo.fromJson(replacedData['data']);

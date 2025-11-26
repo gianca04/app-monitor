@@ -14,13 +14,32 @@ class Photo {
   });
 
   factory Photo.fromJson(Map<String, dynamic> json) {
-    return Photo(
-      id: json['id'],
-      workReportId: json['workReportId'],
-      afterWork: AfterWork.fromJson(json['afterWork']),
-      beforeWork: BeforeWork.fromJson(json['beforeWork']),
-      timestamps: Timestamps.fromJson(json['timestamps']),
-    );
+    if (json.containsKey('afterWork')) {
+      return Photo(
+        id: json['id'],
+        workReportId: json['workReportId'],
+        afterWork: AfterWork.fromJson(json['afterWork']),
+        beforeWork: BeforeWork.fromJson(json['beforeWork']),
+        timestamps: Timestamps.fromJson(json['timestamps']),
+      );
+    } else {
+      return Photo(
+        id: json['id'],
+        workReportId: json['work_report_id'],
+        afterWork: AfterWork(
+          photoPath: json['photo_path'],
+          description: json['descripcion'],
+        ),
+        beforeWork: BeforeWork(
+          photoPath: json['before_work_photo_path'],
+          description: json['before_work_descripcion'],
+        ),
+        timestamps: Timestamps(
+          createdAt: json['created_at'] ?? '',
+          updatedAt: json['updated_at'] ?? '',
+        ),
+      );
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -51,48 +70,48 @@ class Photo {
 }
 
 class AfterWork {
-  final String? photoUrl;
-  final String description;
+  final String? photoPath;
+  final String? description;
 
   AfterWork({
-    this.photoUrl,
-    required this.description,
+    this.photoPath,
+    this.description,
   });
 
   factory AfterWork.fromJson(Map<String, dynamic> json) {
     return AfterWork(
-      photoUrl: json['photoUrl'],
+      photoPath: json['photoPath'],
       description: json['description'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'photoUrl': photoUrl,
+      'photoPath': photoPath,
       'description': description,
     };
   }
 }
 
 class BeforeWork {
-  final String? photoUrl;
-  final String description;
+  final String? photoPath;
+  final String? description;
 
   BeforeWork({
-    this.photoUrl,
-    required this.description,
+    this.photoPath,
+    this.description,
   });
 
   factory BeforeWork.fromJson(Map<String, dynamic> json) {
     return BeforeWork(
-      photoUrl: json['photoUrl'],
+      photoPath: json['photoPath'],
       description: json['description'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'photoUrl': photoUrl,
+      'photoPath': photoPath,
       'description': description,
     };
   }

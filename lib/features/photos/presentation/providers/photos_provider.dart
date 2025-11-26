@@ -101,9 +101,9 @@ class PhotosNotifier extends StateNotifier<PhotosState> {
     }
   }
 
-  Future<void> updatePhoto(int id, Photo photo) async {
+  Future<void> updatePhoto(int id, MultipartFile? photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion) async {
     try {
-      final updatedPhoto = await updatePhotoUseCase.call(id, photo);
+      final updatedPhoto = await updatePhotoUseCase.call(id, photo, descripcion, beforeWorkPhoto, beforeWorkDescripcion);
       final updatedPhotos = state.photos.map((p) => p.id == id ? updatedPhoto : p).toList();
       state = state.copyWith(photos: updatedPhotos);
     } catch (e) {

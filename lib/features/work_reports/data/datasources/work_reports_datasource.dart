@@ -6,7 +6,7 @@ abstract class WorkReportsDataSource {
   Future<List<WorkReport>> getWorkReports();
   Future<WorkReport> getWorkReport(int id);
   Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
-  Future<WorkReport> updateWorkReport(int id, WorkReport report);
+  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
   Future<void> deleteWorkReport(int id);
 }
 
@@ -55,17 +55,15 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       if (personnel != null) 'personnel': personnel,
       if (materials != null) 'materials': materials,
       if (suggestions != null) 'suggestions': suggestions,
-      if (supervisorSignature != null) 'supervisor_signature': supervisorSignature,
-      if (managerSignature != null) 'manager_signature': managerSignature,
     });
 
     // Add photos
     for (int i = 0; i < photos.length; i++) {
       final photo = photos[i];
-      if (photo['descripcion'] != null) {
+      if (photo['descripcion'] != null && photo['descripcion'].isNotEmpty) {
         formData.fields.add(MapEntry('photos[$i][descripcion]', photo['descripcion']));
       }
-      if (photo['before_work_descripcion'] != null) {
+      if (photo['before_work_descripcion'] != null && photo['before_work_descripcion'].isNotEmpty) {
         formData.fields.add(MapEntry('photos[$i][before_work_descripcion]', photo['before_work_descripcion']));
       }
       if (photo['photo'] != null) {
@@ -76,19 +74,62 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       }
     }
 
+    print('Solicitud FormData fields: ${formData.fields}');
+    print('Solicitud FormData files: ${formData.files.map((e) => '${e.key}: ${e.value.filename}').toList()}');
+
     final response = await dio.post(
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}',
       data: formData,
     );
+    print('Create Work Report Response: ${response.data}');
     final replacedData = _replaceUrls(response.data);
+    print('Replaced Data: $replacedData');
     return WorkReport.fromJson(replacedData['data']);
   }
 
   @override
-  Future<WorkReport> updateWorkReport(int id, WorkReport report) async {
-    final response = await dio.put(
+  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos) async {
+    final formData = FormData.fromMap({
+      'project_id': projectId,
+      'employee_id': employeeId,
+      'name': name,
+      'report_date': reportDate,
+      if (startTime != null) 'start_time': startTime,
+      if (endTime != null) 'end_time': endTime,
+      if (description != null) 'description': description,
+      if (tools != null) 'tools': tools,
+      if (personnel != null) 'personnel': personnel,
+      if (materials != null) 'materials': materials,
+      if (suggestions != null) 'suggestions': suggestions,
+      '_method': 'PUT', // for Laravel or similar
+    });
+
+    if (supervisorSignature != null) {
+      formData.files.add(MapEntry('supervisor_signature', supervisorSignature));
+    }
+    if (managerSignature != null) {
+      formData.files.add(MapEntry('manager_signature', managerSignature));
+    }
+
+    // Photos are updated separately via photo endpoint
+    // for (int i = 0; i < photos.length; i++) {
+    //   final photo = photos[i];
+    //   if (photo['id'] != null) {
+    //     formData.fields.add(MapEntry('photos[$i][id]', photo['id'].toString()));
+    //   }
+    //   formData.fields.add(MapEntry('photos[$i][descripcion]', photo['descripcion']));
+    //   formData.fields.add(MapEntry('photos[$i][before_work_descripcion]', photo['before_work_descripcion']));
+    //   if (photo['photo'] != null) {
+    //     formData.files.add(MapEntry('photos[$i][photo]', photo['photo']));
+    //   }
+    //   if (photo['before_work_photo'] != null) {
+    //     formData.files.add(MapEntry('photos[$i][before_work_photo]', photo['before_work_photo']));
+    //   }
+    // }
+
+    final response = await dio.post(
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id',
-      data: report.toJson(),
+      data: formData,
     );
     final replacedData = _replaceUrls(response.data);
     return WorkReport.fromJson(replacedData['data']);

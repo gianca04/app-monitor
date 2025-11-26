@@ -2,35 +2,35 @@ import '../../../photos/data/models/photo.dart';
 
 class WorkReport {
   final int? id;
-  final String name;
-  final String description;
-  final String reportDate;
+  final String? name;
+  final String? description;
+  final String? reportDate;
   final String? startTime;
   final String? endTime;
-  final Resources resources;
-  final String suggestions;
-  final Signatures signatures;
-  final Timestamps timestamps;
-  final Employee employee;
-  final Project project;
-  final List<Photo> photos;
-  final Summary summary;
+  final Resources? resources;
+  final String? suggestions;
+  final Signatures? signatures  ;
+  final Timestamps? timestamps;
+  final Employee? employee;
+  final Project? project;
+  final List<Photo>? photos;
+  final Summary? summary;
 
   WorkReport({
     this.id,
-    required this.name,
-    required this.description,
-    required this.reportDate,
+    this.name,
+    this.description,
+    this.reportDate,
     this.startTime,
     this.endTime,
-    required this.resources,
-    required this.suggestions,
-    required this.signatures,
-    required this.timestamps,
-    required this.employee,
-    required this.project,
-    required this.photos,
-    required this.summary,
+    this.resources,
+    this.suggestions,
+    this.signatures,
+    this.timestamps,
+    this.employee,
+    this.project,
+    this.photos,
+    this.summary,
   });
 
   factory WorkReport.fromJson(Map<String, dynamic> json) {
@@ -41,14 +41,14 @@ class WorkReport {
       reportDate: json['reportDate'],
       startTime: json['startTime'],
       endTime: json['endTime'],
-      resources: Resources.fromJson(json['resources']),
+      resources: json['resources'] != null ? Resources.fromJson(json['resources']) : null,
       suggestions: json['suggestions'],
-      signatures: Signatures.fromJson(json['signatures']),
-      timestamps: Timestamps.fromJson(json['timestamps']),
-      employee: Employee.fromJson(json['employee']),
-      project: Project.fromJson(json['project']),
-      photos: (json['photos'] as List).map((e) => Photo.fromJson(e)).toList(),
-      summary: Summary.fromJson(json['summary']),
+      signatures: json['signatures'] != null ? Signatures.fromJson(json['signatures']) : null,
+      timestamps: json['created_at'] != null ? Timestamps(createdAt: json['created_at'], updatedAt: json['updated_at']) : null,
+      employee: json['employee'] != null ? Employee.fromJson(json['employee']) : null,
+      project: json['project'] != null ? Project.fromJson(json['project']) : null,
+      photos: (json['photos'] as List?)?.map((e) => Photo.fromJson(e)).toList() ?? [],
+      summary: json['summary'] != null ? Summary.fromJson(json['summary']) : null,
     );
   }
 
@@ -60,14 +60,14 @@ class WorkReport {
       'reportDate': reportDate,
       'startTime': startTime,
       'endTime': endTime,
-      'resources': resources.toJson(),
+      'resources': resources?.toJson(),
       'suggestions': suggestions,
-      'signatures': signatures.toJson(),
-      'timestamps': timestamps.toJson(),
-      'employee': employee.toJson(),
-      'project': project.toJson(),
-      'photos': photos.map((e) => e.toJson()).toList(),
-      'summary': summary.toJson(),
+      'signatures': signatures?.toJson(),
+      'timestamps': timestamps?.toJson(),
+      'employee': employee?.toJson(),
+      'project': project?.toJson(),
+      'photos': photos?.map((e) => e.toJson()).toList(),
+      'summary': summary?.toJson(),
     };
   }
 
@@ -107,14 +107,14 @@ class WorkReport {
 }
 
 class Resources {
-  final String tools;
-  final String personnel;
-  final String materials;
+  final String? tools;
+  final String? personnel;
+  final String? materials;
 
   Resources({
-    required this.tools,
-    required this.personnel,
-    required this.materials,
+    this.tools,
+    this.personnel,
+    this.materials,
   });
 
   factory Resources.fromJson(Map<String, dynamic> json) {

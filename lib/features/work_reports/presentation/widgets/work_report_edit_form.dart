@@ -173,32 +173,15 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               TextFormField(
                 controller: _reportDateController,
                 decoration: const InputDecoration(labelText: 'Report Date (YYYY-MM-DD)'),
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return 'Report Date is required';
-                  final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
-                  if (!regex.hasMatch(value!)) return 'Invalid date format. Use YYYY-MM-DD';
-                  return null;
-                },
+                validator: (value) => value?.isEmpty ?? true ? 'Report Date is required' : null,
               ),
               TextFormField(
                 controller: _startTimeController,
                 decoration: const InputDecoration(labelText: 'Start Time (HH:MM)'),
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return null;
-                  final regex = RegExp(r'^\d{2}:\d{2}(:\d{2})?$');
-                  if (!regex.hasMatch(value!)) return 'Invalid time format. Use HH:MM or HH:MM:SS';
-                  return null;
-                },
               ),
               TextFormField(
                 controller: _endTimeController,
                 decoration: const InputDecoration(labelText: 'End Time (HH:MM)'),
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return null;
-                  final regex = RegExp(r'^\d{2}:\d{2}(:\d{2})?$');
-                  if (!regex.hasMatch(value!)) return 'Invalid time format. Use HH:MM or HH:MM:SS';
-                  return null;
-                },
               ),
               TextFormField(
                 controller: _descriptionController,
@@ -304,40 +287,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Imprimir valores de cada campo
-      print('Valores de los campos:');
-      print('Project ID: ${_projectIdController.text}');
-      print('Employee ID: ${_employeeIdController.text}');
-      print('Name: ${_nameController.text}');
-      print('Report Date: ${_reportDateController.text}');
-      print('Start Time: ${_startTimeController.text}');
-      print('End Time: ${_endTimeController.text}');
-      print('Description: ${_descriptionController.text}');
-      print('Tools: ${_toolsController.text}');
-      print('Personnel: ${_personnelController.text}');
-      print('Materials: ${_materialsController.text}');
-      print('Suggestions: ${_suggestionsController.text}');
-      print('Photos: $_photos');
-
-      // Validate photos
-      for (int i = 0; i < _photos.length; i++) {
-        final photo = _photos[i];
-        if (photo['photo'] != null && (photo['descripcion'] == null || photo['descripcion'].isEmpty)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Description is required for photo ${i + 1}')),
-          );
-          return;
-        }
-        if (photo['before_work_photo'] != null && (photo['before_work_descripcion'] == null || photo['before_work_descripcion'].isEmpty)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Before work description is required for photo ${i + 1}')),
-          );
-          return;
-        }
-      }
-
       List<Map<String, dynamic>> validPhotos = _photos.where((photo) => photo['id'] != null || photo['photo'] != null || photo['before_work_photo'] != null).toList();
-      print('Sending data: projectId: ${int.parse(_projectIdController.text)}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos');
       if (widget.report == null) {
         try {
           final newReport = await ref.read(workReportsProvider.notifier).createWorkReport(
@@ -358,19 +308,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           // Navigate to the detail screen of the newly created report
           if (mounted) {
             context.go('/work-reports/${newReport.id}');
-          }
-        } on DioException catch (e) {
-          String errorMessage = 'Error creating work report';
-          if (e.response?.data != null && e.response!.data['errors'] != null) {
-            final errors = e.response!.data['errors'] as Map<String, dynamic>;
-            errorMessage += ': ${errors.values.join(', ')}';
-          } else {
-            errorMessage += ': ${e.message}';
-          }
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorMessage)),
-            );
           }
         } catch (e) {
           // Handle error, maybe show a snackbar
@@ -419,19 +356,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           // Navigate back to the detail screen
           if (mounted) {
             context.go('/work-reports/${widget.report!.id}');
-          }
-        } on DioException catch (e) {
-          String errorMessage = 'Error updating work report';
-          if (e.response?.data != null && e.response!.data['errors'] != null) {
-            final errors = e.response!.data['errors'] as Map<String, dynamic>;
-            errorMessage += ': ${errors.values.join(', ')}';
-          } else {
-            errorMessage += ': ${e.message}';
-          }
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorMessage)),
-            );
           }
         } catch (e) {
           // Handle error, maybe show a snackbar

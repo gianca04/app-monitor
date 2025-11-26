@@ -32,8 +32,8 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
                   itemBuilder: (context, index) {
                     final report = state.reports[index];
                     return ListTile(
-                      title: Text(report.name),
-                      subtitle: Text('${report.description}\n${report.reportDate}'),
+                      title: Text(report.name ?? 'N/A'),
+                      subtitle: Text('${report.description ?? ''}\n${report.reportDate ?? ''}'),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

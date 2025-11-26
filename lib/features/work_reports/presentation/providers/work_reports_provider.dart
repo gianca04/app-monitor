@@ -62,21 +62,37 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final reports = await getWorkReportsUseCase();
+      // Log loaded reports for debugging
+      try {
+        print('Loaded work reports (raw models): $reports');
+        print('Loaded work reports (as json): ${reports.map((r) => r.toJson()).toList()}');
+      } catch (_) {}
       state = state.copyWith(isLoading: false, reports: reports);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos) async {
-    final newReport = await createWorkReportUseCase(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature, photos);
+  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos) async {
+    final newReport = await createWorkReportUseCase(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, photos);
+    // Log the created report returned by the server
+    try {
+      print('Created work report (model): $newReport');
+      print('Created work report (as json): ${newReport.toJson()}');
+    } catch (_) {}
+
     state = state.copyWith(reports: [...state.reports, newReport]);
+    // Log the list we will render
+    try {
+      print('Reports list after create (as json): ${state.reports.map((r) => r.toJson()).toList()}');
+    } catch (_) {}
+
     return newReport;
   }
 
-  Future<void> updateWorkReport(int id, WorkReport report) async {
+  Future<void> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos) async {
     try {
-      final updatedReport = await updateWorkReportUseCase(id, report);
+      final updatedReport = await updateWorkReportUseCase(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature, photos);
       final updatedReports = state.reports.map((r) => r.id == id ? updatedReport : r).toList();
       state = state.copyWith(reports: updatedReports);
     } catch (e) {

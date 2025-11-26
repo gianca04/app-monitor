@@ -39,13 +39,13 @@ class PhotoViewScreen extends ConsumerWidget {
                           Text('Work Report ID: ${state.photo!.workReportId}'),
                           const SizedBox(height: 16),
                           const Text('After Work:', style: TextStyle(fontWeight: FontWeight.bold)),
-                          if (state.photo!.afterWork.photoUrl != null)
-                            ImageViewer(url: state.photo!.afterWork.photoUrl!),
+                          if (state.photo!.afterWork.photoPath != null)
+                            ImageViewer(url: state.photo!.afterWork.photoPath!),
                           Text('Description: ${state.photo!.afterWork.description}'),
                           const SizedBox(height: 16),
                           const Text('Before Work:', style: TextStyle(fontWeight: FontWeight.bold)),
-                          if (state.photo!.beforeWork.photoUrl != null)
-                            ImageViewer(url: state.photo!.beforeWork.photoUrl!),
+                          if (state.photo!.beforeWork.photoPath != null)
+                            ImageViewer(url: state.photo!.beforeWork.photoPath!),
                           Text('Description: ${state.photo!.beforeWork.description}'),
                           const SizedBox(height: 16),
                           Text('Created At: ${state.photo!.timestamps.createdAt}'),

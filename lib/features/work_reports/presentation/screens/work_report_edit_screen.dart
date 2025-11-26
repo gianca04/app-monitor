@@ -20,7 +20,7 @@ class WorkReportEditScreen extends ConsumerWidget {
               ? Center(child: Text('Error: ${state.error}'))
               : state.report == null
                   ? const Center(child: Text('Report not found'))
-                  : WorkReportForm(report: state.report),
+                  : WorkReportForm(report: state.report!),
     );
   }
 }

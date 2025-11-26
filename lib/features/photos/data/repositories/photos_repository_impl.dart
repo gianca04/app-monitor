@@ -24,8 +24,8 @@ class PhotosRepositoryImpl implements PhotosRepository {
   }
 
   @override
-  Future<Photo> updatePhoto(int id, Photo photo) async {
-    return await dataSource.updatePhoto(id, photo);
+  Future<Photo> updatePhoto(int id, MultipartFile? photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion) async {
+    return await dataSource.updatePhoto(id, photo, descripcion, beforeWorkPhoto, beforeWorkDescripcion);
   }
 
   @override
