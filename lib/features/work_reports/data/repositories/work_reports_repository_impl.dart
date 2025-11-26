@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../domain/repositories/work_reports_repository.dart';
 import '../datasources/work_reports_datasource.dart';
 import '../models/work_report.dart';
@@ -18,8 +19,8 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
   }
 
   @override
-  Future<WorkReport> createWorkReport(WorkReport report) async {
-    return await dataSource.createWorkReport(report);
+  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos) async {
+    return await dataSource.createWorkReport(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature, photos);
   }
 
   @override

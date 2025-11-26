@@ -68,13 +68,10 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     }
   }
 
-  Future<void> createWorkReport(WorkReport report) async {
-    try {
-      final newReport = await createWorkReportUseCase(report);
-      state = state.copyWith(reports: [...state.reports, newReport]);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
+  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos) async {
+    final newReport = await createWorkReportUseCase(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature, photos);
+    state = state.copyWith(reports: [...state.reports, newReport]);
+    return newReport;
   }
 
   Future<void> updateWorkReport(int id, WorkReport report) async {

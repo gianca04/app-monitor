@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/work_reports_provider.dart';
 import '../../data/models/work_report.dart';
 
@@ -19,7 +22,17 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   late TextEditingController _reportDateController;
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
+  late TextEditingController _toolsController;
+  late TextEditingController _personnelController;
+  late TextEditingController _materialsController;
   late TextEditingController _suggestionsController;
+  late TextEditingController _employeeIdController;
+  late TextEditingController _projectIdController;
+
+  MultipartFile? _supervisorSignature;
+  MultipartFile? _managerSignature;
+
+  List<Map<String, dynamic>> _photos = [];
 
   @override
   void initState() {
@@ -29,7 +42,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     _reportDateController = TextEditingController(text: widget.report?.reportDate ?? '');
     _startTimeController = TextEditingController(text: widget.report?.startTime ?? '');
     _endTimeController = TextEditingController(text: widget.report?.endTime ?? '');
+    _toolsController = TextEditingController(text: widget.report?.resources.tools ?? '');
+    _personnelController = TextEditingController(text: widget.report?.resources.personnel ?? '');
+    _materialsController = TextEditingController(text: widget.report?.resources.materials ?? '');
     _suggestionsController = TextEditingController(text: widget.report?.suggestions ?? '');
+    _employeeIdController = TextEditingController(text: widget.report?.employee.id.toString() ?? '');
+    _projectIdController = TextEditingController(text: widget.report?.project.id.toString() ?? '');
   }
 
   @override
@@ -39,8 +57,66 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     _reportDateController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
+    _toolsController.dispose();
+    _personnelController.dispose();
+    _materialsController.dispose();
     _suggestionsController.dispose();
+    _employeeIdController.dispose();
+    _projectIdController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage(bool isSupervisor) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      final multipartFile = MultipartFile.fromBytes(bytes, filename: pickedFile.name);
+
+      setState(() {
+        if (isSupervisor) {
+          _supervisorSignature = multipartFile;
+        } else {
+          _managerSignature = multipartFile;
+        }
+      });
+    }
+  }
+
+  void _addPhoto() {
+    setState(() {
+      _photos.add({
+        'descripcion': '',
+        'before_work_descripcion': '',
+        'photo': null,
+        'before_work_photo': null,
+      });
+    });
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+    });
+  }
+
+  Future<void> _pickPhotoImage(int index, bool isAfterWork) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      final multipartFile = MultipartFile.fromBytes(bytes, filename: pickedFile.name);
+
+      setState(() {
+        if (isAfterWork) {
+          _photos[index]['photo'] = multipartFile;
+        } else {
+          _photos[index]['before_work_photo'] = multipartFile;
+        }
+      });
+    }
   }
 
   @override
@@ -49,67 +125,164 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       padding: const EdgeInsets.all(16.0),
       child: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
-              validator: (value) => value?.isEmpty ?? true ? 'Name is required' : null,
-            ),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-              validator: (value) => value?.isEmpty ?? true ? 'Description is required' : null,
-            ),
-            TextFormField(
-              controller: _reportDateController,
-              decoration: const InputDecoration(labelText: 'Report Date (YYYY-MM-DD)'),
-              validator: (value) => value?.isEmpty ?? true ? 'Report Date is required' : null,
-            ),
-            TextFormField(
-              controller: _startTimeController,
-              decoration: const InputDecoration(labelText: 'Start Time'),
-            ),
-            TextFormField(
-              controller: _endTimeController,
-              decoration: const InputDecoration(labelText: 'End Time'),
-            ),
-            TextFormField(
-              controller: _suggestionsController,
-              decoration: const InputDecoration(labelText: 'Suggestions'),
-            ),
-            ElevatedButton(
-              onPressed: _submit,
-              child: Text(widget.report == null ? 'Create' : 'Update'),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _projectIdController,
+                decoration: const InputDecoration(labelText: 'Project ID'),
+                keyboardType: TextInputType.number,
+                validator: (value) => value?.isEmpty ?? true ? 'Project ID is required' : null,
+              ),
+              TextFormField(
+                controller: _employeeIdController,
+                decoration: const InputDecoration(labelText: 'Employee ID'),
+                keyboardType: TextInputType.number,
+                validator: (value) => value?.isEmpty ?? true ? 'Employee ID is required' : null,
+              ),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Name'),
+                validator: (value) => value?.isEmpty ?? true ? 'Name is required' : null,
+              ),
+              TextFormField(
+                controller: _reportDateController,
+                decoration: const InputDecoration(labelText: 'Report Date (YYYY-MM-DD)'),
+                validator: (value) => value?.isEmpty ?? true ? 'Report Date is required' : null,
+              ),
+              TextFormField(
+                controller: _startTimeController,
+                decoration: const InputDecoration(labelText: 'Start Time (HH:MM)'),
+              ),
+              TextFormField(
+                controller: _endTimeController,
+                decoration: const InputDecoration(labelText: 'End Time (HH:MM)'),
+              ),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 3,
+              ),
+              TextFormField(
+                controller: _toolsController,
+                decoration: const InputDecoration(labelText: 'Tools'),
+                maxLines: 2,
+              ),
+              TextFormField(
+                controller: _personnelController,
+                decoration: const InputDecoration(labelText: 'Personnel'),
+                maxLines: 2,
+              ),
+              TextFormField(
+                controller: _materialsController,
+                decoration: const InputDecoration(labelText: 'Materials'),
+                maxLines: 2,
+              ),
+              TextFormField(
+                controller: _suggestionsController,
+                decoration: const InputDecoration(labelText: 'Suggestions'),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              const Text('Photos'),
+              ..._photos.asMap().entries.map((entry) {
+                final index = entry.key;
+                final photo = entry.value;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Photo ${index + 1}'),
+                    TextFormField(
+                      initialValue: photo['descripcion'],
+                      decoration: const InputDecoration(labelText: 'After Work Description'),
+                      onChanged: (value) => photo['descripcion'] = value,
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _pickPhotoImage(index, true),
+                      child: const Text('Pick After Work Photo'),
+                    ),
+                    TextFormField(
+                      initialValue: photo['before_work_descripcion'],
+                      decoration: const InputDecoration(labelText: 'Before Work Description'),
+                      onChanged: (value) => photo['before_work_descripcion'] = value,
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _pickPhotoImage(index, false),
+                      child: const Text('Pick Before Work Photo'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _removePhoto(index),
+                      child: const Text('Remove Photo'),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }),
+              ElevatedButton(
+                onPressed: _addPhoto,
+                child: const Text('Add Photo'),
+              ),
+              const SizedBox(height: 16),
+              const Text('Supervisor Signature'),
+              ElevatedButton(
+                onPressed: () => _pickImage(true),
+                child: const Text('Pick Supervisor Signature'),
+              ),
+              const SizedBox(height: 16),
+              const Text('Manager Signature'),
+              ElevatedButton(
+                onPressed: () => _pickImage(false),
+                child: const Text('Pick Manager Signature'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _submit,
+                child: Text(widget.report == null ? 'Create' : 'Update'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final report = WorkReport(
-        id: widget.report?.id,
-        name: _nameController.text,
-        description: _descriptionController.text,
-        reportDate: _reportDateController.text,
-        startTime: _startTimeController.text.isEmpty ? null : _startTimeController.text,
-        endTime: _endTimeController.text.isEmpty ? null : _endTimeController.text,
-        resources: Resources(tools: '', personnel: '', materials: ''), // Default empty
-        suggestions: _suggestionsController.text,
-        signatures: Signatures(supervisor: null, manager: null), // Default null
-        timestamps: Timestamps(createdAt: '', updatedAt: ''), // Will be set by server
-      );
-
       if (widget.report == null) {
-        ref.read(workReportsProvider.notifier).createWorkReport(report);
-      } else {
-        ref.read(workReportsProvider.notifier).updateWorkReport(widget.report!.id!, report);
-      }
+        try {
+          final newReport = await ref.read(workReportsProvider.notifier).createWorkReport(
+            int.parse(_projectIdController.text),
+            int.parse(_employeeIdController.text),
+            _nameController.text,
+            _reportDateController.text,
+            _startTimeController.text.isEmpty ? null : _startTimeController.text,
+            _endTimeController.text.isEmpty ? null : _endTimeController.text,
+            _descriptionController.text.isEmpty ? null : _descriptionController.text,
+            _toolsController.text.isEmpty ? null : _toolsController.text,
+            _personnelController.text.isEmpty ? null : _personnelController.text,
+            _materialsController.text.isEmpty ? null : _materialsController.text,
+            _suggestionsController.text.isEmpty ? null : _suggestionsController.text,
+            _supervisorSignature,
+            _managerSignature,
+            _photos,
+          );
 
-      Navigator.of(context).pop();
+          // Navigate to the detail screen of the newly created report
+          if (mounted) {
+            context.go('/work-reports/${newReport.id}');
+          }
+        } catch (e) {
+          // Handle error, maybe show a snackbar
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error creating work report: $e')),
+            );
+          }
+        }
+      } else {
+        // For update, we might need to handle differently
+        // ref.read(workReportsProvider.notifier).updateWorkReport(widget.report!.id!, report);
+      }
     }
   }
 }

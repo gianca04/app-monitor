@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/usecases/get_photos_usecase.dart';
 import '../../domain/usecases/get_photo_usecase.dart';
@@ -91,9 +92,9 @@ class PhotosNotifier extends StateNotifier<PhotosState> {
     }
   }
 
-  Future<void> createPhoto(Photo photo) async {
+  Future<void> createPhoto(int workReportId, MultipartFile photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion) async {
     try {
-      final newPhoto = await createPhotoUseCase.call(photo);
+      final newPhoto = await createPhotoUseCase.call(workReportId, photo, descripcion, beforeWorkPhoto, beforeWorkDescripcion);
       state = state.copyWith(photos: [...state.photos, newPhoto]);
     } catch (e) {
       state = state.copyWith(error: e.toString());

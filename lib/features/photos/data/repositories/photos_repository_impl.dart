@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../domain/repositories/photos_repository.dart';
 import '../datasources/photos_datasource.dart';
 import '../models/photo.dart';
@@ -18,8 +19,8 @@ class PhotosRepositoryImpl implements PhotosRepository {
   }
 
   @override
-  Future<Photo> createPhoto(Photo photo) async {
-    return await dataSource.createPhoto(photo);
+  Future<Photo> createPhoto(int workReportId, MultipartFile photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion) async {
+    return await dataSource.createPhoto(workReportId, photo, descripcion, beforeWorkPhoto, beforeWorkDescripcion);
   }
 
   @override

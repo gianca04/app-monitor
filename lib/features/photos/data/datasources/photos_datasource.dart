@@ -5,7 +5,7 @@ import 'package:monitor/core/constants/api_constants.dart';
 abstract class PhotosDataSource {
   Future<List<Photo>> getPhotos();
   Future<Photo> getPhoto(int id);
-  Future<Photo> createPhoto(Photo photo);
+  Future<Photo> createPhoto(int workReportId, MultipartFile photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion);
   Future<Photo> updatePhoto(int id, Photo photo);
   Future<void> deletePhoto(int id);
 }
@@ -28,10 +28,18 @@ class PhotosDataSourceImpl implements PhotosDataSource {
   }
 
   @override
-  Future<Photo> createPhoto(Photo photo) async {
+  Future<Photo> createPhoto(int workReportId, MultipartFile photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion) async {
+    final formData = FormData.fromMap({
+      'work_report_id': workReportId,
+      'photo': photo,
+      'descripcion': descripcion,
+      if (beforeWorkPhoto != null) 'before_work_photo': beforeWorkPhoto,
+      if (beforeWorkDescripcion != null) 'before_work_descripcion': beforeWorkDescripcion,
+    });
+
     final response = await dio.post(
       '${ApiConstants.baseUrl}${ApiConstants.photosEndpoint}',
-      data: photo.toJson(),
+      data: formData,
     );
     return Photo.fromJson(response.data['data']);
   }

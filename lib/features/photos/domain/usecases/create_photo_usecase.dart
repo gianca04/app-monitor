@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../repositories/photos_repository.dart';
 import '../../data/models/photo.dart';
 
@@ -6,7 +7,7 @@ class CreatePhotoUseCase {
 
   CreatePhotoUseCase(this.repository);
 
-  Future<Photo> call(Photo photo) async {
-    return await repository.createPhoto(photo);
+  Future<Photo> call(int workReportId, MultipartFile photo, String descripcion, MultipartFile? beforeWorkPhoto, String? beforeWorkDescripcion) async {
+    return await repository.createPhoto(workReportId, photo, descripcion, beforeWorkPhoto, beforeWorkDescripcion);
   }
 }
