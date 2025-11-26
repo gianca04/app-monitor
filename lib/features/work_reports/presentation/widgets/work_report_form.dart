@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:typed_data';
 import '../providers/work_reports_provider.dart';
 import '../../data/models/work_report.dart';
 
@@ -31,6 +32,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   MultipartFile? _supervisorSignature;
   MultipartFile? _managerSignature;
+  Uint8List? _supervisorSignatureBytes;
+  Uint8List? _managerSignatureBytes;
 
   List<Map<String, dynamic>> _photos = [];
 
@@ -77,8 +80,10 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       setState(() {
         if (isSupervisor) {
           _supervisorSignature = multipartFile;
+          _supervisorSignatureBytes = bytes;
         } else {
           _managerSignature = multipartFile;
+          _managerSignatureBytes = bytes;
         }
       });
     }
@@ -91,6 +96,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         'before_work_descripcion': '',
         'photo': null,
         'before_work_photo': null,
+        'photo_bytes': null,
+        'before_work_photo_bytes': null,
       });
     });
   }
@@ -112,8 +119,10 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       setState(() {
         if (isAfterWork) {
           _photos[index]['photo'] = multipartFile;
+          _photos[index]['photo_bytes'] = bytes;
         } else {
           _photos[index]['before_work_photo'] = multipartFile;
+          _photos[index]['before_work_photo_bytes'] = bytes;
         }
       });
     }
@@ -201,6 +210,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       onPressed: () => _pickPhotoImage(index, true),
                       child: const Text('Pick After Work Photo'),
                     ),
+                    if (photo['photo_bytes'] != null)
+                      Image.memory(photo['photo_bytes'], height: 100, fit: BoxFit.contain),
                     TextFormField(
                       initialValue: photo['before_work_descripcion'],
                       decoration: const InputDecoration(labelText: 'Before Work Description'),
@@ -210,6 +221,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       onPressed: () => _pickPhotoImage(index, false),
                       child: const Text('Pick Before Work Photo'),
                     ),
+                    if (photo['before_work_photo_bytes'] != null)
+                      Image.memory(photo['before_work_photo_bytes'], height: 100, fit: BoxFit.contain),
                     ElevatedButton(
                       onPressed: () => _removePhoto(index),
                       child: const Text('Remove Photo'),
@@ -228,12 +241,16 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 onPressed: () => _pickImage(true),
                 child: const Text('Pick Supervisor Signature'),
               ),
+              if (_supervisorSignatureBytes != null)
+                Image.memory(_supervisorSignatureBytes!, height: 100, fit: BoxFit.contain),
               const SizedBox(height: 16),
               const Text('Manager Signature'),
               ElevatedButton(
                 onPressed: () => _pickImage(false),
                 child: const Text('Pick Manager Signature'),
               ),
+              if (_managerSignatureBytes != null)
+                Image.memory(_managerSignatureBytes!, height: 100, fit: BoxFit.contain),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _submit,

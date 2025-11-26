@@ -15,16 +15,30 @@ class PhotosDataSourceImpl implements PhotosDataSource {
 
   PhotosDataSourceImpl(this.dio);
 
+  dynamic _replaceUrls(dynamic data) {
+    if (data is String) {
+      return data.replaceAll('127.0.0.1', '10.0.2.2');
+    } else if (data is Map) {
+      return data.map<String, dynamic>((key, value) => MapEntry(key as String, _replaceUrls(value)));
+    } else if (data is List) {
+      return data.map(_replaceUrls).toList();
+    } else {
+      return data;
+    }
+  }
+
   @override
   Future<List<Photo>> getPhotos() async {
     final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.photosEndpoint}');
-    return (response.data['data'] as List).map((json) => Photo.fromJson(json)).toList();
+    final replacedData = _replaceUrls(response.data);
+    return (replacedData['data'] as List).map((json) => Photo.fromJson(json)).toList();
   }
 
   @override
   Future<Photo> getPhoto(int id) async {
     final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.photosEndpoint}/$id');
-    return Photo.fromJson(response.data['data']);
+    final replacedData = _replaceUrls(response.data);
+    return Photo.fromJson(replacedData['data']);
   }
 
   @override
@@ -41,7 +55,8 @@ class PhotosDataSourceImpl implements PhotosDataSource {
       '${ApiConstants.baseUrl}${ApiConstants.photosEndpoint}',
       data: formData,
     );
-    return Photo.fromJson(response.data['data']);
+    final replacedData = _replaceUrls(response.data);
+    return Photo.fromJson(replacedData['data']);
   }
 
   @override
@@ -50,7 +65,8 @@ class PhotosDataSourceImpl implements PhotosDataSource {
       '${ApiConstants.baseUrl}${ApiConstants.photosEndpoint}/$id',
       data: photo.toJson(),
     );
-    return Photo.fromJson(response.data['data']);
+    final replacedData = _replaceUrls(response.data);
+    return Photo.fromJson(replacedData['data']);
   }
 
   @override

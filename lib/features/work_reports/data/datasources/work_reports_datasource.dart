@@ -15,16 +15,30 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
 
   WorkReportsDataSourceImpl(this.dio);
 
+  dynamic _replaceUrls(dynamic data) {
+    if (data is String) {
+      return data.replaceAll('127.0.0.1', '10.0.2.2');
+    } else if (data is Map) {
+      return data.map<String, dynamic>((key, value) => MapEntry(key as String, _replaceUrls(value)));
+    } else if (data is List) {
+      return data.map(_replaceUrls).toList();
+    } else {
+      return data;
+    }
+  }
+
   @override
   Future<List<WorkReport>> getWorkReports() async {
     final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}');
-    return (response.data['data'] as List).map((json) => WorkReport.fromJson(json)).toList();
+    final replacedData = _replaceUrls(response.data);
+    return (replacedData['data'] as List).map((json) => WorkReport.fromJson(json)).toList();
   }
 
   @override
   Future<WorkReport> getWorkReport(int id) async {
     final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id');
-    return WorkReport.fromJson(response.data['data']);
+    final replacedData = _replaceUrls(response.data);
+    return WorkReport.fromJson(replacedData['data']);
   }
 
   @override
@@ -66,7 +80,8 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}',
       data: formData,
     );
-    return WorkReport.fromJson(response.data['data']);
+    final replacedData = _replaceUrls(response.data);
+    return WorkReport.fromJson(replacedData['data']);
   }
 
   @override
@@ -75,7 +90,8 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id',
       data: report.toJson(),
     );
-    return WorkReport.fromJson(response.data['data']);
+    final replacedData = _replaceUrls(response.data);
+    return WorkReport.fromJson(replacedData['data']);
   }
 
   @override

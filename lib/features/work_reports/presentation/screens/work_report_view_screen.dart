@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../providers/work_reports_provider.dart';
+import '../../../photos/presentation/widgets/image_viewer.dart';
 
 class WorkReportViewScreen extends ConsumerWidget {
   final int id;
@@ -60,11 +61,11 @@ class WorkReportViewScreen extends ConsumerWidget {
                             const Text('Signatures:', style: TextStyle(fontWeight: FontWeight.bold)),
                             if (state.report!.signatures.supervisor != null) ...[
                               const Text('Supervisor:'),
-                              Image.network(state.report!.signatures.supervisor!),
+                              ImageViewer(url: state.report!.signatures.supervisor!),
                             ],
                             if (state.report!.signatures.manager != null) ...[
                               const Text('Manager:'),
-                              Image.network(state.report!.signatures.manager!),
+                              ImageViewer(url: state.report!.signatures.manager!),
                             ],
                             const SizedBox(height: 16),
                             const Text('Timestamps:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -93,12 +94,12 @@ class WorkReportViewScreen extends ConsumerWidget {
                                 Text('Photo ID: ${photo.id}'),
                                 if (photo.beforeWork.photoUrl != null) ...[
                                   const Text('Before Work:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  Image.network(photo.beforeWork.photoUrl!),
+                                  ImageViewer(url: photo.beforeWork.photoUrl!),
                                   Html(data: photo.beforeWork.description),
                                 ],
                                 if (photo.afterWork.photoUrl != null) ...[
                                   const Text('After Work:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  Image.network(photo.afterWork.photoUrl!),
+                                  ImageViewer(url: photo.afterWork.photoUrl!),
                                   Html(data: photo.afterWork.description),
                                 ],
                               ],
