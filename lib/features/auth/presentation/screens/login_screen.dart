@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/connectivity_indicator.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -14,6 +16,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _rememberMe = true;
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -44,55 +48,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingrese su email';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingrese su contraseña';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              if (authState.isLoading)
-                const CircularProgressIndicator()
-              else
-                ElevatedButton(
-                  onPressed: _login,
-                  child: const Text('Login'),
-                ),
-              if (authState.error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Text(
-                    authState.error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-            ],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/png/auth_background.png',
+            fit: BoxFit.fitHeight,
           ),
-        ),
+
+          Container(color: Colors.black.withOpacity(0.3)),
+
+          // Indicador de conexión (solo visual)
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8.0, right: 16.0),
+              child: Align(
+                alignment: Alignment.topRight,
+                child: ConnectivityIndicator(
+                  mode: ConnectivityDisplayMode.iconOnly,
+                  showWhenOnline: null,
+                ),
+              ),
+            ),
+          ),
+
+          // Formulario
+          Center(
+            child: _SignInForm(
+              formKey: _formKey,
+              emailController: _emailController,
+              passwordController: _passwordController,
+              rememberMe: _rememberMe,
+              onRememberMeChanged: (value) {
+                setState(() {
+                  _rememberMe = value ?? false;
+                });
+              },
+              onLoginPressed: _login,
+              isLoading: authState.isLoading,
+              error: authState.error,
+              isPasswordVisible: _isPasswordVisible,
+              onTogglePasswordVisibility: _togglePasswordVisibility,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -104,5 +103,215 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _passwordController.text,
       );
     }
+  }
+
+  void _togglePasswordVisibility() {
+    setState(() {
+      _isPasswordVisible = !_isPasswordVisible;
+    });
+  }
+}
+
+class _SignInForm extends StatelessWidget {
+  const _SignInForm({
+    required this.formKey,
+    required this.emailController,
+    required this.passwordController,
+    required this.rememberMe,
+    required this.onRememberMeChanged,
+    required this.onLoginPressed,
+    required this.isLoading,
+    this.error,
+    required this.isPasswordVisible,
+    required this.onTogglePasswordVisibility,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final bool rememberMe;
+  final ValueChanged<bool?> onRememberMeChanged;
+  final VoidCallback onLoginPressed;
+  final bool isLoading;
+  final String? error;
+  final bool isPasswordVisible;
+  final VoidCallback onTogglePasswordVisibility;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 8,
+      color: const Color(0xFF18181B),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(32.0),
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset('assets/images/svg/logo.svg', height: 100),
+                const SizedBox(height: 6),
+                Text(
+                  'Ingrese sus credenciales',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: Colors.white),
+                ),
+                const SizedBox(height: 24),
+
+                // Campo correo
+                TextFormField(
+                  controller: emailController,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Correo Electrónico',
+                    labelStyle: const TextStyle(color: Colors.white),
+                    prefixIcon: const Icon(Icons.email_outlined, color: Colors.white),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.white, width: 2),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese su email';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Campo contraseña
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: !isPasswordVisible,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    labelStyle: const TextStyle(color: Colors.white),
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.white),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.white, width: 2),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.white,
+                      ),
+                      onPressed: onTogglePasswordVisibility,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese su contraseña';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Checkbox
+                Theme(
+                  data: Theme.of(context).copyWith(
+                    checkboxTheme: CheckboxThemeData(
+                      fillColor: MaterialStateProperty.all(Colors.white),
+                      checkColor: MaterialStateProperty.all(Color(0xFF18181B)),
+                    ),
+                  ),
+                  child: CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: rememberMe,
+                    onChanged: onRememberMeChanged,
+                    title: const Text('Recordarme', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Botón
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2A8D8D),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: isLoading ? null : onLoginPressed,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      child: isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Ingresar',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                    ),
+                  ),
+                ),
+
+                if (error != null) ...[
+                  const SizedBox(height: 24),
+                  // Mensaje error
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            error!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

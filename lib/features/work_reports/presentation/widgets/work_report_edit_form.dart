@@ -351,6 +351,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             }
           }
 
+          // Invalidate the individual report provider to force reload
+          ref.invalidate(workReportProvider(widget.report!.id!));
+
           // Navigate back to the detail screen
           if (mounted) {
             context.go('/work-reports/${widget.report!.id}');
