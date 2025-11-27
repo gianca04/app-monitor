@@ -1,55 +1,55 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/usecases/get_employees_usecase.dart';
-import '../../domain/usecases/quick_search_employees_usecase.dart';
-import '../../data/models/employee.dart';
+import '../../domain/usecases/get_projects_usecase.dart';
+import '../../domain/usecases/quick_search_projects_usecase.dart';
+import '../../data/models/project.dart';
 import '../../data/models/quick_search_response.dart';
-import '../../data/datasources/employees_datasource_impl.dart';
-import '../../data/repositories/employees_repository_impl.dart';
+import '../../data/datasources/projects_datasource_impl.dart';
+import '../../data/repositories/projects_repository_impl.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 // Providers para dependencias
-final employeesDataSourceProvider = Provider((ref) => EmployeesDatasourceImpl(ref.watch(authenticatedDioProvider)));
-final employeesRepositoryProvider = Provider((ref) => EmployeesRepositoryImpl(ref.watch(employeesDataSourceProvider)));
-final getEmployeesUseCaseProvider = Provider((ref) => GetEmployeesUsecase(ref.watch(employeesRepositoryProvider)));
-final quickSearchEmployeesUseCaseProvider = Provider((ref) => QuickSearchEmployeesUsecase(ref.watch(employeesRepositoryProvider)));
+final projectsDataSourceProvider = Provider((ref) => ProjectsDatasourceImpl(ref.watch(authenticatedDioProvider)));
+final projectsRepositoryProvider = Provider((ref) => ProjectsRepositoryImpl(ref.watch(projectsDataSourceProvider)));
+final getProjectsUseCaseProvider = Provider((ref) => GetProjectsUsecase(ref.watch(projectsRepositoryProvider)));
+final quickSearchProjectsUseCaseProvider = Provider((ref) => QuickSearchProjectsUsecase(ref.watch(projectsRepositoryProvider)));
 
 // Estado para la lista
-class EmployeesState {
-  final List<Employee> employees;
+class ProjectsState {
+  final List<Project> projects;
   final bool isLoading;
   final String? error;
 
-  EmployeesState({
-    this.employees = const [],
+  ProjectsState({
+    this.projects = const [],
     this.isLoading = false,
     this.error,
   });
 
-  EmployeesState copyWith({
-    List<Employee>? employees,
+  ProjectsState copyWith({
+    List<Project>? projects,
     bool? isLoading,
     String? error,
   }) {
-    return EmployeesState(
-      employees: employees ?? this.employees,
+    return ProjectsState(
+      projects: projects ?? this.projects,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
     );
   }
 }
 
-class EmployeesNotifier extends StateNotifier<EmployeesState> {
-  final GetEmployeesUsecase getEmployeesUseCase;
+class ProjectsNotifier extends StateNotifier<ProjectsState> {
+  final GetProjectsUsecase getProjectsUseCase;
 
-  EmployeesNotifier(this.getEmployeesUseCase) : super(EmployeesState()) {
-    loadEmployees();
+  ProjectsNotifier(this.getProjectsUseCase) : super(ProjectsState()) {
+    loadProjects();
   }
 
-  Future<void> loadEmployees() async {
+  Future<void> loadProjects() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final employees = await getEmployeesUseCase();
-      state = state.copyWith(isLoading: false, employees: employees);
+      final projects = await getProjectsUseCase();
+      state = state.copyWith(isLoading: false, projects: projects);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -58,7 +58,7 @@ class EmployeesNotifier extends StateNotifier<EmployeesState> {
 
 // Estado para la búsqueda rápida
 class QuickSearchState {
-  final List<EmployeeQuick> results;
+  final List<ProjectQuick> results;
   final bool isLoading;
   final String? error;
 
@@ -69,7 +69,7 @@ class QuickSearchState {
   });
 
   QuickSearchState copyWith({
-    List<EmployeeQuick>? results,
+    List<ProjectQuick>? results,
     bool? isLoading,
     String? error,
   }) {
@@ -82,7 +82,7 @@ class QuickSearchState {
 }
 
 class QuickSearchNotifier extends StateNotifier<QuickSearchState> {
-  final QuickSearchEmployeesUsecase quickSearchUseCase;
+  final QuickSearchProjectsUsecase quickSearchUseCase;
 
   QuickSearchNotifier(this.quickSearchUseCase) : super(QuickSearchState());
 
@@ -101,12 +101,12 @@ class QuickSearchNotifier extends StateNotifier<QuickSearchState> {
   }
 }
 
-final employeesProvider = StateNotifierProvider<EmployeesNotifier, EmployeesState>((ref) {
-  final getUseCase = ref.watch(getEmployeesUseCaseProvider);
-  return EmployeesNotifier(getUseCase);
+final projectsProvider = StateNotifierProvider<ProjectsNotifier, ProjectsState>((ref) {
+  final getUseCase = ref.watch(getProjectsUseCaseProvider);
+  return ProjectsNotifier(getUseCase);
 });
 
 final quickSearchProvider = StateNotifierProvider<QuickSearchNotifier, QuickSearchState>((ref) {
-  final useCase = ref.watch(quickSearchEmployeesUseCaseProvider);
+  final useCase = ref.watch(quickSearchProjectsUseCaseProvider);
   return QuickSearchNotifier(useCase);
 });

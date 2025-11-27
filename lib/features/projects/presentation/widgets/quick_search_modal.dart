@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/employees_provider.dart';
+import '../providers/projects_provider.dart';
 
 class QuickSearchModal extends ConsumerStatefulWidget {
   const QuickSearchModal({super.key});
@@ -28,7 +28,7 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
           controller: _controller,
           decoration: const InputDecoration(
             labelText: 'Palabra clave',
-            hintText: 'Ingrese nombre, documento, etc.',
+            hintText: 'Ingrese nombre del proyecto, etc.',
             border: OutlineInputBorder(),
           ),
           onChanged: (value) {
@@ -47,13 +47,13 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
               shrinkWrap: true,
               itemCount: quickSearchState.results.length,
               itemBuilder: (context, index) {
-                final employee = quickSearchState.results[index];
+                final project = quickSearchState.results[index];
                 return ListTile(
-                  title: Text(employee.fullName ?? 'Sin nombre'),
-                  subtitle: Text('${employee.documentNumber ?? ''} - ${employee.position ?? ''}'),
+                  title: Text(project.name ?? 'Sin nombre'),
+                  subtitle: Text('ID: ${project.id ?? ''}'),
                   onTap: () {
-                    // Aquí puedes manejar la selección, por ejemplo, cerrar el modal y devolver el empleado
-                    Navigator.of(context).pop(employee);
+                    // Aquí puedes manejar la selección, por ejemplo, cerrar el modal y devolver el proyecto
+                    Navigator.of(context).pop(project);
                   },
                 );
               },

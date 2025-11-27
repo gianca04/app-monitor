@@ -8,6 +8,9 @@ import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/providers/photos_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
+import '../../../../core/widgets/modern_bottom_modal.dart';
+import '../../../employees/presentation/widgets/quick_search_modal.dart';
+import '../../../employees/data/models/quick_search_response.dart';
 
 class WorkReportForm extends ConsumerStatefulWidget {
   final WorkReport? report;
@@ -32,6 +35,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   late TextEditingController _employeeIdController;
   late TextEditingController _projectIdController;
 
+  EmployeeQuick? _selectedEmployee;
+
   MultipartFile? _supervisorSignature;
   MultipartFile? _managerSignature;
   Uint8List? _supervisorSignatureBytes;
@@ -53,6 +58,15 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     _suggestionsController = TextEditingController(text: widget.report?.suggestions ?? '');
     _employeeIdController = TextEditingController(text: widget.report?.employee?.id.toString() ?? '');
     _projectIdController = TextEditingController(text: widget.report?.project?.id.toString() ?? '');
+
+    if (widget.report?.employee != null) {
+      _selectedEmployee = EmployeeQuick(
+        id: widget.report!.employee!.id,
+        fullName: widget.report!.employee!.fullName,
+        documentNumber: widget.report!.employee!.documentNumber,
+        position: widget.report!.employee!.position?.name,
+      );
+    }
 
     if (widget.report != null) {
       for (var photo in widget.report!.photos ?? []) {
@@ -159,11 +173,36 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 keyboardType: TextInputType.number,
                 validator: (value) => value?.isEmpty ?? true ? 'Project ID is required' : null,
               ),
-              TextFormField(
-                controller: _employeeIdController,
-                decoration: const InputDecoration(labelText: 'Employee ID'),
-                keyboardType: TextInputType.number,
-                validator: (value) => value?.isEmpty ?? true ? 'Employee ID is required' : null,
+              // Employee Selector
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Employee', style: TextStyle(fontWeight: FontWeight.bold)),
+                  if (_selectedEmployee != null)
+                    Text('${_selectedEmployee!.fullName} (${_selectedEmployee!.documentNumber})'),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final result = await ModernBottomModal.show<EmployeeQuick>(
+                        context,
+                        title: 'Seleccionar Empleado',
+                        content: const QuickSearchModal(),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancelar'),
+                          ),
+                        ],
+                      );
+                      if (result != null) {
+                        setState(() {
+                          _selectedEmployee = result;
+                          _employeeIdController.text = result.id.toString();
+                        });
+                      }
+                    },
+                    child: const Text('Seleccionar Empleado'),
+                  ),
+                ],
               ),
               TextFormField(
                 controller: _nameController,
@@ -304,10 +343,16 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
+      if (_selectedEmployee == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Debe seleccionar un empleado')),
+        );
+        return;
+      }
       // Imprimir valores de cada campo
       print('Valores de los campos:');
       print('Project ID: ${_projectIdController.text}');
-      print('Employee ID: ${_employeeIdController.text}');
+      print('Employee: ${_selectedEmployee?.fullName} (ID: ${_employeeIdController.text})');
       print('Name: ${_nameController.text}');
       print('Report Date: ${_reportDateController.text}');
       print('Start Time: ${_startTimeController.text}');
