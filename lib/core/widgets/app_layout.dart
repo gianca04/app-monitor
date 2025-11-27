@@ -1,47 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
-class AppLayout extends ConsumerWidget {
+class AppLayout extends StatefulWidget {
   final Widget child;
 
-  AppLayout({super.key, required this.child});
-
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  const AppLayout({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final width = MediaQuery.of(context).size.width;
-    final bool isLargeScreen = width > 800;
+  State<AppLayout> createState() => _AppLayoutState();
+}
 
+class _AppLayoutState extends State<AppLayout> {
+  int _selectedIndex = 0;
+  late final List<String> _paths;
+
+  @override
+  void initState() {
+    super.initState();
+    _paths = ['/home', '/work-reports', '/profile', '/settings'];
+    GoRouter.of(context).routerDelegate.addListener(_onRouteChange);
+    _selectedIndex = _getIndexFromLocation(GoRouter.of(context).routerDelegate.currentConfiguration?.uri.path ?? '/');
+  }
+
+  @override
+  void dispose() {
+    GoRouter.of(context).routerDelegate.removeListener(_onRouteChange);
+    super.dispose();
+  }
+
+  void _onRouteChange() {
+    setState(() {
+      _selectedIndex = _getIndexFromLocation(GoRouter.of(context).routerDelegate.currentConfiguration?.uri.path ?? '/');
+    });
+  }
+
+  int _getIndexFromLocation(String location) {
+    if (location == '/home') return 0;
+    if (location.startsWith('/work-reports')) return 1;
+    if (location.startsWith('/profile')) return 2;
+    if (location.startsWith('/settings')) return 3;
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Theme(
       data: ThemeData.dark(),
       child: Scaffold(
-        key: _scaffoldKey,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           titleSpacing: 0,
-          leading: isLargeScreen
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                ),
-          title: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          title: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   "Logo",
                   style: TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (isLargeScreen) Expanded(child: _navBarItems(context, ref)),
               ],
             ),
           ),
@@ -52,96 +76,42 @@ class AppLayout extends ConsumerWidget {
             ),
           ],
         ),
-        drawer: isLargeScreen ? null : _drawer(context, ref),
-        body: child, // Aquí se inyecta el contenido de la ruta
+        body: widget.child,
+        bottomNavigationBar: SalomonBottomBar(
+          currentIndex: _selectedIndex,
+          selectedItemColor: const Color(0xff6200ee),
+          unselectedItemColor: const Color(0xff757575),
+          onTap: (index) {
+            GoRouter.of(context).go(_paths[index]);
+          },
+          items: _navBarItems,
+        ),
       ),
     );
   }
-
-  Widget _drawer(BuildContext context, WidgetRef ref) => Drawer(
-    child: ListView(
-      children: _menuItems
-          .map(
-            (item) => ListTile(
-              leading: _getIconForItem(item),
-              onTap: () => _onMenuItemTap(context, ref, item),
-              title: Text(item),
-            ),
-          )
-          .toList(),
-    ),
-  );
-
-  Icon _getIconForItem(String item) {
-    switch (item) {
-      case 'Work Reports':
-        return const Icon(Icons.work);
-      case 'Positions':
-        return const Icon(Icons.location_on);
-      case 'Photos':
-        return const Icon(Icons.photo);
-      case 'About':
-        return const Icon(Icons.info);
-      case 'Contact':
-        return const Icon(Icons.contact_mail);
-      case 'Settings':
-        return const Icon(Icons.settings);
-      case 'Sign Out':
-        return const Icon(Icons.logout);
-      default:
-        return const Icon(Icons.help);
-    }
-  }
-
-  Widget _navBarItems(BuildContext context, WidgetRef ref) => Row(
-    mainAxisAlignment: MainAxisAlignment.end,
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: _menuItems
-        .map(
-          (item) => InkWell(
-            onTap: () => _onMenuItemTap(context, ref, item),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 24.0,
-                horizontal: 16,
-              ),
-              child: Text(item, style: const TextStyle(fontSize: 18)),
-            ),
-          ),
-        )
-        .toList(),
-  );
-
-  void _onMenuItemTap(BuildContext context, WidgetRef ref, String item) {
-    switch (item) {
-      case 'Work Reports':
-        GoRouter.of(context).go('/work-reports');
-        break;
-      case 'Positions':
-        GoRouter.of(context).go('/positions');
-        break;
-      case 'Photos':
-        GoRouter.of(context).go('/photos');
-        break;
-      case 'Sign Out':
-        ref.read(authProvider.notifier).logout();
-        break;
-      default:
-        // Handle other items
-        break;
-    }
-    _scaffoldKey.currentState?.openEndDrawer();
-  }
 }
 
-final List<String> _menuItems = <String>[
-  'Work Reports',
-  'Positions',
-  'Photos',
-  'About',
-  'Contact',
-  'Settings',
-  'Sign Out',
+final _navBarItems = [
+  SalomonBottomBarItem(
+    icon: const Icon(Icons.home),
+    title: const Text("Home"),
+    selectedColor: Colors.purple,
+  ),
+  SalomonBottomBarItem(
+    icon: const Icon(Icons.work),
+    title: const Text("Work Reports"),
+    selectedColor: Colors.blue,
+  ),
+  SalomonBottomBarItem(
+    icon: const Icon(Icons.person),
+    title: const Text("Profile"),
+    selectedColor: Colors.teal,
+  ),
+  SalomonBottomBarItem(
+    icon: const Icon(Icons.settings),
+    title: const Text("Settings"),
+    selectedColor: Colors.grey,
+  ),
 ];
 
 enum Menu { itemOne, itemTwo, itemThree }

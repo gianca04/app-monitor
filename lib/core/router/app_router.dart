@@ -14,6 +14,8 @@ import '../../features/photos/presentation/screens/photos_list_screen.dart';
 import '../../features/photos/presentation/screens/photo_view_screen.dart';
 import '../../features/photos/presentation/screens/photo_create_screen.dart';
 import '../../features/photos/presentation/screens/photo_edit_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
 
 GoRouter appRouter(WidgetRef ref) {
   return GoRouter(
@@ -105,6 +107,14 @@ GoRouter appRouter(WidgetRef ref) {
               final id = int.parse(state.pathParameters['id']!);
               return PhotoEditScreen(id: id);
             },
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),
