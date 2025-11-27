@@ -7,7 +7,7 @@ abstract class WorkReportsDataSource {
   Future<WorkReportsResponse> getWorkReports();
   Future<WorkReport> getWorkReport(int id);
   Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
-  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
+  Future<WorkReport> updateWorkReport(int id, int? projectId, int? employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
   Future<void> deleteWorkReport(int id);
 }
 
@@ -89,10 +89,10 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
   }
 
   @override
-  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos) async {
+  Future<WorkReport> updateWorkReport(int id, int? projectId, int? employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos) async {
     final formData = FormData.fromMap({
-      'project_id': projectId,
-      'employee_id': employeeId,
+      if (projectId != null) 'project_id': projectId.toString(),
+      if (employeeId != null) 'employee_id': employeeId.toString(),
       'name': name,
       'report_date': reportDate,
       if (startTime != null) 'start_time': startTime,
@@ -127,6 +127,9 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
     //     formData.files.add(MapEntry('photos[$i][before_work_photo]', photo['before_work_photo']));
     //   }
     // }
+
+    print('Update FormData fields: ${formData.fields}');
+    print('Update FormData files: ${formData.files.map((e) => '${e.key}: ${e.value.filename}').toList()}');
 
     final response = await dio.post(
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id',

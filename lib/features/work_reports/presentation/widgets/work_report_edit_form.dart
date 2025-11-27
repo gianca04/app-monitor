@@ -157,18 +157,15 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 controller: _projectIdController,
                 decoration: const InputDecoration(labelText: 'Project ID'),
                 keyboardType: TextInputType.number,
-                validator: (value) => value?.isEmpty ?? true ? 'Project ID is required' : null,
               ),
               TextFormField(
                 controller: _employeeIdController,
                 decoration: const InputDecoration(labelText: 'Employee ID'),
                 keyboardType: TextInputType.number,
-                validator: (value) => value?.isEmpty ?? true ? 'Employee ID is required' : null,
               ),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) => value?.isEmpty ?? true ? 'Name is required' : null,
               ),
               TextFormField(
                 controller: _reportDateController,
@@ -319,10 +316,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         }
       } else {
         try {
+          print('Updating work report with: projectId: ${_projectIdController.text.isEmpty ? null : int.parse(_projectIdController.text)}, employeeId: ${_employeeIdController.text.isEmpty ? null : int.parse(_employeeIdController.text)}, name: ${_nameController.text}');
           await ref.read(workReportsProvider.notifier).updateWorkReport(
             widget.report!.id!,
-            int.parse(_projectIdController.text),
-            int.parse(_employeeIdController.text),
+            _projectIdController.text.isEmpty ? null : int.parse(_projectIdController.text),
+            _employeeIdController.text.isEmpty ? null : int.parse(_employeeIdController.text),
             _nameController.text,
             _reportDateController.text,
             _startTimeController.text.isEmpty ? null : _startTimeController.text,
