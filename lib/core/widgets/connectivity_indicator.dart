@@ -25,16 +25,19 @@ class ConnectivityIndicator extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    IconData icon = isOnline ? Icons.wifi : Icons.wifi_off;
-    String text = isOnline ? 'Online' : 'Offline';
-    Color color = isOnline ? Colors.green : Colors.red;
-
     switch (mode) {
       case ConnectivityDisplayMode.iconOnly:
+        IconData icon = isOnline ? Icons.wifi : Icons.wifi_off;
+        Color color = isOnline ? Colors.green : Colors.red;
         return Icon(icon, color: color);
       case ConnectivityDisplayMode.textOnly:
+        String text = isOnline ? 'Online' : 'Offline';
+        Color color = isOnline ? Colors.green : Colors.red;
         return Text(text, style: TextStyle(color: color));
       case ConnectivityDisplayMode.iconAndText:
+        IconData icon = isOnline ? Icons.wifi : Icons.wifi_off;
+        String text = isOnline ? 'Online' : 'Offline';
+        Color color = isOnline ? Colors.green : Colors.red;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [

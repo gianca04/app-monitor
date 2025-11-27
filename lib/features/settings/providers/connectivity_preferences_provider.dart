@@ -6,23 +6,50 @@ class ConnectivityPreferences {
   final bool isEnabled;
   final int displayMode; // 0: iconOnly, 1: iconWithText, 2: dotOnly, 3: badge
   final bool showWhenOnline;
+  final bool showNotifications;
+  final bool vibrateOnDisconnect;
+  final bool playSoundOnChange;
 
   const ConnectivityPreferences({
     this.isEnabled = true,
     this.displayMode = 0,
     this.showWhenOnline = false,
+    this.showNotifications = true,
+    this.vibrateOnDisconnect = false,
+    this.playSoundOnChange = false,
   });
 
   ConnectivityPreferences copyWith({
     bool? isEnabled,
     int? displayMode,
     bool? showWhenOnline,
+    bool? showNotifications,
+    bool? vibrateOnDisconnect,
+    bool? playSoundOnChange,
   }) {
     return ConnectivityPreferences(
       isEnabled: isEnabled ?? this.isEnabled,
       displayMode: displayMode ?? this.displayMode,
       showWhenOnline: showWhenOnline ?? this.showWhenOnline,
+      showNotifications: showNotifications ?? this.showNotifications,
+      vibrateOnDisconnect: vibrateOnDisconnect ?? this.vibrateOnDisconnect,
+      playSoundOnChange: playSoundOnChange ?? this.playSoundOnChange,
     );
+  }
+
+  String get displayModeName {
+    switch (displayMode) {
+      case 0:
+        return 'Solo icono';
+      case 1:
+        return 'Icono con texto';
+      case 2:
+        return 'Punto de color';
+      case 3:
+        return 'Badge';
+      default:
+        return 'Solo icono';
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -30,6 +57,9 @@ class ConnectivityPreferences {
       'isEnabled': isEnabled,
       'displayMode': displayMode,
       'showWhenOnline': showWhenOnline,
+      'showNotifications': showNotifications,
+      'vibrateOnDisconnect': vibrateOnDisconnect,
+      'playSoundOnChange': playSoundOnChange,
     };
   }
 
@@ -38,6 +68,9 @@ class ConnectivityPreferences {
       isEnabled: json['isEnabled'] ?? true,
       displayMode: json['displayMode'] ?? 0,
       showWhenOnline: json['showWhenOnline'] ?? false,
+      showNotifications: json['showNotifications'] ?? true,
+      vibrateOnDisconnect: json['vibrateOnDisconnect'] ?? false,
+      playSoundOnChange: json['playSoundOnChange'] ?? false,
     );
   }
 }
@@ -54,7 +87,10 @@ class ConnectivityPreferencesNotifier extends StateNotifier<ConnectivityPreferen
     try {
       final data = await _storage.read(key: 'connectivity_preferences');
       if (data != null) {
-        state = ConnectivityPreferences.fromJson(data as Map<String, dynamic>);
+        final json = data as Map<String, dynamic>?;
+        if (json != null) {
+          state = ConnectivityPreferences.fromJson(json);
+        }
       }
     } catch (e) {
       // Usar valores por defecto si hay error
@@ -72,19 +108,28 @@ class ConnectivityPreferencesNotifier extends StateNotifier<ConnectivityPreferen
     }
   }
 
-  void toggleEnabled() {
-    state = state.copyWith(isEnabled: !state.isEnabled);
-    _savePreferences();
+  Future<void> updatePreference({
+    bool? isEnabled,
+    int? displayMode,
+    bool? showWhenOnline,
+    bool? showNotifications,
+    bool? vibrateOnDisconnect,
+    bool? playSoundOnChange,
+  }) async {
+    state = state.copyWith(
+      isEnabled: isEnabled,
+      displayMode: displayMode,
+      showWhenOnline: showWhenOnline,
+      showNotifications: showNotifications,
+      vibrateOnDisconnect: vibrateOnDisconnect,
+      playSoundOnChange: playSoundOnChange,
+    );
+    await _savePreferences();
   }
 
-  void setDisplayMode(int mode) {
-    state = state.copyWith(displayMode: mode);
-    _savePreferences();
-  }
-
-  void toggleShowWhenOnline() {
-    state = state.copyWith(showWhenOnline: !state.showWhenOnline);
-    _savePreferences();
+  Future<void> resetToDefaults() async {
+    state = const ConnectivityPreferences();
+    await _savePreferences();
   }
 }
 

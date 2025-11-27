@@ -22,7 +22,7 @@ class _AppLayoutState extends State<AppLayout> {
     super.initState();
     _paths = ['/home', '/work-reports', '/profile', '/settings'];
     GoRouter.of(context).routerDelegate.addListener(_onRouteChange);
-    _selectedIndex = _getIndexFromLocation(GoRouter.of(context).routerDelegate.currentConfiguration?.uri.path ?? '/');
+    _selectedIndex = _getIndexFromLocation(GoRouter.of(context).routerDelegate.currentConfiguration.uri.path);
   }
 
   @override
@@ -33,7 +33,7 @@ class _AppLayoutState extends State<AppLayout> {
 
   void _onRouteChange() {
     setState(() {
-      _selectedIndex = _getIndexFromLocation(GoRouter.of(context).routerDelegate.currentConfiguration?.uri.path ?? '/');
+      _selectedIndex = _getIndexFromLocation(GoRouter.of(context).routerDelegate.currentConfiguration.uri.path);
     });
   }
 
