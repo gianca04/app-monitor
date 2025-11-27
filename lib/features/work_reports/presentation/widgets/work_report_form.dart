@@ -11,6 +11,8 @@ import '../../../photos/presentation/widgets/image_viewer.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../employees/presentation/widgets/quick_search_modal.dart';
 import '../../../employees/data/models/quick_search_response.dart';
+import '../../../projects/presentation/widgets/quick_search_modal.dart' as projects_modal;
+import '../../../projects/data/models/quick_search_response.dart';
 
 class WorkReportForm extends ConsumerStatefulWidget {
   final WorkReport? report;
@@ -36,6 +38,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   late TextEditingController _projectIdController;
 
   EmployeeQuick? _selectedEmployee;
+  ProjectQuick? _selectedProject;
 
   MultipartFile? _supervisorSignature;
   MultipartFile? _managerSignature;
@@ -65,6 +68,13 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         fullName: widget.report!.employee!.fullName,
         documentNumber: widget.report!.employee!.documentNumber,
         position: widget.report!.employee!.position?.name,
+      );
+    }
+
+    if (widget.report?.project != null) {
+      _selectedProject = ProjectQuick(
+        id: widget.report!.project!.id,
+        name: widget.report!.project!.name,
       );
     }
 
@@ -167,11 +177,36 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              TextFormField(
-                controller: _projectIdController,
-                decoration: const InputDecoration(labelText: 'Project ID'),
-                keyboardType: TextInputType.number,
-                validator: (value) => value?.isEmpty ?? true ? 'Project ID is required' : null,
+              // Project Selector
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Project', style: TextStyle(fontWeight: FontWeight.bold)),
+                  if (_selectedProject != null)
+                    Text('${_selectedProject!.name} (ID: ${_selectedProject!.id})'),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final result = await ModernBottomModal.show<ProjectQuick>(
+                        context,
+                        title: 'Seleccionar Proyecto',
+                        content: const projects_modal.QuickSearchModal(),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancelar'),
+                          ),
+                        ],
+                      );
+                      if (result != null) {
+                        setState(() {
+                          _selectedProject = result;
+                          _projectIdController.text = result.id.toString();
+                        });
+                      }
+                    },
+                    child: const Text('Seleccionar Proyecto'),
+                  ),
+                ],
               ),
               // Employee Selector
               Column(
@@ -349,9 +384,15 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         );
         return;
       }
+      if (_selectedProject == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Debe seleccionar un proyecto')),
+        );
+        return;
+      }
       // Imprimir valores de cada campo
       print('Valores de los campos:');
-      print('Project ID: ${_projectIdController.text}');
+      print('Project: ${_selectedProject?.name} (ID: ${_selectedProject?.id})');
       print('Employee: ${_selectedEmployee?.fullName} (ID: ${_employeeIdController.text})');
       print('Name: ${_nameController.text}');
       print('Report Date: ${_reportDateController.text}');
@@ -382,11 +423,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       }
 
       List<Map<String, dynamic>> validPhotos = _photos.where((photo) => photo['id'] != null || photo['photo'] != null || photo['before_work_photo'] != null).toList();
-      print('Sending data: projectId: ${int.parse(_projectIdController.text)}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos');
+      print('Sending data: projectId: ${_selectedProject!.id}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos');
       if (widget.report == null) {
         try {
           final newReport = await ref.read(workReportsProvider.notifier).createWorkReport(
-            int.parse(_projectIdController.text),
+            _selectedProject!.id as int,
             int.parse(_employeeIdController.text),
             _nameController.text,
             _reportDateController.text,
@@ -429,7 +470,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         try {
           await ref.read(workReportsProvider.notifier).updateWorkReport(
             widget.report!.id!,
-            int.parse(_projectIdController.text),
+            _selectedProject!.id as int,
             int.parse(_employeeIdController.text),
             _nameController.text,
             _reportDateController.text,
