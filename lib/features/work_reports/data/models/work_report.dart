@@ -38,13 +38,23 @@ class WorkReport {
       id: json['id'] as int?,
       name: json['name'] as String?,
       description: json['description'] as String?,
-      reportDate: json['reportDate'] as String?,
-      startTime: json['startTime'] as String?,
-      endTime: json['endTime'] as String?,
-      resources: json['resources'] != null ? Resources.fromJson(json['resources']) : null,
+      reportDate: json['report_date'] as String?,
+      startTime: json['start_time'] as String?,
+      endTime: json['end_time'] as String?,
+      resources: Resources.fromJson({
+        'tools': json['tools'],
+        'personnel': json['personnel'],
+        'materials': json['materials'],
+      }),
       suggestions: json['suggestions'] as String?,
-      signatures: json['signatures'] != null ? Signatures.fromJson(json['signatures']) : null,
-      timestamps: json['timestamps'] != null ? Timestamps.fromJson(json['timestamps']) : null,
+      signatures: Signatures.fromJson({
+        'supervisor': json['supervisor_signature'],
+        'manager': json['manager_signature'],
+      }),
+      timestamps: Timestamps.fromJson({
+        'createdAt': json['created_at'],
+        'updatedAt': json['updated_at'],
+      }),
       employee: json['employee'] != null ? Employee.fromJson(json['employee']) : null,
       project: json['project'] != null ? Project.fromJson(json['project']) : null,
       photos: (json['photos'] as List?)?.map((e) => Photo.fromJson(e)).toList() ?? [],
@@ -204,10 +214,10 @@ class Employee {
   factory Employee.fromJson(Map<String, dynamic> json) {
     return Employee(
       id: json['id'] as int?,
-      documentType: json['documentType'] as String?,
-      documentNumber: json['documentNumber'] as String?,
-      firstName: json['firstName'] as String?,
-      lastName: json['lastName'] as String?,
+      documentType: json['document_type'] as String?,
+      documentNumber: json['document_number'] as String?,
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
       fullName: json['fullName'] as String?,
       position: json['position'] != null ? Position.fromJson(json['position']) : null,
     );
@@ -273,9 +283,16 @@ class Project {
     return Project(
       id: json['id'] as int?,
       name: json['name'] as String?,
-      location: json['location'] != null ? Location.fromJson(json['location']) : null,
-      dates: json['dates'] != null ? Dates.fromJson(json['dates']) : null,
-      status: json['status'] as String?,
+      location: Location.fromJson({
+        'latitude': json['location_latitude'],
+        'longitude': json['location_longitude'],
+        'coordinates': json['coordinates'],
+      }),
+      dates: Dates.fromJson({
+        'startDate': json['start_date'],
+        'endDate': json['end_date'],
+      }),
+      status: json['status_text'] as String?,
       subClient: json['subClient'] != null ? SubClient.fromJson(json['subClient']) : null,
       client: json['client'],
     );
