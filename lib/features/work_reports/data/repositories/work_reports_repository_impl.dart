@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../domain/repositories/work_reports_repository.dart';
 import '../datasources/work_reports_datasource.dart';
 import '../models/work_report.dart';
+import '../models/work_reports_response.dart';
 
 class WorkReportsRepositoryImpl implements WorkReportsRepository {
   final WorkReportsDataSource dataSource;
@@ -9,7 +10,7 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
   WorkReportsRepositoryImpl(this.dataSource);
 
   @override
-  Future<List<WorkReport>> getWorkReports() async {
+  Future<WorkReportsResponse> getWorkReports() async {
     return await dataSource.getWorkReports();
   }
 

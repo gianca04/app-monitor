@@ -6,6 +6,7 @@ import '../../domain/usecases/create_work_report_usecase.dart';
 import '../../domain/usecases/update_work_report_usecase.dart';
 import '../../domain/usecases/delete_work_report_usecase.dart';
 import '../../data/models/work_report.dart';
+import '../../data/models/work_reports_response.dart';
 import '../../data/datasources/work_reports_datasource.dart';
 import '../../data/repositories/work_reports_repository_impl.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -22,23 +23,25 @@ final deleteWorkReportUseCaseProvider = Provider((ref) => DeleteWorkReportUseCas
 
 // Estado para la lista
 class WorkReportsState {
-  final List<WorkReport> reports;
+  final WorkReportsResponse? response;
   final bool isLoading;
   final String? error;
 
   WorkReportsState({
-    this.reports = const [],
+    this.response,
     this.isLoading = false,
     this.error,
   });
 
+  List<WorkReport> get reports => response?.data ?? [];
+
   WorkReportsState copyWith({
-    List<WorkReport>? reports,
+    WorkReportsResponse? response,
     bool? isLoading,
     String? error,
   }) {
     return WorkReportsState(
-      reports: reports ?? this.reports,
+      response: response ?? this.response,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
     );
@@ -61,13 +64,13 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
   Future<void> loadWorkReports() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final reports = await getWorkReportsUseCase();
+      final response = await getWorkReportsUseCase();
       // Log loaded reports for debugging
       try {
-        print('Loaded work reports (raw models): $reports');
-        print('Loaded work reports (as json): ${reports.map((r) => r.toJson()).toList()}');
+        print('Loaded work reports response: $response');
+        print('Loaded work reports data: ${response.data?.map((r) => r.toJson()).toList() ?? []}');
       } catch (_) {}
-      state = state.copyWith(isLoading: false, reports: reports);
+      state = state.copyWith(isLoading: false, response: response);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -81,20 +84,17 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
       print('Created work report (as json): ${newReport.toJson()}');
     } catch (_) {}
 
-    state = state.copyWith(reports: [...state.reports, newReport]);
-    // Log the list we will render
-    try {
-      print('Reports list after create (as json): ${state.reports.map((r) => r.toJson()).toList()}');
-    } catch (_) {}
+    // Reload the list to get updated pagination
+    await loadWorkReports();
 
     return newReport;
   }
 
   Future<void> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos) async {
     try {
-      final updatedReport = await updateWorkReportUseCase(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature, photos);
-      final updatedReports = state.reports.map((r) => r.id == id ? updatedReport : r).toList();
-      state = state.copyWith(reports: updatedReports);
+      await updateWorkReportUseCase(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature, photos);
+      // Reload the list to get updated data
+      await loadWorkReports();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -103,8 +103,8 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
   Future<void> deleteWorkReport(int id) async {
     try {
       await deleteWorkReportUseCase(id);
-      final updatedReports = state.reports.where((r) => r.id != id).toList();
-      state = state.copyWith(reports: updatedReports);
+      // Reload the list to get updated data
+      await loadWorkReports();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }

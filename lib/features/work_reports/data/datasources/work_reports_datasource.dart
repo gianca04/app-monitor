@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
 import '../models/work_report.dart';
+import '../models/work_reports_response.dart';
 import 'package:monitor/core/constants/api_constants.dart';
 
 abstract class WorkReportsDataSource {
-  Future<List<WorkReport>> getWorkReports();
+  Future<WorkReportsResponse> getWorkReports();
   Future<WorkReport> getWorkReport(int id);
   Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
   Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
@@ -28,10 +29,10 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
   }
 
   @override
-  Future<List<WorkReport>> getWorkReports() async {
+  Future<WorkReportsResponse> getWorkReports() async {
     final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}');
     final replacedData = _replaceUrls(response.data);
-    return (replacedData['data'] as List).map((json) => WorkReport.fromJson(json)).toList();
+    return WorkReportsResponse.fromJson(replacedData);
   }
 
   @override
