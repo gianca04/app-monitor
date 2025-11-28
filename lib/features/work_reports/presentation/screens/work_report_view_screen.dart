@@ -10,6 +10,17 @@ class WorkReportViewScreen extends ConsumerWidget {
 
   const WorkReportViewScreen({super.key, required this.id});
 
+  String _extractDataUri(String url) {
+    if (url.startsWith('data:')) {
+      return url;
+    }
+    final dataIndex = url.indexOf('data:');
+    if (dataIndex != -1) {
+      return url.substring(dataIndex);
+    }
+    return url; // Fallback to original if no data: found
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(workReportProvider(id));
@@ -212,7 +223,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                                           const SizedBox(height: 4),
                                           Container(
                                             decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
-                                            child: ImageViewer(url: state.report!.signatures!.supervisor!),
+                                            child: ImageViewer(url: _extractDataUri(state.report!.signatures!.supervisor!)),
                                           ),
                                         ],
                                       ),
@@ -228,7 +239,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                                           const SizedBox(height: 4),
                                           Container(
                                             decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
-                                            child: ImageViewer(url: state.report!.signatures!.manager!),
+                                            child: ImageViewer(url: _extractDataUri(state.report!.signatures!.manager!)),
                                           ),
                                         ],
                                       ),
@@ -241,10 +252,23 @@ class WorkReportViewScreen extends ConsumerWidget {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('CREATED: ${state.report!.timestamps?.createdAt ?? '-'}',
-                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5))),
-                                  Text('UPDATED: ${state.report!.timestamps?.updatedAt ?? '-'}',
-                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5))),
+                                  Expanded(
+                                    child: Text(
+                                      'CREATED: ${state.report!.timestamps?.createdAt ?? '-'}',
+                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5)),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'UPDATED: ${state.report!.timestamps?.updatedAt ?? '-'}',
+                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5)),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      textAlign: TextAlign.right,
+                                    ),
+                                  ),
                                 ],
                               )
                             ],
