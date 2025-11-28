@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 // Constantes de diseño Industrial
 const Color _kBackgroundColor = Color(0xFF1F1F1F); // Fondo oscuro
 const Color _kBorderColor = Colors.white12; // Borde sutil
-const Color _kAccentColor = Colors.amber; // Acento industrial
 const double _kRadius = 4.0; // Radio casi recto
 
 class BottomModal extends StatelessWidget {

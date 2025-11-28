@@ -24,11 +24,20 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: kIndustrialBg, // Fondo Oscuro Industrial
       appBar: AppBar(
-        title: const Text('SETTINGS', style: TextStyle(letterSpacing: 1.0, fontSize: 16, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'SETTINGS',
+          style: TextStyle(
+            letterSpacing: 1.0,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: kIndustrialSurface,
         elevation: 0, // Sin sombras
         centerTitle: true,
-        shape: const Border(bottom: BorderSide(color: kIndustrialBorder)), // Borde inferior
+        shape: const Border(
+          bottom: BorderSide(color: kIndustrialBorder),
+        ), // Borde inferior
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: ListView(
@@ -46,15 +55,9 @@ class SettingsScreen extends ConsumerWidget {
           // Sección de Conectividad
           _buildSectionHeader(context, 'ESTADO DE CONEXIÓN'),
           const SizedBox(height: 12),
-          // Asumo que este widget también debería seguir el estilo, 
+          // Asumo que este widget también debería seguir el estilo,
           // pero como es importado, lo envuelvo en un contenedor industrial por si acaso
-          Container(
-             decoration: BoxDecoration(
-              border: Border.all(color: kIndustrialBorder),
-              borderRadius: BorderRadius.circular(kIndustrialRadius),
-            ),
-            child: const ConnectivityDetailCard()
-          ),
+          Container(child: const ConnectivityDetailCard()),
 
           const SizedBox(height: 24),
 
@@ -69,7 +72,7 @@ class SettingsScreen extends ConsumerWidget {
           // Sección de General
           _buildSectionHeader(context, 'SISTEMA'),
           const SizedBox(height: 12),
-          
+
           _IndustrialCardContainer(
             children: [
               _buildIndustrialTile(
@@ -83,13 +86,13 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
               const Divider(height: 1, color: Colors.white10),
-              _buildIndustrialTile(
-                icon: Icons.language,
-                title: 'Idioma',
-                subtitle: 'Español (ES)',
-                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                onTap: () {},
-              ),
+              //_buildIndustrialTile(
+              //  icon: Icons.language,
+              //  title: 'Idioma',
+              //  subtitle: 'Español (ES)',
+              //  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              //  onTap: () {},
+              //),
               const Divider(height: 1, color: Colors.white10),
               _buildIndustrialTile(
                 icon: Icons.dark_mode_outlined,
@@ -144,10 +147,10 @@ class SettingsScreen extends ConsumerWidget {
     return Text(
       text,
       style: const TextStyle(
-        color: kIndustrialAccent, 
-        fontWeight: FontWeight.bold, 
+        color: kIndustrialAccent,
+        fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
-        fontSize: 12
+        fontSize: 12,
       ),
     );
   }
@@ -245,7 +248,11 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               if (preferences.isEnabled && preferences.vibrateOnDisconnect)
                 IconButton(
-                  icon: const Icon(Icons.play_arrow, size: 20, color: kIndustrialAccent),
+                  icon: const Icon(
+                    Icons.play_arrow,
+                    size: 20,
+                    color: kIndustrialAccent,
+                  ),
                   onPressed: () => _testVibration(context),
                 ),
               CupertinoSwitch(
@@ -254,7 +261,9 @@ class SettingsScreen extends ConsumerWidget {
                 value: preferences.vibrateOnDisconnect,
                 onChanged: preferences.isEnabled
                     ? (value) async {
-                        await notifier.updatePreference(vibrateOnDisconnect: value);
+                        await notifier.updatePreference(
+                          vibrateOnDisconnect: value,
+                        );
                       }
                     : null,
               ),
@@ -289,8 +298,8 @@ class SettingsScreen extends ConsumerWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () async {
-               // Lógica original mantenida
-               final confirmed = await showCupertinoDialog<bool>(
+              // Lógica original mantenida
+              final confirmed = await showCupertinoDialog<bool>(
                 context: context,
                 builder: (context) => CupertinoAlertDialog(
                   // Nota: CupertinoAlertDialog no se estiliza fácilmente, se deja nativo o se hace custom
@@ -315,10 +324,16 @@ class SettingsScreen extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Configuración restablecida', style: TextStyle(color: Colors.black)),
-                      backgroundColor: kIndustrialAccent, // Ámbar para éxito/info
+                      content: const Text(
+                        'Configuración restablecida',
+                        style: TextStyle(color: Colors.black),
+                      ),
+                      backgroundColor:
+                          kIndustrialAccent, // Ámbar para éxito/info
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   );
                 }
@@ -328,16 +343,16 @@ class SettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
-                   const Icon(Icons.restore, color: Colors.deepOrangeAccent),
-                   const SizedBox(width: 16),
-                   Text(
+                  const Icon(Icons.restore, color: Colors.deepOrangeAccent),
+                  const SizedBox(width: 16),
+                  Text(
                     'RESTABLECER VALORES',
                     style: TextStyle(
                       color: Colors.deepOrangeAccent.shade100,
                       fontWeight: FontWeight.bold,
-                      fontSize: 13
+                      fontSize: 13,
                     ),
-                   ),
+                  ),
                 ],
               ),
             ),
@@ -360,9 +375,7 @@ class SettingsScreen extends ConsumerWidget {
         border: Border.all(color: kIndustrialBorder),
       ),
       clipBehavior: Clip.antiAlias, // Asegura que el InkWell no se salga
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 
@@ -399,7 +412,7 @@ class SettingsScreen extends ConsumerWidget {
                       style: TextStyle(
                         color: textColor,
                         fontWeight: FontWeight.w500,
-                        fontSize: 15
+                        fontSize: 15,
                       ),
                     ),
                     if (subtitle != null) ...[
@@ -407,8 +420,10 @@ class SettingsScreen extends ConsumerWidget {
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: enabled ? Colors.grey.shade500 : Colors.grey.shade800,
-                          fontSize: 13
+                          color: enabled
+                              ? Colors.grey.shade500
+                              : Colors.grey.shade800,
+                          fontSize: 13,
                         ),
                       ),
                     ],
@@ -425,18 +440,24 @@ class SettingsScreen extends ConsumerWidget {
 
   // ... (Lógica de vibración _testVibration se mantiene igual, solo ajustando colores de snackbar)
   void _testVibration(BuildContext context) async {
-      // ... tu logica original ...
-      // Solo asegúrate de cambiar los colors de SnackBar a estilos planos
-      // Ejemplo: backgroundColor: kIndustrialSurface, content style white...
-      // Para no alargar demasiado el código, asumo que mantienes tu lógica
-      // pero te recomiendo usar kIndustrialAccent para éxito y redAccent para error.
-       try {
+    // ... tu logica original ...
+    // Solo asegúrate de cambiar los colors de SnackBar a estilos planos
+    // Ejemplo: backgroundColor: kIndustrialSurface, content style white...
+    // Para no alargar demasiado el código, asumo que mantienes tu lógica
+    // pero te recomiendo usar kIndustrialAccent para éxito y redAccent para error.
+    try {
       final hasVibrator = await Vibration.hasVibrator();
       if (hasVibrator == true) {
         await Vibration.vibrate(duration: 300);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('Vibración OK', style: TextStyle(color: Colors.black)), backgroundColor: kIndustrialAccent),
+            const SnackBar(
+              content: Text(
+                'Vibración OK',
+                style: TextStyle(color: Colors.black),
+              ),
+              backgroundColor: kIndustrialAccent,
+            ),
           );
         }
       } else {
@@ -470,7 +491,9 @@ class SettingsScreen extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         // Borde superior recto/casi recto con línea blanca sutil
         side: BorderSide(color: kIndustrialBorder),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(kIndustrialRadius)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(kIndustrialRadius),
+        ),
       ),
       isScrollControlled: true,
       builder: (BuildContext context) {
@@ -512,30 +535,46 @@ class SettingsScreen extends ConsumerWidget {
               ...modes.map((mode) {
                 final isSelected = preferences.displayMode == mode['value'];
                 // Estilo Industrial: Borde Ambar si seleccionado, Gris si no
-                final borderColor = isSelected ? kIndustrialAccent : kIndustrialBorder;
-                final textColor = isSelected ? kIndustrialAccent : Colors.white70;
+                final borderColor = isSelected
+                    ? kIndustrialAccent
+                    : kIndustrialBorder;
+                final textColor = isSelected
+                    ? kIndustrialAccent
+                    : Colors.white70;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: Material(
-                    color: Colors.transparent, // Transparente para ver el fondo del modal
+                    color: Colors
+                        .transparent, // Transparente para ver el fondo del modal
                     child: InkWell(
                       onTap: () async {
-                        await notifier.updatePreference(displayMode: mode['value'] as int);
+                        await notifier.updatePreference(
+                          displayMode: mode['value'] as int,
+                        );
                         if (context.mounted) Navigator.pop(context);
                       },
                       borderRadius: BorderRadius.circular(kIndustrialRadius),
                       splashColor: kIndustrialAccent.withOpacity(0.1),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 16,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: borderColor,
-                            width: isSelected ? 1.5 : 1, // Borde fino siempre visible
+                            width: isSelected
+                                ? 1.5
+                                : 1, // Borde fino siempre visible
                           ),
-                          borderRadius: BorderRadius.circular(kIndustrialRadius),
+                          borderRadius: BorderRadius.circular(
+                            kIndustrialRadius,
+                          ),
                           // Fondo sutil si está seleccionado
-                          color: isSelected ? kIndustrialAccent.withOpacity(0.05) : Colors.transparent,
+                          color: isSelected
+                              ? kIndustrialAccent.withOpacity(0.05)
+                              : Colors.transparent,
                         ),
                         child: Row(
                           children: [
@@ -547,16 +586,23 @@ class SettingsScreen extends ConsumerWidget {
                             const SizedBox(width: 16),
                             Expanded(
                               child: Text(
-                                (mode['name'] as String).toUpperCase(), // Texto en mayúsculas estilo técnico
+                                (mode['name'] as String)
+                                    .toUpperCase(), // Texto en mayúsculas estilo técnico
                                 style: TextStyle(
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                   color: textColor,
                                   fontSize: 13,
                                 ),
                               ),
                             ),
                             if (isSelected)
-                              const Icon(Icons.check, color: kIndustrialAccent, size: 20),
+                              const Icon(
+                                Icons.check,
+                                color: kIndustrialAccent,
+                                size: 20,
+                              ),
                           ],
                         ),
                       ),
@@ -574,7 +620,9 @@ class SettingsScreen extends ConsumerWidget {
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Colors.grey), // Borde gris neutro
+                    side: const BorderSide(
+                      color: Colors.grey,
+                    ), // Borde gris neutro
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(kIndustrialRadius),
                     ),

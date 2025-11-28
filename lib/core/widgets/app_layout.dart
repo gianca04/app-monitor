@@ -162,22 +162,22 @@ class _AppLayoutState extends State<AppLayout> {
 final _navBarItems = [
   SalomonBottomBarItem(
     icon: const Icon(Icons.home),
-    title: const Text("Home"),
+    title: const Text("Inicio"),
     selectedColor: const Color(0xFFFFAB00),
   ),
   SalomonBottomBarItem(
     icon: const Icon(Icons.work),
-    title: const Text("Work Reports"),
+    title: const Text("Reportes"),
     selectedColor: const Color(0xFFFFAB00),
   ),
   SalomonBottomBarItem(
     icon: const Icon(Icons.person),
-    title: const Text("Profile"),
+    title: const Text("Perfil"),
     selectedColor: const Color(0xFFFFAB00),
   ),
   SalomonBottomBarItem(
     icon: const Icon(Icons.settings),
-    title: const Text("Settings"),
+    title: const Text("Configuración"),
     selectedColor: const Color(0xFFFFAB00),
   ),
 ];

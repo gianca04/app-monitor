@@ -63,14 +63,14 @@ class ProfileScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _ActionButton(
-                        onPressed: () {
-                          // Acción para editar perfil
-                        },
-                        label: "EDITAR",
-                        icon: Icons.edit,
-                        color: theme.colorScheme.primary,
-                      ),
+                      //_ActionButton(
+                      //  onPressed: () {
+                      //    // Acción para editar perfil
+                      //  },
+                      //  label: "EDITAR",
+                      //  icon: Icons.edit,
+                      //  color: theme.colorScheme.primary,
+                      //),
                       const SizedBox(width: 16.0),
                       _ActionButton(
                         onPressed: () {
@@ -101,7 +101,7 @@ class ProfileScreen extends ConsumerWidget {
                     title: 'OTROS DATOS',
                     items: [
                       _InfoItem(label: 'Nombre de usuario', value: userName),
-                      _InfoItem(label: 'ID Empleado', value: '12345'),
+                      //_InfoItem(label: 'ID Empleado', value: '12345'),
                     ],
                   ),
                   const SizedBox(height: 32),

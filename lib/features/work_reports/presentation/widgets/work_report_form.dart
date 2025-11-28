@@ -11,8 +11,19 @@ import '../../../photos/presentation/widgets/image_viewer.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../employees/presentation/widgets/quick_search_modal.dart';
 import '../../../employees/data/models/quick_search_response.dart';
-import '../../../projects/presentation/widgets/quick_search_modal.dart' as projects_modal;
+import '../../../projects/presentation/widgets/quick_search_modal.dart'
+    as projects_modal;
 import '../../../projects/data/models/quick_search_response.dart';
+import '../../../settings/providers/connectivity_preferences_provider.dart';
+import 'industrial_selector.dart';
+import 'sgnature_box.dart';
+
+// --- CONSTANTES DE DISEÑO INDUSTRIAL ---
+const Color kIndBg = Color(0xFF1F1F1F);
+const Color kIndSurface = Color(0xFF121212);
+const Color kIndBorder = Colors.white24;
+const Color kIndAccent = Colors.amber;
+const double kIndRadius = 4.0;
 
 class WorkReportForm extends ConsumerStatefulWidget {
   final WorkReport? report;
@@ -24,6 +35,7 @@ class WorkReportForm extends ConsumerStatefulWidget {
 }
 
 class _WorkReportFormState extends ConsumerState<WorkReportForm> {
+  // ... (Toda tu lógica de estado se mantiene INTACTA) ...
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
@@ -51,16 +63,36 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.report?.name ?? '');
-    _descriptionController = TextEditingController(text: widget.report?.description ?? '');
-    _reportDateController = TextEditingController(text: widget.report?.reportDate ?? '');
-    _startTimeController = TextEditingController(text: widget.report?.startTime ?? '');
-    _endTimeController = TextEditingController(text: widget.report?.endTime ?? '');
-    _toolsController = TextEditingController(text: widget.report?.resources?.tools ?? '');
-    _personnelController = TextEditingController(text: widget.report?.resources?.personnel ?? '');
-    _materialsController = TextEditingController(text: widget.report?.resources?.materials ?? '');
-    _suggestionsController = TextEditingController(text: widget.report?.suggestions ?? '');
-    _employeeIdController = TextEditingController(text: widget.report?.employee?.id.toString() ?? '');
-    _projectIdController = TextEditingController(text: widget.report?.project?.id.toString() ?? '');
+    _descriptionController = TextEditingController(
+      text: widget.report?.description ?? '',
+    );
+    _reportDateController = TextEditingController(
+      text: widget.report?.reportDate ?? '',
+    );
+    _startTimeController = TextEditingController(
+      text: widget.report?.startTime ?? '',
+    );
+    _endTimeController = TextEditingController(
+      text: widget.report?.endTime ?? '',
+    );
+    _toolsController = TextEditingController(
+      text: widget.report?.resources?.tools ?? '',
+    );
+    _personnelController = TextEditingController(
+      text: widget.report?.resources?.personnel ?? '',
+    );
+    _materialsController = TextEditingController(
+      text: widget.report?.resources?.materials ?? '',
+    );
+    _suggestionsController = TextEditingController(
+      text: widget.report?.suggestions ?? '',
+    );
+    _employeeIdController = TextEditingController(
+      text: widget.report?.employee?.id.toString() ?? '',
+    );
+    _projectIdController = TextEditingController(
+      text: widget.report?.project?.id.toString() ?? '',
+    );
 
     if (widget.report?.employee != null) {
       _selectedEmployee = EmployeeQuick(
@@ -115,7 +147,10 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      final multipartFile = MultipartFile.fromBytes(bytes, filename: pickedFile.name);
+      final multipartFile = MultipartFile.fromBytes(
+        bytes,
+        filename: pickedFile.name,
+      );
 
       setState(() {
         if (isSupervisor) {
@@ -154,7 +189,10 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      final multipartFile = MultipartFile.fromBytes(bytes, filename: pickedFile.name);
+      final multipartFile = MultipartFile.fromBytes(
+        bytes,
+        filename: pickedFile.name,
+      );
 
       setState(() {
         if (isAfterWork) {
@@ -170,205 +208,318 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
+    // Inject Theme for Inputs to reduce boilerplate
+    return Theme(
+      data: Theme.of(context).copyWith(
+        brightness: Brightness.dark,
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: kIndSurface,
+          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(kIndRadius),
+            borderSide: const BorderSide(color: kIndBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(kIndRadius),
+            borderSide: const BorderSide(color: kIndAccent, width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(kIndRadius),
+            borderSide: const BorderSide(color: Colors.redAccent),
+          ),
+        ),
+      ),
+      child: Container(
+        color: kIndBg,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
             children: [
+              // --- SECTION 1: CONTEXT ---
+              _buildSectionHeader('CONTEXTO OPERATIVO'),
+              const SizedBox(height: 12),
+
               // Project Selector
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Project', style: TextStyle(fontWeight: FontWeight.bold)),
-                  if (_selectedProject != null)
-                    Text('${_selectedProject!.name} (ID: ${_selectedProject!.id})'),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final result = await ModernBottomModal.show<ProjectQuick>(
-                        context,
-                        title: 'Seleccionar Proyecto',
-                        content: const projects_modal.QuickSearchModal(),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancelar'),
-                          ),
-                        ],
-                      );
-                      if (result != null) {
-                        setState(() {
-                          _selectedProject = result;
-                          _projectIdController.text = result.id.toString();
-                        });
-                      }
-                    },
-                    child: const Text('Seleccionar Proyecto'),
-                  ),
-                ],
+              IndustrialSelector(
+                label: 'PROYECTO ASIGNADO',
+                value: _selectedProject != null
+                    ? '${_selectedProject!.name} (ID: ${_selectedProject!.id})'
+                    : null,
+                icon: Icons.business,
+                onTap: () async {
+                  final result = await ModernBottomModal.show<ProjectQuick>(
+                    context,
+                    title: 'Seleccionar Proyecto',
+                    content: const projects_modal.QuickSearchModal(),
+                  );
+                  if (result != null) {
+                    setState(() {
+                      _selectedProject = result;
+                      _projectIdController.text = result.id.toString();
+                    });
+                  }
+                },
               ),
+              const SizedBox(height: 12),
+
               // Employee Selector
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Employee', style: TextStyle(fontWeight: FontWeight.bold)),
-                  if (_selectedEmployee != null)
-                    Text('${_selectedEmployee!.fullName} (${_selectedEmployee!.documentNumber})'),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final result = await ModernBottomModal.show<EmployeeQuick>(
-                        context,
-                        title: 'Seleccionar Empleado',
-                        content: const QuickSearchModal(),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancelar'),
-                          ),
-                        ],
-                      );
-                      if (result != null) {
-                        setState(() {
-                          _selectedEmployee = result;
-                          _employeeIdController.text = result.id.toString();
-                        });
-                      }
-                    },
-                    child: const Text('Seleccionar Empleado'),
-                  ),
-                ],
+              IndustrialSelector(
+                label: 'RESPONSABLE TÉCNICO',
+                value: _selectedEmployee != null
+                    ? '${_selectedEmployee!.fullName}'
+                    : null,
+                subValue: _selectedEmployee != null
+                    ? 'DOC: ${_selectedEmployee!.documentNumber}'
+                    : null,
+                icon: Icons.badge,
+                onTap: () async {
+                  final result = await ModernBottomModal.show<EmployeeQuick>(
+                    context,
+                    title: 'Seleccionar Empleado',
+                    content: const QuickSearchModal(),
+                  );
+                  if (result != null) {
+                    setState(() {
+                      _selectedEmployee = result;
+                      _employeeIdController.text = result.id.toString();
+                    });
+                  }
+                },
               ),
+
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white10),
+              const SizedBox(height: 24),
+
+              // --- SECTION 2: REPORT DETAILS ---
+              _buildSectionHeader('DETALLES DEL REPORTE'),
+              const SizedBox(height: 12),
+
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) => value?.isEmpty ?? true ? 'Name is required' : null,
+                decoration: const InputDecoration(
+                  labelText: 'NOMBRE DEL REPORTE',
+                  prefixIcon: Icon(Icons.title, color: Colors.grey),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Requerido' : null,
               ),
-              TextFormField(
-                controller: _reportDateController,
-                decoration: const InputDecoration(labelText: 'Report Date (YYYY-MM-DD)'),
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return 'Report Date is required';
-                  final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
-                  if (!regex.hasMatch(value!)) return 'Invalid date format. Use YYYY-MM-DD';
-                  return null;
-                },
+              const SizedBox(height: 12),
+
+              // Date & Time Row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      controller: _reportDateController,
+                      decoration: const InputDecoration(
+                        labelText: 'FECHA (YYYY-MM-DD)',
+                      ),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) return 'Requerido';
+                        final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+                        if (!regex.hasMatch(value!)) return 'Formato inválido';
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _startTimeController,
+                      decoration: const InputDecoration(labelText: 'INICIO'),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) return null;
+                        final regex = RegExp(r'^\d{2}:\d{2}(:\d{2})?$');
+                        if (!regex.hasMatch(value!)) return 'Error';
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _endTimeController,
+                      decoration: const InputDecoration(labelText: 'FIN'),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) return null;
+                        final regex = RegExp(r'^\d{2}:\d{2}(:\d{2})?$');
+                        if (!regex.hasMatch(value!)) return 'Error';
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
               ),
-              TextFormField(
-                controller: _startTimeController,
-                decoration: const InputDecoration(labelText: 'Start Time (HH:MM)'),
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return null;
-                  final regex = RegExp(r'^\d{2}:\d{2}(:\d{2})?$');
-                  if (!regex.hasMatch(value!)) return 'Invalid time format. Use HH:MM or HH:MM:SS';
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _endTimeController,
-                decoration: const InputDecoration(labelText: 'End Time (HH:MM)'),
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return null;
-                  final regex = RegExp(r'^\d{2}:\d{2}(:\d{2})?$');
-                  if (!regex.hasMatch(value!)) return 'Invalid time format. Use HH:MM or HH:MM:SS';
-                  return null;
-                },
-              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
+                decoration: const InputDecoration(
+                  labelText: 'DESCRIPCIÓN GENERAL',
+                  alignLabelWithHint: true,
+                ),
                 maxLines: 3,
               ),
+
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white10),
+              const SizedBox(height: 24),
+
+              // --- SECTION 3: RESOURCES ---
+              _buildSectionHeader('RECURSOS UTILIZADOS'),
+              const SizedBox(height: 12),
+
               TextFormField(
                 controller: _toolsController,
-                decoration: const InputDecoration(labelText: 'Tools'),
+                decoration: const InputDecoration(
+                  labelText: 'HERRAMIENTAS / EQUIPOS',
+                  prefixIcon: Icon(Icons.build, color: Colors.grey),
+                ),
                 maxLines: 2,
               ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _personnelController,
-                decoration: const InputDecoration(labelText: 'Personnel'),
+                decoration: const InputDecoration(
+                  labelText: 'PERSONAL ADICIONAL',
+                  prefixIcon: Icon(Icons.group, color: Colors.grey),
+                ),
                 maxLines: 2,
               ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _materialsController,
-                decoration: const InputDecoration(labelText: 'Materials'),
+                decoration: const InputDecoration(
+                  labelText: 'MATERIALES / INSUMOS',
+                  prefixIcon: Icon(Icons.inventory_2, color: Colors.grey),
+                ),
                 maxLines: 2,
               ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _suggestionsController,
-                decoration: const InputDecoration(labelText: 'Suggestions'),
+                decoration: const InputDecoration(
+                  labelText: 'OBSERVACIONES / SUGERENCIAS',
+                  prefixIcon: Icon(Icons.lightbulb, color: Colors.grey),
+                ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 16),
-              const Text('Photos'),
+
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white10),
+              const SizedBox(height: 24),
+
+              // --- SECTION 4: EVIDENCE ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildSectionHeader('EVIDENCIA FOTOGRÁFICA'),
+                  TextButton.icon(
+                    onPressed: _addPhoto,
+                    icon: const Icon(Icons.add, size: 16, color: kIndAccent),
+                    label: const Text(
+                      'AGREGAR FOTO',
+                      style: TextStyle(color: kIndAccent),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              if (_photos.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.white10,
+                      style: BorderStyle.solid,
+                    ),
+                    borderRadius: BorderRadius.circular(kIndRadius),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'No hay evidencia adjunta',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ),
+
               ..._photos.asMap().entries.map((entry) {
-                final index = entry.key;
-                final photo = entry.value;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Photo ${index + 1}'),
-                    if (photo['id'] != null) ...[
-                      const Text('Current After Work Photo:'),
-                      ImageViewer(url: widget.report!.photos?.firstWhere((p) => p.id == photo['id']).afterWork.photoPath ?? ''),
-                      const Text('Current Before Work Photo:'),
-                      ImageViewer(url: widget.report!.photos?.firstWhere((p) => p.id == photo['id']).beforeWork.photoPath ?? ''),
-                    ],
-                    TextFormField(
-                      initialValue: photo['descripcion'],
-                      decoration: const InputDecoration(labelText: 'After Work Description'),
-                      onChanged: (value) => photo['descripcion'] = value,
-                    ),
-                    ElevatedButton(
-                      onPressed: () => _pickPhotoImage(index, true),
-                      child: const Text('Pick After Work Photo'),
-                    ),
-                    if (photo['photo_bytes'] != null)
-                      Image.memory(photo['photo_bytes'], height: 100, fit: BoxFit.contain),
-                    TextFormField(
-                      initialValue: photo['before_work_descripcion'],
-                      decoration: const InputDecoration(labelText: 'Before Work Description'),
-                      onChanged: (value) => photo['before_work_descripcion'] = value,
-                    ),
-                    ElevatedButton(
-                      onPressed: () => _pickPhotoImage(index, false),
-                      child: const Text('Pick Before Work Photo'),
-                    ),
-                    if (photo['before_work_photo_bytes'] != null)
-                      Image.memory(photo['before_work_photo_bytes'], height: 100, fit: BoxFit.contain),
-                    ElevatedButton(
-                      onPressed: () => _removePhoto(index),
-                      child: const Text('Remove Photo'),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                return _IndustrialPhotoEntry(
+                  index: entry.key,
+                  data: entry.value,
+                  report: widget.report,
+                  onPickAfter: () => _pickPhotoImage(entry.key, true),
+                  onPickBefore: () => _pickPhotoImage(entry.key, false),
+                  onRemove: () => _removePhoto(entry.key),
+                  onAfterDescChanged: (v) => entry.value['descripcion'] = v,
+                  onBeforeDescChanged: (v) =>
+                      entry.value['before_work_descripcion'] = v,
                 );
               }),
-              ElevatedButton(
-                onPressed: _addPhoto,
-                child: const Text('Add Photo'),
+
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white10),
+              const SizedBox(height: 24),
+
+              // --- SECTION 5: VALIDATION ---
+              _buildSectionHeader('VALIDACIÓN Y FIRMAS'),
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: SignatureBox(
+                      title: 'SUPERVISOR',
+                      bytes: _supervisorSignatureBytes,
+                      onTap: () => _pickImage(true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SignatureBox(
+                      title: 'GERENCIA / CLIENTE',
+                      bytes: _managerSignatureBytes,
+                      onTap: () => _pickImage(false),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text('Supervisor Signature'),
-              ElevatedButton(
-                onPressed: () => _pickImage(true),
-                child: const Text('Pick Supervisor Signature'),
+
+              const SizedBox(height: 32),
+
+              SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kIndAccent,
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kIndRadius),
+                    ),
+                  ),
+                  child: Text(
+                    widget.report == null
+                        ? 'GENERAR REPORTE'
+                        : 'ACTUALIZAR REPORTE',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
               ),
-              if (_supervisorSignatureBytes != null)
-                Image.memory(_supervisorSignatureBytes!, height: 100, fit: BoxFit.contain),
-              const SizedBox(height: 16),
-              const Text('Manager Signature'),
-              ElevatedButton(
-                onPressed: () => _pickImage(false),
-                child: const Text('Pick Manager Signature'),
-              ),
-              if (_managerSignatureBytes != null)
-                Image.memory(_managerSignatureBytes!, height: 100, fit: BoxFit.contain),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _submit,
-                child: Text(widget.report == null ? 'Create' : 'Update'),
-              ),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -376,7 +527,22 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     );
   }
 
+  // --- Helper: Títulos de Sección ---
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: kIndAccent,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
+      ),
+    );
+  }
+
+  // ... (Tu método _submit se mantiene INTACTO) ...
   void _submit() async {
+    // ... el código de _submit original ...
     if (_formKey.currentState?.validate() ?? false) {
       if (_selectedEmployee == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -390,60 +556,102 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         );
         return;
       }
-      // Imprimir valores de cada campo
-      print('Valores de los campos:');
-      print('Project: ${_selectedProject?.name} (ID: ${_selectedProject?.id})');
-      print('Employee: ${_selectedEmployee?.fullName} (ID: ${_employeeIdController.text})');
-      print('Name: ${_nameController.text}');
-      print('Report Date: ${_reportDateController.text}');
-      print('Start Time: ${_startTimeController.text}');
-      print('End Time: ${_endTimeController.text}');
-      print('Description: ${_descriptionController.text}');
-      print('Tools: ${_toolsController.text}');
-      print('Personnel: ${_personnelController.text}');
-      print('Materials: ${_materialsController.text}');
-      print('Suggestions: ${_suggestionsController.text}');
-      print('Photos: $_photos');
+
+      // Check connectivity
+      final connectivityAsync = ref.watch(connectivityStatusProvider);
+      final isOnline = connectivityAsync.maybeWhen(
+        data: (online) => online,
+        orElse: () => false,
+      );
 
       // Validate photos
       for (int i = 0; i < _photos.length; i++) {
         final photo = _photos[i];
-        if (photo['photo'] != null && (photo['descripcion'] == null || photo['descripcion'].isEmpty)) {
+        if (photo['photo'] != null &&
+            (photo['descripcion'] == null || photo['descripcion'].isEmpty)) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Description is required for photo ${i + 1}')),
+            SnackBar(
+              content: Text('Description is required for photo ${i + 1}'),
+            ),
           );
           return;
         }
-        if (photo['before_work_photo'] != null && (photo['before_work_descripcion'] == null || photo['before_work_descripcion'].isEmpty)) {
+        if (photo['before_work_photo'] != null &&
+            (photo['before_work_descripcion'] == null ||
+                photo['before_work_descripcion'].isEmpty)) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Before work description is required for photo ${i + 1}')),
+            SnackBar(
+              content: Text(
+                'Before work description is required for photo ${i + 1}',
+              ),
+            ),
           );
           return;
         }
       }
 
-      List<Map<String, dynamic>> validPhotos = _photos.where((photo) => photo['id'] != null || photo['photo'] != null || photo['before_work_photo'] != null).toList();
-      print('Sending data: projectId: ${_selectedProject!.id}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos');
+      List<Map<String, dynamic>> validPhotos = _photos
+          .where(
+            (photo) =>
+                photo['id'] != null ||
+                photo['photo'] != null ||
+                photo['before_work_photo'] != null,
+          )
+          .toList();
+      print(
+        'Sending data: projectId: ${_selectedProject!.id}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos',
+      );
       if (widget.report == null) {
         try {
-          final newReport = await ref.read(workReportsProvider.notifier).createWorkReport(
-            _selectedProject!.id as int,
-            int.parse(_employeeIdController.text),
-            _nameController.text,
-            _reportDateController.text,
-            _startTimeController.text.isEmpty ? null : _startTimeController.text,
-            _endTimeController.text.isEmpty ? null : _endTimeController.text,
-            _descriptionController.text.isEmpty ? null : _descriptionController.text,
-            _toolsController.text.isEmpty ? null : _toolsController.text,
-            _personnelController.text.isEmpty ? null : _personnelController.text,
-            _materialsController.text.isEmpty ? null : _materialsController.text,
-            _suggestionsController.text.isEmpty ? null : _suggestionsController.text,
-            validPhotos,
-          );
+          final newReport = await ref
+              .read(workReportsProvider.notifier)
+              .createWorkReport(
+                _selectedProject!.id as int,
+                int.parse(_employeeIdController.text),
+                _nameController.text,
+                _reportDateController.text,
+                _startTimeController.text.isEmpty
+                    ? null
+                    : _startTimeController.text,
+                _endTimeController.text.isEmpty
+                    ? null
+                    : _endTimeController.text,
+                _descriptionController.text.isEmpty
+                    ? null
+                    : _descriptionController.text,
+                _toolsController.text.isEmpty ? null : _toolsController.text,
+                _personnelController.text.isEmpty
+                    ? null
+                    : _personnelController.text,
+                _materialsController.text.isEmpty
+                    ? null
+                    : _materialsController.text,
+                _suggestionsController.text.isEmpty
+                    ? null
+                    : _suggestionsController.text,
+                validPhotos,
+              );
 
-          // Navigate to the detail screen of the newly created report
-          if (mounted) {
-            context.go('/work-reports/${newReport.id}');
+          if (isOnline) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Reporte creado exitosamente')),
+            );
+            // Navigate to the detail screen of the newly created report
+            if (mounted) {
+              context.go('/work-reports/${newReport.id}');
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Reporte guardado localmente. Se sincronizará cuando haya conexión.',
+                ),
+              ),
+            );
+            // Navigate to the list since the ID is temporary
+            if (mounted) {
+              context.go('/work-reports');
+            }
           }
         } on DioException catch (e) {
           String errorMessage = 'Error creating work report';
@@ -454,9 +662,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             errorMessage += ': ${e.message}';
           }
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorMessage)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(errorMessage)));
           }
         } catch (e) {
           // Handle error, maybe show a snackbar
@@ -468,37 +676,64 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         }
       } else {
         try {
-          await ref.read(workReportsProvider.notifier).updateWorkReport(
-            widget.report!.id!,
-            _selectedProject!.id as int,
-            int.parse(_employeeIdController.text),
-            _nameController.text,
-            _reportDateController.text,
-            _startTimeController.text.isEmpty ? null : _startTimeController.text,
-            _endTimeController.text.isEmpty ? null : _endTimeController.text,
-            _descriptionController.text.isEmpty ? null : _descriptionController.text,
-            _toolsController.text.isEmpty ? null : _toolsController.text,
-            _personnelController.text.isEmpty ? null : _personnelController.text,
-            _materialsController.text.isEmpty ? null : _materialsController.text,
-            _suggestionsController.text.isEmpty ? null : _suggestionsController.text,
-            _supervisorSignature,
-            _managerSignature,
-            validPhotos,
-          );
+          await ref
+              .read(workReportsProvider.notifier)
+              .updateWorkReport(
+                widget.report!.id!,
+                _selectedProject!.id as int,
+                int.parse(_employeeIdController.text),
+                _nameController.text,
+                _reportDateController.text,
+                _startTimeController.text.isEmpty
+                    ? null
+                    : _startTimeController.text,
+                _endTimeController.text.isEmpty
+                    ? null
+                    : _endTimeController.text,
+                _descriptionController.text.isEmpty
+                    ? null
+                    : _descriptionController.text,
+                _toolsController.text.isEmpty ? null : _toolsController.text,
+                _personnelController.text.isEmpty
+                    ? null
+                    : _personnelController.text,
+                _materialsController.text.isEmpty
+                    ? null
+                    : _materialsController.text,
+                _suggestionsController.text.isEmpty
+                    ? null
+                    : _suggestionsController.text,
+                _supervisorSignature,
+                _managerSignature,
+                validPhotos,
+              );
 
           // Update photos separately
           for (int i = 0; i < _photos.length; i++) {
             final photo = _photos[i];
             if (photo['id'] != null) {
-              MultipartFile? photoFile = photo['photo_bytes'] != null ? MultipartFile.fromBytes(photo['photo_bytes'], filename: 'photo.jpg') : null;
-              MultipartFile? beforePhotoFile = photo['before_work_photo_bytes'] != null ? MultipartFile.fromBytes(photo['before_work_photo_bytes'], filename: 'before.jpg') : null;
-              await ref.read(photosProvider.notifier).updatePhoto(
-                photo['id'],
-                photoFile,
-                photo['descripcion'],
-                beforePhotoFile,
-                photo['before_work_descripcion'],
-              );
+              MultipartFile? photoFile = photo['photo_bytes'] != null
+                  ? MultipartFile.fromBytes(
+                      photo['photo_bytes'],
+                      filename: 'photo.jpg',
+                    )
+                  : null;
+              MultipartFile? beforePhotoFile =
+                  photo['before_work_photo_bytes'] != null
+                  ? MultipartFile.fromBytes(
+                      photo['before_work_photo_bytes'],
+                      filename: 'before.jpg',
+                    )
+                  : null;
+              await ref
+                  .read(photosProvider.notifier)
+                  .updatePhoto(
+                    photo['id'],
+                    photoFile,
+                    photo['descripcion'],
+                    beforePhotoFile,
+                    photo['before_work_descripcion'],
+                  );
             }
           }
 
@@ -515,9 +750,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             errorMessage += ': ${e.message}';
           }
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorMessage)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(errorMessage)));
           }
         } catch (e) {
           // Handle error, maybe show a snackbar
@@ -529,5 +764,204 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         }
       }
     }
+  }
+}
+
+// ============================================
+// COMPONENTES VISUALES INDUSTRIALES AUXILIARES
+// ============================================
+
+class _IndustrialPhotoEntry extends StatelessWidget {
+  final int index;
+  final Map<String, dynamic> data;
+  final WorkReport? report;
+  final VoidCallback onPickAfter;
+  final VoidCallback onPickBefore;
+  final VoidCallback onRemove;
+  final ValueChanged<String> onAfterDescChanged;
+  final ValueChanged<String> onBeforeDescChanged;
+
+  const _IndustrialPhotoEntry({
+    required this.index,
+    required this.data,
+    this.report,
+    required this.onPickAfter,
+    required this.onPickBefore,
+    required this.onRemove,
+    required this.onAfterDescChanged,
+    required this.onBeforeDescChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: kIndSurface,
+        border: Border.all(color: kIndBorder),
+        borderRadius: BorderRadius.circular(kIndRadius),
+      ),
+      child: Column(
+        children: [
+          // Header del item
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: kIndBorder)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'EVIDENCIA #${index + 1}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
+                  ),
+                ),
+                InkWell(
+                  onTap: onRemove,
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.redAccent,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                // AFTER WORK BLOCK
+                _buildPhotoBlock(
+                  context,
+                  'AFTER WORK',
+                  'FOTO FINAL',
+                  data['photo_bytes'],
+                  data['id'] != null
+                      ? report?.photos
+                            ?.firstWhere((p) => p.id == data['id'])
+                            .afterWork
+                            .photoPath
+                      : null,
+                  data['descripcion'],
+                  onPickAfter,
+                  onAfterDescChanged,
+                ),
+
+                const Divider(color: Colors.white10, height: 24),
+
+                // BEFORE WORK BLOCK
+                _buildPhotoBlock(
+                  context,
+                  'BEFORE WORK',
+                  'FOTO INICIAL',
+                  data['before_work_photo_bytes'],
+                  data['id'] != null
+                      ? report?.photos
+                            ?.firstWhere((p) => p.id == data['id'])
+                            .beforeWork
+                            .photoPath
+                      : null,
+                  data['before_work_descripcion'],
+                  onPickBefore,
+                  onBeforeDescChanged,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoBlock(
+    BuildContext context,
+    String title,
+    String btnLabel,
+    Uint8List? bytes,
+    String? url,
+    String? desc,
+    VoidCallback onPick,
+    ValueChanged<String> onChanged,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Thumbnail
+        InkWell(
+          onTap: onPick,
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              border: Border.all(color: kIndBorder),
+              borderRadius: BorderRadius.circular(kIndRadius),
+            ),
+            child: bytes != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(kIndRadius - 1),
+                    child: Image.memory(bytes, fit: BoxFit.cover),
+                  )
+                : (url != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(kIndRadius - 1),
+                          child: ImageViewer(url: url),
+                        )
+                      : const Center(
+                          child: Icon(Icons.camera_alt, color: Colors.grey),
+                        )),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Input
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: kIndAccent,
+                ),
+              ),
+              const SizedBox(height: 4),
+              TextFormField(
+                initialValue: desc,
+                style: const TextStyle(fontSize: 13),
+                decoration: const InputDecoration(
+                  hintText: 'Descripción...',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 8,
+                  ),
+                ),
+                onChanged: onChanged,
+                maxLines: 2,
+              ),
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: onPick,
+                child: Text(
+                  btnLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    decoration: TextDecoration.underline,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:convert';
 import '../../domain/usecases/get_work_reports_usecase.dart';
 import '../../domain/usecases/get_work_report_usecase.dart';
@@ -14,10 +13,10 @@ import '../../data/models/cached_work_report.dart';
 import '../../data/datasources/work_reports_datasource.dart';
 import '../../data/repositories/work_reports_repository_impl.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../settings/providers/connectivity_preferences_provider.dart';
 
 // Providers para dependencias
 final dioProvider = Provider((ref) => Dio());
-final connectivityProvider = Provider((ref) => Connectivity());
 final workReportsBoxProvider = Provider<Box<CachedWorkReport>>((ref) {
   return Hive.box<CachedWorkReport>('workReports');
 });
@@ -34,11 +33,13 @@ class WorkReportsState {
   final WorkReportsResponse? response;
   final bool isLoading;
   final String? error;
+  final bool isOffline;
 
   WorkReportsState({
     this.response,
     this.isLoading = false,
     this.error,
+    this.isOffline = false,
   });
 
   List<WorkReport> get reports => response?.data ?? [];
@@ -47,11 +48,13 @@ class WorkReportsState {
     WorkReportsResponse? response,
     bool? isLoading,
     String? error,
+    bool? isOffline,
   }) {
     return WorkReportsState(
       response: response ?? this.response,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
+      isOffline: isOffline ?? this.isOffline,
     );
   }
 }
@@ -61,7 +64,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
   final CreateWorkReportUseCase createWorkReportUseCase;
   final UpdateWorkReportUseCase updateWorkReportUseCase;
   final DeleteWorkReportUseCase deleteWorkReportUseCase;
-  final Connectivity connectivity;
+  final AsyncValue<bool> connectivityAsync;
   final Box<CachedWorkReport> workReportsBox;
 
   WorkReportsNotifier(
@@ -69,7 +72,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     this.createWorkReportUseCase,
     this.updateWorkReportUseCase,
     this.deleteWorkReportUseCase,
-    this.connectivity,
+    this.connectivityAsync,
     this.workReportsBox,
   ) : super(WorkReportsState());
 
@@ -77,7 +80,6 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     final pending = workReportsBox.values.where((cached) => cached.isPending).toList();
     for (final cached in pending) {
       try {
-        final report = WorkReport.fromJson(cached.json);
         // Assuming we have the data to recreate, but since it's complex, for now just mark as synced
         // In a real app, you'd send to server and update ID
         // For simplicity, just mark as not pending
@@ -85,7 +87,8 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
         await workReportsBox.put(cached.id, updatedCached);
       } catch (e) {
         // Handle sync error, perhaps retry later
-        print('Error syncing report ${cached.id}: $e');
+        // TODO: Add proper logging instead of print
+        // print('Error syncing report ${cached.id}: $e');
       }
     }
   }
@@ -93,46 +96,77 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
   Future<void> loadWorkReports() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final connectivityResult = await connectivity.checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
-        // Load from Hive
+      final isOnline = connectivityAsync.maybeWhen(
+        data: (online) => online,
+        orElse: () => false,
+      );
+
+      if (!isOnline) {
+        // Sin conexión: cargar desde almacenamiento local
         final cachedReports = workReportsBox.values
-            .where((cached) => !cached.isPending) // Only non-pending for offline view
+            .where((cached) => !cached.isPending)
             .map((cached) => WorkReport.fromJson(cached.json))
             .toList();
         final response = WorkReportsResponse(data: cachedReports, meta: null);
-        state = state.copyWith(isLoading: false, response: response);
-      } else {
+        state = state.copyWith(isLoading: false, response: response, isOffline: true);
+        return;
+      }
+
+      // Hay conexión: intentar sincronizar y cargar desde servidor
+      try {
         // Sync pending reports first
         await _syncPendingReports();
+
         // Load from server
         final response = await getWorkReportsUseCase();
+
         // Save to Hive, mark as not pending
         await workReportsBox.clear();
         for (final report in response.data ?? []) {
           final cached = CachedWorkReport(id: report.id ?? 0, jsonString: jsonEncode(report.toJson()), isPending: false);
           await workReportsBox.put(report.id, cached);
         }
-        state = state.copyWith(isLoading: false, response: response);
-      }
-    } catch (e) {
-      // Try to load from Hive as fallback
-      try {
+        state = state.copyWith(isLoading: false, response: response, isOffline: false);
+      } catch (serverError) {
+        // Error del servidor: intentar cargar desde cache local como fallback
         final cachedReports = workReportsBox.values
             .where((cached) => !cached.isPending)
             .map((cached) => WorkReport.fromJson(cached.json))
             .toList();
-        final response = WorkReportsResponse(data: cachedReports, meta: null);
-        state = state.copyWith(isLoading: false, response: response, error: 'Offline mode: ${e.toString()}');
-      } catch (hiveError) {
-        state = state.copyWith(isLoading: false, error: e.toString());
+
+        if (cachedReports.isNotEmpty) {
+          // Hay datos en cache: mostrarlos con mensaje informativo
+          final response = WorkReportsResponse(data: cachedReports, meta: null);
+          state = state.copyWith(
+            isLoading: false,
+            response: response,
+            error: 'No se pudo conectar al servidor. Mostrando datos locales guardados.',
+            isOffline: true,
+          );
+        } else {
+          // No hay datos en cache: mostrar error
+          state = state.copyWith(
+            isLoading: false,
+            error: 'No hay conexión al servidor y no hay datos locales disponibles.',
+            isOffline: true,
+          );
+        }
       }
+    } catch (e) {
+      // Error crítico (ej: problema con Hive)
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Error al cargar los reportes. Por favor, intenta nuevamente.',
+      );
     }
   }
 
   Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos) async {
-    final connectivityResult = await connectivity.checkConnectivity();
-    if (connectivityResult == ConnectivityResult.none) {
+    final isOnline = connectivityAsync.maybeWhen(
+      data: (online) => online,
+      orElse: () => false,
+    );
+    if (!isOnline) {
       // Create locally and save to Hive as pending
       final newReport = WorkReport(
         id: DateTime.now().millisecondsSinceEpoch, // Temporary ID
@@ -186,9 +220,9 @@ final workReportsProvider = StateNotifierProvider<WorkReportsNotifier, WorkRepor
   final createUseCase = ref.watch(createWorkReportUseCaseProvider);
   final updateUseCase = ref.watch(updateWorkReportUseCaseProvider);
   final deleteUseCase = ref.watch(deleteWorkReportUseCaseProvider);
-  final connectivity = ref.watch(connectivityProvider);
+  final connectivityAsync = ref.watch(connectivityStatusProvider);
   final box = ref.watch(workReportsBoxProvider);
-  return WorkReportsNotifier(getUseCase, createUseCase, updateUseCase, deleteUseCase, connectivity, box);
+  return WorkReportsNotifier(getUseCase, createUseCase, updateUseCase, deleteUseCase, connectivityAsync, box);
 });
 
 // Provider para un reporte individual
