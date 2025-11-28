@@ -17,18 +17,20 @@ import '../../../projects/data/models/quick_search_response.dart';
 import '../../../settings/providers/connectivity_preferences_provider.dart';
 import 'industrial_selector.dart';
 import 'sgnature_box.dart';
+import '../../../../core/theme_config.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
-const Color kIndBg = Color(0xFF1F1F1F);
-const Color kIndSurface = Color(0xFF121212);
-const Color kIndBorder = Colors.white24;
-const Color kIndAccent = Colors.amber;
+const Color kIndBg = AppTheme.background;
+const Color kIndSurface = AppTheme.surface;
+const Color kIndBorder = AppTheme.border;
+const Color kIndAccent = AppTheme.primaryAccent;
 const double kIndRadius = 4.0;
 
 class WorkReportForm extends ConsumerStatefulWidget {
   final WorkReport? report;
+  final String? saveType;
 
-  const WorkReportForm({super.key, this.report});
+  const WorkReportForm({super.key, this.report, this.saveType});
 
   @override
   ConsumerState<WorkReportForm> createState() => _WorkReportFormState();
@@ -215,7 +217,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: kIndSurface,
-          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+          labelStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
@@ -230,7 +232,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(kIndRadius),
-            borderSide: const BorderSide(color: Colors.redAccent),
+            borderSide: BorderSide(color: AppTheme.error),
           ),
         ),
       ),
@@ -305,7 +307,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'NOMBRE DEL REPORTE',
-                  prefixIcon: Icon(Icons.title, color: Colors.grey),
+                  prefixIcon: Icon(Icons.title, color: AppTheme.textSecondary),
                 ),
                 validator: (value) =>
                     value?.isEmpty ?? true ? 'Requerido' : null,
@@ -510,7 +512,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                   ),
                   child: Text(
                     widget.report == null
-                        ? 'GENERAR REPORTE'
+                        ? (widget.saveType == 'local' ? 'GUARDAR LOCALMENTE' : 'GENERAR REPORTE')
                         : 'ACTUALIZAR REPORTE',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
@@ -559,10 +561,25 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
       // Check connectivity
       final connectivityAsync = ref.watch(connectivityStatusProvider);
-      final isOnline = connectivityAsync.maybeWhen(
+      final actualOnline = connectivityAsync.maybeWhen(
         data: (online) => online,
         orElse: () => false,
       );
+
+      bool isOnline;
+      if (widget.saveType == 'cloud') {
+        if (!actualOnline) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No hay conexión para guardar en la nube')),
+          );
+          return;
+        }
+        isOnline = true;
+      } else if (widget.saveType == 'local') {
+        isOnline = false;
+      } else {
+        isOnline = actualOnline;
+      }
 
       // Validate photos
       for (int i = 0; i < _photos.length; i++) {

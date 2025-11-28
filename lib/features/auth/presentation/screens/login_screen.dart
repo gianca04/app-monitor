@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/connectivity_indicator.dart';
 import '../../../../features/settings/providers/connectivity_preferences_provider.dart';
+import '../../../../core/theme_config.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -176,7 +177,7 @@ class _SignInFormState extends State<_SignInForm> {
   Widget build(BuildContext context) {
     return Card(
       elevation: 8,
-      color: const Color(0xFF18181B),
+      color: AppTheme.surface,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(30),
@@ -298,7 +299,7 @@ class _SignInFormState extends State<_SignInForm> {
                   data: Theme.of(context).copyWith(
                     checkboxTheme: CheckboxThemeData(
                       fillColor: MaterialStateProperty.all(Colors.white),
-                      checkColor: MaterialStateProperty.all(Color(0xFF18181B)),
+                      checkColor: MaterialStateProperty.all(AppTheme.surface),
                     ),
                   ),
                   child: CheckboxListTile(
@@ -317,7 +318,7 @@ class _SignInFormState extends State<_SignInForm> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2A8D8D),
+                      backgroundColor: AppTheme.primaryAccent,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -342,18 +343,18 @@ class _SignInFormState extends State<_SignInForm> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: AppTheme.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border: Border.all(color: AppTheme.error.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                        Icon(Icons.error_outline, color: AppTheme.error, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             widget.error!,
-                            style: const TextStyle(color: Colors.red),
+                            style: TextStyle(color: AppTheme.error),
                           ),
                         ),
                       ],

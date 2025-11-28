@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/photos_provider.dart';
+import '../widgets/photo_list_item.dart';
+import '../widgets/photo_list_item.dart';
 
 class PhotosListScreen extends ConsumerStatefulWidget {
   const PhotosListScreen({super.key});
@@ -31,26 +33,10 @@ class _PhotosListScreenState extends ConsumerState<PhotosListScreen> {
                   itemCount: state.photos.length,
                   itemBuilder: (context, index) {
                     final photo = state.photos[index];
-                    return ListTile(
-                      title: Text('Photo ${photo.id} - Work Report ${photo.workReportId}'),
-                      subtitle: Text('After: ${photo.afterWork.description}\nBefore: ${photo.beforeWork.description}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.visibility),
-                            onPressed: () => context.go('/photos/${photo.id}'),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed: () => context.go('/photos/${photo.id}/edit'),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () => _deletePhoto(photo.id!),
-                          ),
-                        ],
-                      ),
+                    return PhotoListItem(
+                      photo: photo,
+                      onEdit: () => context.go('/photos/${photo.id}/edit'),
+                      onDelete: () => _deletePhoto(photo.id!),
                     );
                   },
                 ),

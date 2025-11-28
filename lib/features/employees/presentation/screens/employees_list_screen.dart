@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../providers/employees_provider.dart';
 import '../widgets/quick_search_modal.dart';
+import '../widgets/employee_list_item.dart';
 import '../../data/models/quick_search_response.dart';
 
 class EmployeesListScreen extends ConsumerWidget {
@@ -48,9 +49,11 @@ class EmployeesListScreen extends ConsumerWidget {
                   itemCount: employeesState.employees.length,
                   itemBuilder: (context, index) {
                     final employee = employeesState.employees[index];
-                    return ListTile(
-                      title: Text(employee.fullName ?? 'No name'),
-                      subtitle: Text(employee.documentNumber ?? 'No document'),
+                    return EmployeeListItem(
+                      employee: employee,
+                      onTap: () {
+                        // TODO: Navigate to employee details
+                      },
                     );
                   },
                 ),

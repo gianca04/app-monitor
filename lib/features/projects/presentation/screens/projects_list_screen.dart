@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../providers/projects_provider.dart';
 import '../widgets/quick_search_modal.dart';
+import '../widgets/project_list_item.dart';
 import '../../data/models/quick_search_response.dart';
 
 class ProjectsListScreen extends ConsumerWidget {
@@ -48,10 +49,11 @@ class ProjectsListScreen extends ConsumerWidget {
                   itemCount: projectsState.projects.length,
                   itemBuilder: (context, index) {
                     final project = projectsState.projects[index];
-                    return ListTile(
-                      title: Text(project.name ?? 'Sin nombre'),
-                      subtitle: Text('${project.location ?? ''}'),
-                      trailing: Text('${project.startDate ?? ''} - ${project.endDate ?? ''}'),
+                    return ProjectListItem(
+                      project: project,
+                      onTap: () {
+                        // TODO: Navigate to project details
+                      },
                     );
                   },
                 ),

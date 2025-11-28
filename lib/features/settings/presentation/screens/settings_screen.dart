@@ -6,12 +6,15 @@ import 'package:vibration/vibration.dart';
 // Asegúrate de que estas importaciones apunten a tus archivos correctos
 import '../widgets/connectivity_indicator.dart';
 import 'package:monitor/features/settings/providers/connectivity_preferences_provider.dart';
+import 'package:monitor/core/theme_config.dart';
+import 'package:monitor/core/widgets/industrial_tile.dart';
+import 'package:monitor/core/widgets/industrial_card.dart';
 
 // Constantes del sistema de diseño Industrial
-const kIndustrialBg = Color(0xFF121212);
-const kIndustrialSurface = Color(0xFF1E1E1E);
-const kIndustrialBorder = Colors.white24;
-const kIndustrialAccent = Colors.amber;
+const kIndustrialBg = AppTheme.background;
+const kIndustrialSurface = AppTheme.surface;
+const kIndustrialBorder = AppTheme.border;
+const kIndustrialAccent = AppTheme.primaryAccent;
 const kIndustrialRadius = 4.0;
 
 class SettingsScreen extends ConsumerWidget {
@@ -165,7 +168,7 @@ class SettingsScreen extends ConsumerWidget {
     return _IndustrialCardContainer(
       children: [
         // Habilitar/Deshabilitar indicador
-        _buildIndustrialTile(
+        IndustrialTile(
           icon: Icons.visibility,
           title: 'Mostrar indicador',
           subtitle: 'Visualizar estado en navbar',
@@ -182,7 +185,7 @@ class SettingsScreen extends ConsumerWidget {
         const Divider(height: 1, color: Colors.white10),
 
         // Selector de modo de visualización
-        _buildIndustrialTile(
+        IndustrialTile(
           icon: Icons.palette_outlined,
           title: 'Estilo visual',
           subtitle: preferences.displayModeName,

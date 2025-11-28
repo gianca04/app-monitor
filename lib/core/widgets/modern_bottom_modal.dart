@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 // Constantes de diseño Industrial
 const Color _kBackgroundColor = Color(0xFF1F1F1F);
 const Color _kBorderColor = Colors.white12;
-const Color _kAccentColor = Colors.amber;
 const double _kRadius = 4.0;
 
 class ModernBottomModal extends StatelessWidget {

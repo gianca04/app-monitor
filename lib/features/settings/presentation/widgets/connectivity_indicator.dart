@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/connectivity_provider.dart';
 import '../../providers/connectivity_preferences_provider.dart';
 import '../../services/connectivity_service.dart';
+import '../../../../core/theme_config.dart';
 
 /// Widget compacto que muestra el estado de conectividad en el navbar
 ///
@@ -176,13 +177,13 @@ class ConnectivityIndicator extends ConsumerWidget {
       case ConnectionStatus.online:
         return (
           Icons.wifi,
-          Colors.greenAccent,
+          AppTheme.success,
           'Conectado a Internet',
-        ); // GreenAccent resalta mejor en oscuro
+        );
       case ConnectionStatus.noInternet:
-        return (Icons.wifi_off, Colors.orangeAccent, 'Sin Internet');
+        return (Icons.wifi_off, AppTheme.warning, 'Sin Internet');
       case ConnectionStatus.offline:
-        return (Icons.signal_wifi_off, Colors.redAccent, 'Offline');
+        return (Icons.signal_wifi_off, AppTheme.error, 'Offline');
     }
   }
 
@@ -223,8 +224,8 @@ class ConnectivityDetailCard extends ConsumerWidget {
     final connectionStatusAsync = ref.watch(connectionStatusProvider);
     
     // REGLA: Color de fondo técnico y Borde Gris Suave
-    final borderColor = Colors.grey.shade700;
-    final cardBgColor = const Color(0xFF1E1E1E); 
+    final borderColor = AppTheme.border;
+    final cardBgColor = AppTheme.surface; 
 
     // REGLA: Reemplazar Card con Container + Decoration
     return Container(
@@ -397,11 +398,11 @@ class ConnectivityDetailCard extends ConsumerWidget {
   Color _getStatusColor(ConnectionStatus status) {
     switch (status) {
       case ConnectionStatus.online:
-        return Colors.green.shade600;
+        return AppTheme.success;
       case ConnectionStatus.noInternet:
-        return Colors.orange.shade700;
+        return AppTheme.warning;
       case ConnectionStatus.offline:
-        return Colors.red.shade700;
+        return AppTheme.error;
     }
   }
 

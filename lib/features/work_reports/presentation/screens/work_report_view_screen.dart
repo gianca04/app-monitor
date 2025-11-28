@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
+import '../../../../core/widgets/industrial_card.dart';
 
 class WorkReportViewScreen extends ConsumerWidget {
   final int id;
@@ -35,13 +36,6 @@ class WorkReportViewScreen extends ConsumerWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/work-reports'),
-        ),
-        title: Text(
-          'WORK REPORT DETAILS', // Estilo industrial
-          style: theme.appBarTheme.titleTextStyle?.copyWith(
-            letterSpacing: 1.0,
-            fontSize: 18,
-          ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -97,36 +91,38 @@ class WorkReportViewScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // 1. GENERAL INFO SECTION
-                          _IndustrialCard(
-                            theme: theme,
-                            children: [
-                              _SectionHeader(theme: theme, title: 'GENERAL INFORMATION', icon: Icons.info_outline),
-                              const SizedBox(height: 12),
-                              Text(
-                                state.report!.name?.toUpperCase() ?? 'N/A',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontSize: 20,
+                          IndustrialCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _SectionHeader(theme: theme, title: 'GENERAL INFORMATION', icon: Icons.info_outline),
+                                const SizedBox(height: 12),
+                                Text(
+                                  state.report!.name?.toUpperCase() ?? 'N/A',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontSize: 20,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(child: _InfoRow(theme: theme, label: 'DATE', value: state.report!.reportDate)),
-                                  Expanded(child: _InfoRow(theme: theme, label: 'START TIME', value: state.report!.startTime)),
-                                  Expanded(child: _InfoRow(theme: theme, label: 'END TIME', value: state.report!.endTime)),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              const Divider(color: Colors.white10, height: 1), // REGLA: Separadores
-                              const SizedBox(height: 16),
-                              Text('DESCRIPTION', style: theme.textTheme.bodySmall?.copyWith(fontSize: 12)),
-                              Html(
-                                data: state.report!.description ?? '',
-                                style: {
-                                  "body": Style(color: colorScheme.onSurface, margin: Margins.zero, fontSize: FontSize(14)),
-                                },
-                              ),
-                            ],
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(child: _InfoRow(theme: theme, label: 'DATE', value: state.report!.reportDate)),
+                                    Expanded(child: _InfoRow(theme: theme, label: 'START TIME', value: state.report!.startTime)),
+                                    Expanded(child: _InfoRow(theme: theme, label: 'END TIME', value: state.report!.endTime)),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                const Divider(color: Colors.white10, height: 1), // REGLA: Separadores
+                                const SizedBox(height: 16),
+                                Text('DESCRIPTION', style: theme.textTheme.bodySmall?.copyWith(fontSize: 12)),
+                                Html(
+                                  data: state.report!.description ?? '',
+                                  style: {
+                                    "body": Style(color: colorScheme.onSurface, margin: Margins.zero, fontSize: FontSize(14)),
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
 
                           const SizedBox(height: 16),
@@ -136,32 +132,36 @@ class WorkReportViewScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: _IndustrialCard(
-                                  theme: theme,
-                                  children: [
-                                    _SectionHeader(theme: theme, title: 'EMPLOYEE', icon: Icons.person_outline),
-                                    const SizedBox(height: 12),
-                                    _InfoRow(theme: theme, label: 'NAME', value: state.report!.employee?.fullName),
-                                    const SizedBox(height: 8),
-                                    _InfoRow(theme: theme, label: 'POSITION', value: state.report!.employee?.position?.name),
-                                  ],
+                                child: IndustrialCard(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _SectionHeader(theme: theme, title: 'EMPLOYEE', icon: Icons.person_outline),
+                                      const SizedBox(height: 12),
+                                      _InfoRow(theme: theme, label: 'NAME', value: state.report!.employee?.fullName),
+                                      const SizedBox(height: 8),
+                                      _InfoRow(theme: theme, label: 'POSITION', value: state.report!.employee?.position?.name),
+                                    ],
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: _IndustrialCard(
-                                  theme: theme,
-                                  children: [
-                                    _SectionHeader(theme: theme, title: 'PROJECT', icon: Icons.work_outline),
-                                    const SizedBox(height: 12),
-                                    _InfoRow(theme: theme, label: 'NAME', value: state.report!.project?.name),
-                                    const SizedBox(height: 8),
-                                    _InfoRow(theme: theme, label: 'STATUS', value: state.report!.project?.status),
-                                    if (state.report!.project?.subClient != null) ...[
+                                child: IndustrialCard(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _SectionHeader(theme: theme, title: 'PROJECT', icon: Icons.work_outline),
+                                      const SizedBox(height: 12),
+                                      _InfoRow(theme: theme, label: 'NAME', value: state.report!.project?.name),
                                       const SizedBox(height: 8),
-                                      _InfoRow(theme: theme, label: 'CLIENT', value: state.report!.project?.subClient?.name),
-                                    ]
-                                  ],
+                                      _InfoRow(theme: theme, label: 'STATUS', value: state.report!.project?.status),
+                                      if (state.report!.project?.subClient != null) ...[
+                                        const SizedBox(height: 8),
+                                        _InfoRow(theme: theme, label: 'CLIENT', value: state.report!.project?.subClient?.name),
+                                      ]
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -170,25 +170,27 @@ class WorkReportViewScreen extends ConsumerWidget {
                           const SizedBox(height: 16),
 
                           // 3. RESOURCES SECTION
-                          _IndustrialCard(
-                            theme: theme,
-                            children: [
-                              _SectionHeader(theme: theme, title: 'RESOURCES & EXECUTION', icon: Icons.construction),
-                              const SizedBox(height: 12),
-                              _ResourceBlock(theme: theme, title: 'TOOLS', htmlContent: state.report!.resources?.tools),
-                              const Divider(color: Colors.white10),
-                              _ResourceBlock(theme: theme, title: 'PERSONNEL', htmlContent: state.report!.resources?.personnel),
-                              const Divider(color: Colors.white10),
-                              _ResourceBlock(
-                                theme: theme,
-                                title: 'MATERIALS',
-                                htmlContent: (state.report!.resources?.materials?.isEmpty ?? true)
-                                    ? 'None'
-                                    : state.report!.resources!.materials,
-                              ),
-                              const Divider(color: Colors.white10),
-                              _ResourceBlock(theme: theme, title: 'SUGGESTIONS', htmlContent: state.report!.suggestions),
-                            ],
+                          IndustrialCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _SectionHeader(theme: theme, title: 'RESOURCES & EXECUTION', icon: Icons.construction),
+                                const SizedBox(height: 12),
+                                _ResourceBlock(theme: theme, title: 'TOOLS', htmlContent: state.report!.resources?.tools),
+                                const Divider(color: Colors.white10),
+                                _ResourceBlock(theme: theme, title: 'PERSONNEL', htmlContent: state.report!.resources?.personnel),
+                                const Divider(color: Colors.white10),
+                                _ResourceBlock(
+                                  theme: theme,
+                                  title: 'MATERIALS',
+                                  htmlContent: (state.report!.resources?.materials?.isEmpty ?? true)
+                                      ? 'None'
+                                      : state.report!.resources!.materials,
+                                ),
+                                const Divider(color: Colors.white10),
+                                _ResourceBlock(theme: theme, title: 'SUGGESTIONS', htmlContent: state.report!.suggestions),
+                              ],
+                            ),
                           ),
 
                           const SizedBox(height: 16),
@@ -207,71 +209,73 @@ class WorkReportViewScreen extends ConsumerWidget {
                           ],
 
                           // 5. SIGNATURES & TIMESTAMPS
-                          _IndustrialCard(
-                            theme: theme,
-                            children: [
-                              _SectionHeader(theme: theme, title: 'VALIDATION', icon: Icons.verified_user_outlined),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  if (state.report!.signatures?.supervisor != null)
+                          IndustrialCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _SectionHeader(theme: theme, title: 'VALIDATION', icon: Icons.verified_user_outlined),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    if (state.report!.signatures?.supervisor != null)
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('SUPERVISOR', style: theme.textTheme.bodySmall?.copyWith(fontSize: 10)),
+                                            const SizedBox(height: 4),
+                                            Container(
+                                              decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
+                                              child: ImageViewer(url: _extractDataUri(state.report!.signatures!.supervisor!)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    if (state.report!.signatures?.supervisor != null && state.report!.signatures?.manager != null)
+                                      const SizedBox(width: 16),
+                                    if (state.report!.signatures?.manager != null)
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('MANAGER', style: theme.textTheme.bodySmall?.copyWith(fontSize: 10)),
+                                            const SizedBox(height: 4),
+                                            Container(
+                                              decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
+                                              child: ImageViewer(url: _extractDataUri(state.report!.signatures!.manager!)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                const Divider(color: Colors.white10),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text('SUPERVISOR', style: theme.textTheme.bodySmall?.copyWith(fontSize: 10)),
-                                          const SizedBox(height: 4),
-                                          Container(
-                                            decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
-                                            child: ImageViewer(url: _extractDataUri(state.report!.signatures!.supervisor!)),
-                                          ),
-                                        ],
+                                      child: Text(
+                                        'CREATED: ${state.report!.timestamps?.createdAt ?? '-'}',
+                                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5)),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
                                       ),
                                     ),
-                                  if (state.report!.signatures?.supervisor != null && state.report!.signatures?.manager != null)
-                                    const SizedBox(width: 16),
-                                  if (state.report!.signatures?.manager != null)
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text('MANAGER', style: theme.textTheme.bodySmall?.copyWith(fontSize: 10)),
-                                          const SizedBox(height: 4),
-                                          Container(
-                                            decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
-                                            child: ImageViewer(url: _extractDataUri(state.report!.signatures!.manager!)),
-                                          ),
-                                        ],
+                                      child: Text(
+                                        'UPDATED: ${state.report!.timestamps?.updatedAt ?? '-'}',
+                                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5)),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                        textAlign: TextAlign.right,
                                       ),
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              const Divider(color: Colors.white10),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'CREATED: ${state.report!.timestamps?.createdAt ?? '-'}',
-                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5)),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      'UPDATED: ${state.report!.timestamps?.updatedAt ?? '-'}',
-                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5)),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            ],
+                                  ],
+                                )
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 40), // Bottom padding
                         ],
@@ -282,30 +286,6 @@ class WorkReportViewScreen extends ConsumerWidget {
 }
 
 // --- WIDGETS AUXILIARES PRIVADOS PARA DISEÑO INDUSTRIAL ---
-
-class _IndustrialCard extends StatelessWidget {
-  final ThemeData theme;
-  final List<Widget> children;
-  const _IndustrialCard({required this.theme, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        // REGLA: Borde recto visible y radius 4
-        border: Border.all(color: theme.colorScheme.outline),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
-      ),
-    );
-  }
-}
 
 class _SectionHeader extends StatelessWidget {
   final ThemeData theme;

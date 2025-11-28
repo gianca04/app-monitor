@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:monitor/core/theme_config.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -7,12 +7,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    final Color primaryColor = Colors.amber; // Para bordes activos/focos
-    final Color borderColor = Colors.grey.shade700; // Borde suave
-    final Color cardBgColor = const Color(0xFF1E1E1E); // Fondo oscuro técnico
-
+    final Color borderColor = AppTheme.border; // Borde suave
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Fondo principal muy oscuro
+      backgroundColor: AppTheme.background, // Fondo principal muy oscuro
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -137,16 +134,16 @@ class TechCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28, 
                   fontWeight: FontWeight.bold, 
-                  color: Colors.white
+                  color: AppTheme.textPrimary
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 title,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
               ),
             ],
           ),
@@ -195,19 +192,19 @@ class SyncStatusCard extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16, 
                             fontWeight: FontWeight.w600, 
-                            color: Colors.white
+                            color: AppTheme.textPrimary
                           ),
                         ),
                         Text(
                           subtitle,
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                         ),
                       ],
                     ),
-                    const Icon(Icons.sync, color: Colors.grey),
+                    const Icon(Icons.sync, color: AppTheme.textSecondary),
                   ],
                 ),
               ),
@@ -217,11 +214,11 @@ class SyncStatusCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
-                    const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                    const Icon(Icons.access_time, size: 14, color: AppTheme.textSecondary),
                     const SizedBox(width: 8),
                     Text(
                       "Última sinc.: $lastSync",
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                     ),
                   ],
                 ),
@@ -251,7 +248,7 @@ class ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Si es primario borde ámbar, si no gris
-    final color = isPrimary ? Colors.amber : Colors.grey; 
+    final color = isPrimary ? AppTheme.primaryAccent : AppTheme.textSecondary; 
     
     return Material(
       color: Colors.transparent, // Fondo transparente para ver el borde limpio
@@ -294,10 +291,10 @@ class SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: Colors.grey,
+        color: AppTheme.textSecondary,
         letterSpacing: 1.2,
       ),
     );

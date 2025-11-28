@@ -14,7 +14,10 @@ class CachedWorkReport {
   @HiveField(2)
   final bool isPending; // True if created offline and not synced
 
-  CachedWorkReport({required this.id, required this.jsonString, this.isPending = false});
+  @HiveField(3)
+  final bool isLocal; // True if created locally, false if from server
+
+  CachedWorkReport({required this.id, required this.jsonString, this.isPending = false, this.isLocal = false});
 
   // Helper to get the map
   Map<String, dynamic> get json => jsonDecode(jsonString) as Map<String, dynamic>;

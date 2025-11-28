@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/positions_list_provider.dart';
+import '../../../../core/theme_config.dart';
+import '../../../../core/widgets/industrial_card.dart';
 
 class PositionsListWidget extends ConsumerStatefulWidget {
   const PositionsListWidget({super.key});
@@ -66,7 +68,7 @@ class _PositionsListWidgetState extends ConsumerState<PositionsListWidget> {
             child: Text(
               'Showing ${state.positions!.data.length} of ${state.positions!.total} positions',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
+                    color: AppTheme.textSecondary,
                   ),
             ),
           ),
@@ -106,13 +108,35 @@ class PositionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      key: ValueKey(position.id),
-      title: Text(position.name),
-      subtitle: Text('ID: ${position.id}'),
+    return IndustrialCard(
       onTap: () {
         // Navigate to position details
       },
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  position.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'ID: ${position.id}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import '../../core/theme_config.dart';
 
 enum ConnectivityDisplayMode {
   iconOnly,
@@ -28,16 +29,16 @@ class ConnectivityIndicator extends StatelessWidget {
     switch (mode) {
       case ConnectivityDisplayMode.iconOnly:
         IconData icon = isOnline ? Icons.wifi : Icons.wifi_off;
-        Color color = isOnline ? Colors.green : Colors.red;
+        Color color = isOnline ? AppTheme.success : AppTheme.error;
         return Icon(icon, color: color);
       case ConnectivityDisplayMode.textOnly:
         String text = isOnline ? 'Online' : 'Offline';
-        Color color = isOnline ? Colors.green : Colors.red;
+        Color color = isOnline ? AppTheme.success : AppTheme.error;
         return Text(text, style: TextStyle(color: color));
       case ConnectivityDisplayMode.iconAndText:
         IconData icon = isOnline ? Icons.wifi : Icons.wifi_off;
         String text = isOnline ? 'Online' : 'Offline';
-        Color color = isOnline ? Colors.green : Colors.red;
+        Color color = isOnline ? AppTheme.success : AppTheme.error;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [

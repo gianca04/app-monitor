@@ -11,6 +11,14 @@ class AppTheme {
   static const Color textSecondary = Color(0xFF8B949E);
   static const Color border = Color(0xFF30363D);
   static const Color error = Color(0xFFCF6679);
+  static const Color success = Color(0xFF4CAF50);
+  static const Color warning = Color(0xFFFF9800);
+  static const Color info = Color(0xFF2196F3);
+
+  // Colores adicionales para consistencia
+  static const Color cardBackground = Color(0xFF1E1E1E);
+  static const Color inputFill = Color(0xFF2A2A2A);
+  static const Color divider = Color(0xFF30363D);
 
   static ThemeData get industrialTheme {
     return ThemeData(
@@ -76,11 +84,11 @@ class AppTheme {
       // Inputs unificados
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.black12,
+        fillColor: inputFill,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(4)),
-          borderSide: const BorderSide(color: Colors.grey),
+          borderSide: const BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(4)),
@@ -89,6 +97,8 @@ class AppTheme {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(4)),
         ),
+        labelStyle: const TextStyle(color: textSecondary),
+        hintStyle: const TextStyle(color: textSecondary),
       ),
 
       colorScheme: ColorScheme.dark(

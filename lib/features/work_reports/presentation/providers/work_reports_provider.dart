@@ -29,32 +29,48 @@ final updateWorkReportUseCaseProvider = Provider((ref) => UpdateWorkReportUseCas
 final deleteWorkReportUseCaseProvider = Provider((ref) => DeleteWorkReportUseCase(ref.watch(workReportsRepositoryProvider)));
 
 // Estado para la lista
+enum ReportFilter { all, local, cloud }
+
 class WorkReportsState {
   final WorkReportsResponse? response;
   final bool isLoading;
   final String? error;
   final bool isOffline;
+  final ReportFilter filter;
 
   WorkReportsState({
     this.response,
     this.isLoading = false,
     this.error,
     this.isOffline = false,
+    this.filter = ReportFilter.all,
   });
 
-  List<WorkReport> get reports => response?.data ?? [];
+  List<WorkReport> get reports {
+    final all = response?.data ?? [];
+    switch (filter) {
+      case ReportFilter.all:
+        return all;
+      case ReportFilter.local:
+        return all.where((r) => r.id != null && r.id! > 1700000000000).toList();
+      case ReportFilter.cloud:
+        return all.where((r) => r.id == null || r.id! <= 1700000000000).toList();
+    }
+  }
 
   WorkReportsState copyWith({
     WorkReportsResponse? response,
     bool? isLoading,
     String? error,
     bool? isOffline,
+    ReportFilter? filter,
   }) {
     return WorkReportsState(
       response: response ?? this.response,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       isOffline: isOffline ?? this.isOffline,
+      filter: filter ?? this.filter,
     );
   }
 }
@@ -212,6 +228,10 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
+  }
+
+  void setFilter(ReportFilter newFilter) {
+    state = state.copyWith(filter: newFilter);
   }
 }
 

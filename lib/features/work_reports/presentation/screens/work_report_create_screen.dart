@@ -7,15 +7,18 @@ class WorkReportCreateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final queryParams = GoRouterState.of(context).uri.queryParameters;
+    final type = queryParams['type']; // 'local' or 'cloud'
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/work-reports'),
         ),
-        title: const Text('Create Work Report'),
+        title: Text(type == 'local' ? 'Crear Reporte Local' : 'Crear Reporte en la Nube'),
       ),
-      body: const WorkReportForm(),
+      body: WorkReportForm(saveType: type),
     );
   }
 }

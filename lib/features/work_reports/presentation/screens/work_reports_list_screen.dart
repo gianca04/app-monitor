@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:monitor/core/theme_config.dart';
 import '../providers/work_reports_provider.dart';
-// Asegúrate de importar tu theme si lo necesitas referenciar directamente, 
-// aunque usando Theme.of(context) es suficiente.
+import '../widgets/work_report_list_item.dart';
 
 class WorkReportsListScreen extends ConsumerStatefulWidget {
   const WorkReportsListScreen({super.key});
@@ -13,6 +13,8 @@ class WorkReportsListScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
+  bool _isExpanded = false;
+
   @override
   void initState() {
     super.initState();
@@ -22,7 +24,6 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workReportsProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -39,172 +40,135 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
           )
         ],
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFAB00)))
-          : state.reports.isEmpty && state.error != null
-              ? Center(
-                  child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.warning_amber_rounded, size: 48, color: Color(0xFFCF6679)),
-                    const SizedBox(height: 16),
-                    Text(state.error!, style: const TextStyle(color: Color(0xFFCF6679))),
-                  ],
-                ))
-              : Column(
-                  children: [
-                    // Mostrar banner offline cuando estamos en modo offline
-                    if (state.isOffline)
-                      Container(
-                        width: double.infinity,
-                        color: Colors.orange.withOpacity(0.1),
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.wifi_off, color: Colors.orange),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                state.error != null
-                                    ? state.error!
-                                    : 'Modo offline: Solo se muestran reportes locales. Se sincronizarán cuando haya conexión.',
-                                style: TextStyle(color: Colors.orange[700]),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    // Mostrar mensaje cuando no hay reportes
-                    if (state.reports.isEmpty)
-                      Expanded(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                state.isOffline ? Icons.wifi_off : Icons.assignment_outlined,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                state.isOffline
-                                    ? 'No hay reportes locales disponibles'
-                                    : 'No hay reportes disponibles',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                              if (!state.isOffline) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Toca el botón + para crear uno nuevo',
-                                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: ListView.builder(
-                            itemCount: state.reports.length,
-                            itemBuilder: (context, index) {
-                              final report = state.reports[index];
-                              
-                              // Diseño de Tarjeta Industrial
-                              return Card(
-                                child: InkWell(
-                                  onTap: () => context.go('/work-reports/${report.id}'),
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Encabezado de la tarjeta
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                report.name ?? 'UNTITLED REPORT',
-                                                style: theme.textTheme.titleMedium?.copyWith(
-                                                  fontSize: 16,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            // ID o Código estilo "etiqueta"
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black26,
-                                                borderRadius: BorderRadius.circular(2),
-                                                border: Border.all(color: Colors.white10),
-                                              ),
-                                              child: Text(
-                                                'ID: ${report.id}',
-                                                style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'Courier'), // Fuente monoespaciada si es posible
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        
-                                        // Descripción
-                                        if (report.description != null && report.description!.isNotEmpty)
-                                          Text(
-                                            report.description!,
-                                            style: theme.textTheme.bodyMedium,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        
-                                        const SizedBox(height: 16),
-                                        const Divider(height: 1, color: Colors.white10),
-                                        const SizedBox(height: 12),
-
-                                        // Pie de tarjeta: Fecha y Acciones
-                                        Row(
-                                          children: [
-                                            Icon(Icons.calendar_today_outlined, size: 14, color: theme.primaryColor),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              report.reportDate ?? 'No Date',
-                                              style: theme.textTheme.bodySmall,
-                                            ),
-                                            const Spacer(),
-                                            
-                                            // Acciones Minimalistas
-                                            _ActionButton(
-                                              icon: Icons.edit_outlined,
-                                              onTap: () => context.go('/work-reports/${report.id}/edit'),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            _ActionButton(
-                                              icon: Icons.delete_outline,
-                                              color: theme.colorScheme.error,
-                                              onTap: () => _deleteReport(report.id!),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+      body: Stack(
+        children: [
+          state.isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryAccent))
+              : state.reports.isEmpty && state.error != null
+                  ? Center(
+                      child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 48, color: AppTheme.error),
+                        const SizedBox(height: 16),
+                        Text(state.error!, style: TextStyle(color: AppTheme.error)),
+                      ],
+                    ))
+                  : Column(
+                      children: [
+                        // Mostrar banner offline cuando estamos en modo offline
+                        if (state.isOffline)
+                          Container(
+                            width: double.infinity,
+                            color: AppTheme.warning.withOpacity(0.1),
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.wifi_off, color: AppTheme.warning),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    state.error != null
+                                        ? state.error!
+                                        : 'Modo offline: Solo se muestran reportes locales. Se sincronizarán cuando haya conexión.',
+                                    style: TextStyle(color: AppTheme.warning),
                                   ),
                                 ),
-                              );
-                            },
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
-                  ],
+                        // Mostrar mensaje cuando no hay reportes
+                        if (state.reports.isEmpty)
+                          Expanded(
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    state.isOffline ? Icons.wifi_off : Icons.assignment_outlined,
+                                    size: 64,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    state.isOffline
+                                        ? 'No hay reportes locales disponibles'
+                                        : 'No hay reportes disponibles',
+                                    style: TextStyle(color: AppTheme.textSecondary),
+                                  ),
+                                  if (!state.isOffline) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Toca el botón + para crear uno nuevo',
+                                      style: TextStyle(color: AppTheme.textSecondary.withOpacity(0.7), fontSize: 14),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: ListView.builder(
+                                itemCount: state.reports.length,
+                                itemBuilder: (context, index) {
+                                  final report = state.reports[index];
+
+                                  return WorkReportListItem(
+                                    report: report,
+                                    onEdit: () => context.go('/work-reports/${report.id}/edit'),
+                                    onDelete: () => _deleteReport(report.id!),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (_isExpanded) ...[
+                  AnimatedOpacity(
+                    opacity: _isExpanded ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: FloatingActionButton(
+                      heroTag: 'cloud_fab',
+                      onPressed: () => context.go('/work-reports/create?type=cloud'),
+                      child: const Icon(Icons.cloud),
+                      mini: true,
+                      tooltip: 'Crear reporte en la nube',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  AnimatedOpacity(
+                    opacity: _isExpanded ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: FloatingActionButton(
+                      heroTag: 'local_fab',
+                      onPressed: () => context.go('/work-reports/create?type=local'),
+                      child: const Icon(Icons.save),
+                      mini: true,
+                      tooltip: 'Guardar reporte local',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                FloatingActionButton(
+                  heroTag: 'main_fab',
+                  onPressed: () => setState(() => _isExpanded = !_isExpanded),
+                  child: Icon(_isExpanded ? Icons.close : Icons.add),
+                  tooltip: _isExpanded ? 'Cerrar opciones' : 'Nuevo reporte',
                 ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/work-reports/create'),
-        child: const Icon(Icons.add),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -218,41 +182,16 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
+            child: const Text('CANCEL', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           TextButton(
             onPressed: () {
               ref.read(workReportsProvider.notifier).deleteWorkReport(id);
               Navigator.of(context).pop();
             },
-            child: const Text('DELETE', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFCF6679))),
+            child: const Text('DELETE', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.error)),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Widget auxiliar para botones pequeños
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color? color;
-
-  const _ActionButton({required this.icon, required this.onTap, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.white12),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Icon(icon, size: 18, color: color ?? Colors.grey[400]),
       ),
     );
   }
