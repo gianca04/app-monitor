@@ -37,6 +37,8 @@ class WorkReportsState {
   final String? error;
   final bool isOffline;
   final ReportFilter filter;
+  final String? dateFrom;
+  final String? dateTo;
 
   WorkReportsState({
     this.response,
@@ -44,6 +46,8 @@ class WorkReportsState {
     this.error,
     this.isOffline = false,
     this.filter = ReportFilter.cloud,
+    this.dateFrom,
+    this.dateTo,
   });
 
   List<WorkReport> get reports {
@@ -62,6 +66,8 @@ class WorkReportsState {
     String? error,
     bool? isOffline,
     ReportFilter? filter,
+    String? dateFrom,
+    String? dateTo,
   }) {
     return WorkReportsState(
       response: response ?? this.response,
@@ -69,6 +75,8 @@ class WorkReportsState {
       error: error ?? this.error,
       isOffline: isOffline ?? this.isOffline,
       filter: filter ?? this.filter,
+      dateFrom: dateFrom ?? this.dateFrom,
+      dateTo: dateTo ?? this.dateTo,
     );
   }
 }
@@ -97,7 +105,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
         // Assuming we have the data to recreate, but since it's complex, for now just mark as synced
         // In a real app, you'd send to server and update ID
         // For simplicity, just mark as not pending
-        final updatedCached = CachedWorkReport(id: cached.id, jsonString: cached.jsonString, isPending: false);
+        final updatedCached = CachedWorkReport(id: cached.id, jsonString: cached.jsonString, isPending: false, isLocal: cached.isLocal);
         await workReportsBox.put(cached.id, updatedCached);
       } catch (e) {
         // Handle sync error, perhaps retry later
@@ -132,12 +140,12 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
         await _syncPendingReports();
 
         // Load from server
-        final response = await getWorkReportsUseCase();
+        final response = await getWorkReportsUseCase(dateFrom: state.dateFrom, dateTo: state.dateTo);
 
         // Save to Hive, mark as not pending
         await workReportsBox.clear();
         for (final report in response.data ?? []) {
-          final cached = CachedWorkReport(id: report.id ?? 0, jsonString: jsonEncode(report.toJson()), isPending: false);
+          final cached = CachedWorkReport(id: report.id ?? 0, jsonString: jsonEncode(report.toJson()), isPending: false, isLocal: false);
           await workReportsBox.put(report.id, cached);
         }
         state = state.copyWith(isLoading: false, response: response, isOffline: false);
@@ -193,7 +201,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
         suggestions: suggestions,
         // Other fields can be added
       );
-      final cached = CachedWorkReport(id: newReport.id ?? 0, jsonString: jsonEncode(newReport.toJson()), isPending: true);
+      final cached = CachedWorkReport(id: newReport.id ?? 0, jsonString: jsonEncode(newReport.toJson()), isPending: true, isLocal: true);
       await workReportsBox.put(newReport.id, cached);
       // Reload from Hive
       await loadWorkReports();
@@ -201,7 +209,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     } else {
       final newReport = await createWorkReportUseCase(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, photos);
       // Save to Hive as synced
-      final cached = CachedWorkReport(id: newReport.id ?? 0, jsonString: jsonEncode(newReport.toJson()), isPending: false);
+      final cached = CachedWorkReport(id: newReport.id ?? 0, jsonString: jsonEncode(newReport.toJson()), isPending: false, isLocal: false);
       await workReportsBox.put(newReport.id, cached);
       await loadWorkReports();
       return newReport;
@@ -230,6 +238,11 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
 
   void setFilter(ReportFilter newFilter) {
     state = state.copyWith(filter: newFilter);
+  }
+
+  void setDateFilter(String? dateFrom, String? dateTo) {
+    state = state.copyWith(dateFrom: dateFrom, dateTo: dateTo);
+    loadWorkReports();
   }
 }
 

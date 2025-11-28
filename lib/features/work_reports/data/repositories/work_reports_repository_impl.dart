@@ -10,8 +10,8 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
   WorkReportsRepositoryImpl(this.dataSource);
 
   @override
-  Future<WorkReportsResponse> getWorkReports() async {
-    return await dataSource.getWorkReports();
+  Future<WorkReportsResponse> getWorkReports({String? dateFrom, String? dateTo}) async {
+    return await dataSource.getWorkReports(dateFrom: dateFrom, dateTo: dateTo);
   }
 
   @override

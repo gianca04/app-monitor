@@ -4,7 +4,7 @@ import '../models/work_reports_response.dart';
 import 'package:monitor/core/constants/api_constants.dart';
 
 abstract class WorkReportsDataSource {
-  Future<WorkReportsResponse> getWorkReports();
+  Future<WorkReportsResponse> getWorkReports({String? dateFrom, String? dateTo});
   Future<WorkReport> getWorkReport(int id);
   Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
   Future<WorkReport> updateWorkReport(int id, int? projectId, int? employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature, List<Map<String, dynamic>> photos);
@@ -29,8 +29,11 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
   }
 
   @override
-  Future<WorkReportsResponse> getWorkReports() async {
-    final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}');
+  Future<WorkReportsResponse> getWorkReports({String? dateFrom, String? dateTo}) async {
+    final queryParams = <String, dynamic>{};
+    if (dateFrom != null) queryParams['date_from'] = dateFrom;
+    if (dateTo != null) queryParams['date_to'] = dateTo;
+    final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}', queryParameters: queryParams);
     final replacedData = _replaceUrls(response.data);
     return WorkReportsResponse.fromJson(replacedData);
   }

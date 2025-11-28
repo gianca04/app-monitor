@@ -56,8 +56,8 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> w
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: () {}, // Placeholder para futuro filtro
-            tooltip: 'Filter',
+            onPressed: _showDateFilterDialog,
+            tooltip: 'Filtrar por fechas',
           )
         ],
       ),
@@ -213,6 +213,75 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> w
             child: const Text('DELETE', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.error)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDateFilterDialog() {
+    final currentState = ref.watch(workReportsProvider);
+    DateTime? selectedFrom = currentState.dateFrom != null ? DateTime.parse(currentState.dateFrom!) : null;
+    DateTime? selectedTo = currentState.dateTo != null ? DateTime.parse(currentState.dateTo!) : null;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Filtrar por fechas'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                readOnly: true,
+                decoration: const InputDecoration(labelText: 'Fecha desde'),
+                controller: TextEditingController(text: selectedFrom?.toIso8601String().split('T')[0]),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedFrom ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2101),
+                  );
+                  if (picked != null) {
+                    setState(() => selectedFrom = picked);
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                readOnly: true,
+                decoration: const InputDecoration(labelText: 'Fecha hasta'),
+                controller: TextEditingController(text: selectedTo?.toIso8601String().split('T')[0]),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedTo ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2101),
+                  );
+                  if (picked != null) {
+                    setState(() => selectedTo = picked);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('CANCELAR'),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(workReportsProvider.notifier).setDateFilter(
+                  selectedFrom?.toIso8601String().split('T')[0],
+                  selectedTo?.toIso8601String().split('T')[0],
+                );
+                Navigator.of(context).pop();
+              },
+              child: const Text('APLICAR'),
+            ),
+          ],
+        ),
       ),
     );
   }
