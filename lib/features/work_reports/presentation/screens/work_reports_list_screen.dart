@@ -12,13 +12,22 @@ class WorkReportsListScreen extends ConsumerStatefulWidget {
   ConsumerState<WorkReportsListScreen> createState() => _WorkReportsListScreenState();
 }
 
-class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
+class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> with TickerProviderStateMixin {
   bool _isExpanded = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.index = 1; // Iniciar en WEB
     Future.microtask(() => ref.read(workReportsProvider.notifier).loadWorkReports());
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -27,11 +36,23 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home'),
-        ),
         title: const Text('WORK REPORTS'), // Mayúsculas para estilo industrial
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'LOCALES'),
+            Tab(text: 'WEB'),
+          ],
+          onTap: (index) {
+            final filter = index == 0 ? ReportFilter.local : ReportFilter.cloud;
+            ref.read(workReportsProvider.notifier).setFilter(filter);
+          },
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          unselectedLabelStyle: const TextStyle(fontSize: 14),
+          indicatorColor: AppTheme.primaryAccent,
+          labelColor: AppTheme.primaryAccent,
+          unselectedLabelColor: AppTheme.textSecondary,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),

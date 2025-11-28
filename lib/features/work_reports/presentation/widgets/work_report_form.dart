@@ -322,13 +322,23 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     flex: 2,
                     child: TextFormField(
                       controller: _reportDateController,
+                      readOnly: true,
                       decoration: const InputDecoration(
-                        labelText: 'FECHA (YYYY-MM-DD)',
+                        labelText: 'FECHA',
                       ),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2101),
+                        );
+                        if (picked != null) {
+                          _reportDateController.text = picked.toIso8601String().split('T')[0];
+                        }
+                      },
                       validator: (value) {
                         if (value?.isEmpty ?? true) return 'Requerido';
-                        final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
-                        if (!regex.hasMatch(value!)) return 'Formato inválido';
                         return null;
                       },
                     ),
@@ -337,11 +347,21 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _startTimeController,
-                      decoration: const InputDecoration(labelText: 'INICIO'),
+                      readOnly: true,
+                      decoration: const InputDecoration(labelText: 'INICIO (HH:mm)'),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
+                        if (picked != null) {
+                          _startTimeController.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                        }
+                      },
                       validator: (value) {
                         if (value?.isEmpty ?? true) return null;
-                        final regex = RegExp(r'^\d{2}:\d{2}(:\d{2})?$');
-                        if (!regex.hasMatch(value!)) return 'Error';
+                        final regex = RegExp(r'^\d{2}:\d{2}$');
+                        if (!regex.hasMatch(value!)) return 'Formato inválido';
                         return null;
                       },
                     ),
@@ -350,11 +370,21 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _endTimeController,
-                      decoration: const InputDecoration(labelText: 'FIN'),
+                      readOnly: true,
+                      decoration: const InputDecoration(labelText: 'FIN (HH:mm)'),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
+                        if (picked != null) {
+                          _endTimeController.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                        }
+                      },
                       validator: (value) {
                         if (value?.isEmpty ?? true) return null;
-                        final regex = RegExp(r'^\d{2}:\d{2}(:\d{2})?$');
-                        if (!regex.hasMatch(value!)) return 'Error';
+                        final regex = RegExp(r'^\d{2}:\d{2}$');
+                        if (!regex.hasMatch(value!)) return 'Formato inválido';
                         return null;
                       },
                     ),

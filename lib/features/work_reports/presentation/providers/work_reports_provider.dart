@@ -29,7 +29,7 @@ final updateWorkReportUseCaseProvider = Provider((ref) => UpdateWorkReportUseCas
 final deleteWorkReportUseCaseProvider = Provider((ref) => DeleteWorkReportUseCase(ref.watch(workReportsRepositoryProvider)));
 
 // Estado para la lista
-enum ReportFilter { all, local, cloud }
+enum ReportFilter { local, cloud }
 
 class WorkReportsState {
   final WorkReportsResponse? response;
@@ -43,14 +43,12 @@ class WorkReportsState {
     this.isLoading = false,
     this.error,
     this.isOffline = false,
-    this.filter = ReportFilter.all,
+    this.filter = ReportFilter.cloud,
   });
 
   List<WorkReport> get reports {
     final all = response?.data ?? [];
     switch (filter) {
-      case ReportFilter.all:
-        return all;
       case ReportFilter.local:
         return all.where((r) => r.id != null && r.id! > 1700000000000).toList();
       case ReportFilter.cloud:
