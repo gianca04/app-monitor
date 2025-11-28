@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 /// Preferencias del usuario para el indicador de conectividad
 class ConnectivityPreferences {
@@ -138,4 +139,10 @@ final connectivityPreferencesNotifierProvider =
     StateNotifierProvider<ConnectivityPreferencesNotifier, ConnectivityPreferences>((ref) {
   final storage = FlutterSecureStorage();
   return ConnectivityPreferencesNotifier(storage);
+});
+
+/// Provider para el estado de conectividad
+final connectivityStatusProvider = StreamProvider<bool>((ref) {
+  final connectivity = Connectivity();
+  return connectivity.onConnectivityChanged.map((result) => result != ConnectivityResult.none);
 });

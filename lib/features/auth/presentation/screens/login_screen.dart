@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/connectivity_indicator.dart';
+import '../../../../features/settings/providers/connectivity_preferences_provider.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -29,6 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final connectivityAsync = ref.watch(connectivityStatusProvider);
 
     if (authState.isChecking) {
       return const Scaffold(
@@ -64,9 +67,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               padding: const EdgeInsets.only(top: 8.0, right: 16.0),
               child: Align(
                 alignment: Alignment.topRight,
-                child: ConnectivityIndicator(
-                  mode: ConnectivityDisplayMode.iconOnly,
-                  showWhenOnline: null,
+                child: connectivityAsync.when(
+                  data: (isOnline) => ConnectivityIndicator(
+                    mode: ConnectivityDisplayMode.iconOnly,
+                    showWhenOnline: null,
+                    isOnline: isOnline,
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (error, stack) => const SizedBox.shrink(),
                 ),
               ),
             ),
@@ -89,6 +97,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               error: authState.error,
               isPasswordVisible: _isPasswordVisible,
               onTogglePasswordVisibility: _togglePasswordVisibility,
+              connectivityAsync: connectivityAsync,
             ),
           ),
         ],
@@ -112,7 +121,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-class _SignInForm extends StatelessWidget {
+class _SignInForm extends StatefulWidget {
   const _SignInForm({
     required this.formKey,
     required this.emailController,
@@ -124,6 +133,7 @@ class _SignInForm extends StatelessWidget {
     this.error,
     required this.isPasswordVisible,
     required this.onTogglePasswordVisibility,
+    required this.connectivityAsync,
   });
 
   final GlobalKey<FormState> formKey;
@@ -136,6 +146,31 @@ class _SignInForm extends StatelessWidget {
   final String? error;
   final bool isPasswordVisible;
   final VoidCallback onTogglePasswordVisibility;
+  final AsyncValue<bool> connectivityAsync;
+
+  @override
+  State<_SignInForm> createState() => _SignInFormState();
+}
+
+class _SignInFormState extends State<_SignInForm> {
+  bool _showLogo = true;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      setState(() {
+        _showLogo = !_showLogo;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,11 +186,29 @@ class _SignInForm extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 420),
         child: SingleChildScrollView(
           child: Form(
-            key: formKey,
+            key: widget.formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SvgPicture.asset('assets/images/svg/logo.svg', height: 100),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  child: _showLogo
+                      ? SvgPicture.asset(
+                          'assets/images/svg/logo.svg',
+                          height: 100,
+                          key: const ValueKey('logo'),
+                        )
+                      : widget.connectivityAsync.when(
+                          data: (isOnline) => ConnectivityIndicator(
+                            mode: ConnectivityDisplayMode.iconOnly,
+                            showWhenOnline: null,
+                            isOnline: isOnline,
+                            key: const ValueKey('indicator'),
+                          ),
+                          loading: () => const SizedBox.shrink(),
+                          error: (error, stack) => const SizedBox.shrink(),
+                        ),
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'Ingrese sus credenciales',
@@ -168,7 +221,7 @@ class _SignInForm extends StatelessWidget {
 
                 // Campo correo
                 TextFormField(
-                  controller: emailController,
+                  controller: widget.emailController,
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
@@ -201,8 +254,8 @@ class _SignInForm extends StatelessWidget {
 
                 // Campo contraseña
                 TextFormField(
-                  controller: passwordController,
-                  obscureText: !isPasswordVisible,
+                  controller: widget.passwordController,
+                  obscureText: !widget.isPasswordVisible,
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
@@ -224,10 +277,10 @@ class _SignInForm extends StatelessWidget {
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        widget.isPasswordVisible ? Icons.visibility_off : Icons.visibility,
                         color: Colors.white,
                       ),
-                      onPressed: onTogglePasswordVisibility,
+                      onPressed: widget.onTogglePasswordVisibility,
                     ),
                   ),
                   validator: (value) {
@@ -251,8 +304,8 @@ class _SignInForm extends StatelessWidget {
                   child: CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    value: rememberMe,
-                    onChanged: onRememberMeChanged,
+                    value: widget.rememberMe,
+                    onChanged: widget.onRememberMeChanged,
                     title: const Text('Recordarme', style: TextStyle(color: Colors.white)),
                   ),
                 ),
@@ -270,10 +323,10 @@ class _SignInForm extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: isLoading ? null : onLoginPressed,
+                    onPressed: widget.isLoading ? null : widget.onLoginPressed,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12.0),
-                      child: isLoading
+                      child: widget.isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Ingresar',
@@ -283,7 +336,7 @@ class _SignInForm extends StatelessWidget {
                   ),
                 ),
 
-                if (error != null) ...[
+                if (widget.error != null) ...[
                   const SizedBox(height: 24),
                   // Mensaje error
                   Container(
@@ -299,7 +352,7 @@ class _SignInForm extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            error!,
+                            widget.error!,
                             style: const TextStyle(color: Colors.red),
                           ),
                         ),

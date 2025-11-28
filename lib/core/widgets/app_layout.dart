@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/settings/providers/connectivity_preferences_provider.dart';
+import '../widgets/connectivity_indicator.dart';
 
 class AppLayout extends StatefulWidget {
   final Widget child;
@@ -56,18 +58,85 @@ class _AppLayoutState extends State<AppLayout> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         titleSpacing: 0,
-        title: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              SvgPicture.asset(
-                'assets/images/svg/logo.svg',
-                height: 24,
-                width: 24,
-              ),
-            ],
-          ),
+        title: Consumer(
+          builder: (context, ref, child) {
+            final preferences = ref.watch(connectivityPreferencesNotifierProvider);
+            final connectivityAsync = ref.watch(connectivityStatusProvider);
+            if (preferences.isEnabled) {
+              ConnectivityDisplayMode mode;
+              switch (preferences.displayMode) {
+                case 0:
+                  mode = ConnectivityDisplayMode.iconOnly;
+                  break;
+                case 1:
+                  mode = ConnectivityDisplayMode.iconAndText;
+                  break;
+                case 2:
+                  mode = ConnectivityDisplayMode.iconOnly; // Placeholder for dot
+                  break;
+                case 3:
+                  mode = ConnectivityDisplayMode.iconOnly; // Placeholder for badge
+                  break;
+                default:
+                  mode = ConnectivityDisplayMode.iconOnly;
+              }
+              return connectivityAsync.when(
+                data: (isOnline) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      ConnectivityIndicator(
+                        mode: mode,
+                        showWhenOnline: preferences.showWhenOnline,
+                        isOnline: isOnline,
+                      ),
+                    ],
+                  ),
+                ),
+                loading: () => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/images/svg/logo.svg',
+                        height: 24,
+                        width: 24,
+                      ),
+                    ],
+                  ),
+                ),
+                error: (error, stack) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/images/svg/logo.svg',
+                        height: 24,
+                        width: 24,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/images/svg/logo.svg',
+                      height: 24,
+                      width: 24,
+                    ),
+                  ],
+                ),
+              );
+            }
+          },
         ),
         actions: const [
           Padding(

@@ -17,7 +17,7 @@ class WorkReportEditScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/work-reports/$id'),
         ),
         title: const Text('Edit Work Report'),
       ),

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 enum ConnectivityDisplayMode {
@@ -9,19 +10,18 @@ enum ConnectivityDisplayMode {
 class ConnectivityIndicator extends StatelessWidget {
   final ConnectivityDisplayMode mode;
   final bool? showWhenOnline;
+  final bool isOnline;
 
   const ConnectivityIndicator({
     super.key,
     required this.mode,
     this.showWhenOnline,
+    required this.isOnline,
   });
 
   @override
   Widget build(BuildContext context) {
-    // For simplicity, assume always online
-    bool isOnline = true;
-
-    if (showWhenOnline != null && !showWhenOnline!) {
+    if (showWhenOnline != null && !showWhenOnline! && isOnline) {
       return const SizedBox.shrink();
     }
 

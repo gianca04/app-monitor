@@ -11,7 +11,7 @@ class WorkReportCreateScreen extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/work-reports'),
         ),
         title: const Text('Create Work Report'),
       ),
