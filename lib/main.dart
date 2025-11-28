@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/router/app_router.dart';
 import 'core/theme_config.dart';
+import 'features/auth/presentation/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: MainApp()));
+  final sharedPreferences = await SharedPreferences.getInstance();
+  runApp(ProviderScope(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+    ],
+    child: const MainApp(),
+  ));
 }
 
 class MainApp extends ConsumerWidget {

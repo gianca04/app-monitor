@@ -26,6 +26,10 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
         title: const Text('WORK REPORTS'), // Mayúsculas para estilo industrial
         actions: [
           IconButton(

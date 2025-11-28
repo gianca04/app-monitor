@@ -8,79 +8,69 @@ const double _kRadius = 4.0; // Radio casi recto
 
 class BottomModal extends StatelessWidget {
   final Widget child;
-  final double? height;
   final bool isDismissible;
   final bool enableDrag;
 
   const BottomModal({
     super.key,
     required this.child,
-    this.height,
     this.isDismissible = true,
     this.enableDrag = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Inyectamos el Theme para que los inputs y dividers dentro del "child"
-    // hereden automáticamente el estilo industrial sin modificar la lógica interna.
-    return Theme(
-      data: Theme.of(context).copyWith(
-        brightness: Brightness.dark,
-        dividerColor: Colors.white10, // Regla: Separadores sutiles
-        inputDecorationTheme: const InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.black12,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          // Regla: Inputs OutlineInputBorder con borde gris suave
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(_kRadius)),
-            borderSide: BorderSide(color: Colors.grey),
-          ),
-          // Regla: Al enfocar, borde Ámbar
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(_kRadius)),
-            borderSide: BorderSide(color: _kAccentColor, width: 2),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(_kRadius)),
-          ),
-        ),
-      ),
+    // 1. Calculamos límite de altura (85% de la pantalla)
+    final double maxScreenHeight = MediaQuery.of(context).size.height * 0.85;
+    // 2. Capturamos la altura del teclado
+    final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardHeight),
       child: Container(
-        height: height,
+        // 4. Constraints en lugar de height fijo
+        constraints: BoxConstraints(
+          maxHeight: maxScreenHeight,
+        ),
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
           color: _kBackgroundColor,
-          // Regla: Siempre con Border.all
           border: Border.all(color: _kBorderColor),
-          // Regla: Bordes Rectos o casi rectos (Radius.circular(4))
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(_kRadius),
             topRight: Radius.circular(_kRadius),
           ),
-          // Regla: Sombras Eliminadas
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min, // Se adapta al contenido, no estira
           children: [
-            // Handle (Estilo oscuro)
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24, // Gris industrial
-                borderRadius: BorderRadius.circular(2),
+            // Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            Expanded(
-              // Material transparente para que los InkWell funcionen visualmente sobre el fondo oscuro
-              child: Material(
-                color: Colors.transparent,
-                child: child,
+            
+            // 5. Flexible + SingleChildScrollView
+            // Esto permite que el contenido crezca hasta el límite y luego haga scroll
+            Flexible(
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(), // Scroll firme industrial
+                child: Material(
+                  color: Colors.transparent,
+                  child: child, // Tu contenido arbitrario
+                ),
               ),
             ),
+            
+            // Safe area inferior opcional por si el contenido no tiene padding final
+            SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 0 : 16),
           ],
         ),
       ),
@@ -90,7 +80,6 @@ class BottomModal extends StatelessWidget {
   static Future<T?> show<T>(
     BuildContext context, {
     required Widget child,
-    double? height,
     bool isDismissible = true,
     bool enableDrag = true,
   }) {
@@ -98,21 +87,14 @@ class BottomModal extends StatelessWidget {
       context: context,
       isDismissible: isDismissible,
       enableDrag: enableDrag,
-      backgroundColor: _kBackgroundColor, // Fondo oscuro
-      elevation: 0, // Regla: Sin sombra
-      // Shape ajustado al borde y radio definidos
-      shape: const RoundedRectangleBorder(
-        side: BorderSide(color: _kBorderColor),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(_kRadius),
-          topRight: Radius.circular(_kRadius),
-        ),
-      ),
+      // CRÍTICO: Permite que el modal supere el 50% de la pantalla
+      isScrollControlled: true, 
+      backgroundColor: Colors.transparent, // El Container maneja el color
+      elevation: 0,
       builder: (context) => BottomModal(
-        child: child,
-        height: height,
         isDismissible: isDismissible,
         enableDrag: enableDrag,
+        child: child,
       ),
     );
   }

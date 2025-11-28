@@ -21,6 +21,7 @@ dependencies:
   salomon_bottom_bar: ^3.3.2
   connectivity_plus: ^7.0.0
   vibration: ^3.1.4
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

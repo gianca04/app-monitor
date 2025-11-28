@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/work_report_form.dart';
 import '../providers/work_reports_provider.dart';
 
@@ -13,7 +14,13 @@ class WorkReportEditScreen extends ConsumerWidget {
     final state = ref.watch(workReportProvider(id));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Work Report')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Edit Work Report'),
+      ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.error != null

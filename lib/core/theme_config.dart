@@ -71,7 +71,27 @@ class AppTheme {
           borderRadius: BorderRadius.circular(4),
           side: const BorderSide(color: border),
         ),
-      ), colorScheme: ColorScheme.dark(
+      ),
+
+      // Inputs unificados
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.black12,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+          borderSide: const BorderSide(color: Colors.grey),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+          borderSide: const BorderSide(color: primaryAccent, width: 2),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+        ),
+      ),
+
+      colorScheme: ColorScheme.dark(
         primary: primaryAccent,
         surface: surface,
         error: error,

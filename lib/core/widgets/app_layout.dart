@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
 class AppLayout extends StatefulWidget {
@@ -16,24 +17,27 @@ class AppLayout extends StatefulWidget {
 class _AppLayoutState extends State<AppLayout> {
   int _selectedIndex = 0;
   late final List<String> _paths;
+  late final RouterDelegate _routerDelegate;
 
   @override
   void initState() {
     super.initState();
     _paths = ['/home', '/work-reports', '/profile', '/settings'];
-    GoRouter.of(context).routerDelegate.addListener(_onRouteChange);
-    _selectedIndex = _getIndexFromLocation(GoRouter.of(context).routerDelegate.currentConfiguration.uri.path);
+    final router = GoRouter.of(context);
+    _routerDelegate = router.routerDelegate;
+    _routerDelegate.addListener(_onRouteChange);
+    _selectedIndex = _getIndexFromLocation(_routerDelegate.currentConfiguration.uri.path);
   }
 
   @override
   void dispose() {
-    GoRouter.of(context).routerDelegate.removeListener(_onRouteChange);
+    _routerDelegate.removeListener(_onRouteChange);
     super.dispose();
   }
 
   void _onRouteChange() {
     setState(() {
-      _selectedIndex = _getIndexFromLocation(GoRouter.of(context).routerDelegate.currentConfiguration.uri.path);
+      _selectedIndex = _getIndexFromLocation(_routerDelegate.currentConfiguration.uri.path);
     });
   }
 
@@ -47,45 +51,40 @@ class _AppLayoutState extends State<AppLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: ThemeData.dark(),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          titleSpacing: 0,
-          title: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Logo",
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              SvgPicture.asset(
+                'assets/images/svg/logo.svg',
+                height: 24,
+                width: 24,
+              ),
+            ],
           ),
-          actions: const [
-            Padding(
-              padding: EdgeInsets.only(right: 16.0),
-              child: CircleAvatar(child: _ProfileIcon()),
-            ),
-          ],
         ),
-        body: widget.child,
-        bottomNavigationBar: SalomonBottomBar(
-          currentIndex: _selectedIndex,
-          selectedItemColor: const Color(0xff6200ee),
-          unselectedItemColor: const Color(0xff757575),
-          onTap: (index) {
-            GoRouter.of(context).go(_paths[index]);
-          },
-          items: _navBarItems,
-        ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(child: _ProfileIcon()),
+          ),
+        ],
+      ),
+      body: widget.child,
+      bottomNavigationBar: SalomonBottomBar(
+        currentIndex: _selectedIndex,
+        selectedItemColor: const Color(0xFFFFAB00), // primaryAccent
+        unselectedItemColor: const Color(0xFF8B949E), // textSecondary
+        onTap: (index) {
+          GoRouter.of(context).go(_paths[index]);
+        },
+        items: _navBarItems,
       ),
     );
   }
@@ -95,22 +94,22 @@ final _navBarItems = [
   SalomonBottomBarItem(
     icon: const Icon(Icons.home),
     title: const Text("Home"),
-    selectedColor: Colors.purple,
+    selectedColor: const Color(0xFFFFAB00),
   ),
   SalomonBottomBarItem(
     icon: const Icon(Icons.work),
     title: const Text("Work Reports"),
-    selectedColor: Colors.blue,
+    selectedColor: const Color(0xFFFFAB00),
   ),
   SalomonBottomBarItem(
     icon: const Icon(Icons.person),
     title: const Text("Profile"),
-    selectedColor: Colors.teal,
+    selectedColor: const Color(0xFFFFAB00),
   ),
   SalomonBottomBarItem(
     icon: const Icon(Icons.settings),
     title: const Text("Settings"),
-    selectedColor: Colors.grey,
+    selectedColor: const Color(0xFFFFAB00),
   ),
 ];
 

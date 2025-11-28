@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../data/models/login_request.dart';
 import '../../data/models/login_response.dart';
@@ -11,6 +12,9 @@ import '../../domain/exceptions/auth_exceptions.dart';
 // Providers para dependencias
 final dioProvider = Provider((ref) => Dio());
 final secureStorageProvider = Provider((ref) => const FlutterSecureStorage());
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('SharedPreferences must be initialized in main');
+});
 
 // Dio provider con autenticación
 final authenticatedDioProvider = Provider((ref) {
@@ -60,8 +64,9 @@ class AuthState {
 class AuthNotifier extends StateNotifier<AuthState> {
   final LoginUseCase loginUseCase;
   final FlutterSecureStorage secureStorage;
+  final SharedPreferences sharedPreferences;
 
-  AuthNotifier(this.loginUseCase, this.secureStorage) : super(AuthState()) {
+  AuthNotifier(this.loginUseCase, this.secureStorage, this.sharedPreferences) : super(AuthState()) {
     _checkLoginStatus();
   }
 
@@ -90,6 +95,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final response = await loginUseCase(request);
       await secureStorage.write(key: 'auth_token', value: response.token);
       await secureStorage.write(key: 'expires_at', value: response.expiresAt.toIso8601String());
+
+      // Guardar información del usuario y empleado en SharedPreferences
+      if (response.user != null) {
+        await sharedPreferences.setInt('user_id', response.user!['id']);
+        await sharedPreferences.setString('user_name', response.user!['name']);
+        await sharedPreferences.setString('user_email', response.user!['email']);
+      }
+      if (response.employee != null) {
+        await sharedPreferences.setInt('employee_id', response.employee!['id']);
+        await sharedPreferences.setString('employee_document_type', response.employee!['document_type']);
+        await sharedPreferences.setString('employee_document_number', response.employee!['document_number']);
+        await sharedPreferences.setString('employee_first_name', response.employee!['first_name']);
+        await sharedPreferences.setString('employee_last_name', response.employee!['last_name']);
+        await sharedPreferences.setString('employee_position', response.employee!['position']);
+      }
+
       state = state.copyWith(isLoading: false, isLoggedIn: true, response: response);
     } catch (e) {
       String errorMessage;
@@ -111,6 +132,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     await secureStorage.delete(key: 'auth_token');
     await secureStorage.delete(key: 'expires_at');
+    // Limpiar información del usuario y empleado
+    await sharedPreferences.remove('user_id');
+    await sharedPreferences.remove('user_name');
+    await sharedPreferences.remove('user_email');
+    await sharedPreferences.remove('employee_id');
+    await sharedPreferences.remove('employee_document_type');
+    await sharedPreferences.remove('employee_document_number');
+    await sharedPreferences.remove('employee_first_name');
+    await sharedPreferences.remove('employee_last_name');
+    await sharedPreferences.remove('employee_position');
     state = state.copyWith(isLoggedIn: false, response: null);
   }
 }
@@ -118,5 +149,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final loginUseCase = ref.watch(loginUseCaseProvider);
   final secureStorage = ref.watch(secureStorageProvider);
-  return AuthNotifier(loginUseCase, secureStorage);
+  final sharedPreferences = ref.watch(sharedPreferencesProvider);
+  return AuthNotifier(loginUseCase, secureStorage, sharedPreferences);
 });

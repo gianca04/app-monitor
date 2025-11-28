@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 // Constantes de diseño Industrial
-const Color _kBackgroundColor = Color(0xFF1F1F1F); // Fondo oscuro industrial
-const Color _kBorderColor = Colors.white12; // Borde sutil
-const Color _kAccentColor = Colors.amber; // Acento industrial
-const double _kRadius = 4.0; // Radio casi recto
+const Color _kBackgroundColor = Color(0xFF1F1F1F);
+const Color _kBorderColor = Colors.white12;
+const Color _kAccentColor = Colors.amber;
+const double _kRadius = 4.0;
 
 class ModernBottomModal extends StatelessWidget {
   final String? title;
@@ -20,92 +20,92 @@ class ModernBottomModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Envolvemos el contenido en un Theme local para forzar el estilo de Inputs y Dividers
-    // sin que el desarrollador tenga que estilar cada widget manualmente.
-    return Theme(
-      data: Theme.of(context).copyWith(
-        brightness: Brightness.dark,
-        dividerColor: Colors.white10, // Regla: Separadores Colors.white10
-        inputDecorationTheme: const InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.black12,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          // Regla: Inputs OutlineInputBorder con borde gris suave
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(_kRadius)),
-            borderSide: BorderSide(color: Colors.grey), 
-          ),
-          // Regla: Al enfocar, borde Ámbar
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(_kRadius)),
-            borderSide: BorderSide(color: _kAccentColor, width: 2),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(_kRadius)),
-          ),
-        ),
+    // Calculamos la altura disponible para no tapar la status bar
+    final double maxScreenHeight = MediaQuery.of(context).size.height * 0.85;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        padding: const EdgeInsets.all(16.0),
+        // Restricción: El modal se adapta al contenido, pero nunca pasa del 85% de la pantalla
+        constraints: BoxConstraints(
+          maxHeight: maxScreenHeight,
+        ),
         decoration: BoxDecoration(
           color: _kBackgroundColor,
-          // Regla: Siempre con Border.all
           border: Border.all(color: _kBorderColor),
-          // Regla: Bordes Rectos o casi rectos (Radius.circular(4))
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(_kRadius),
             topRight: Radius.circular(_kRadius),
           ),
-          // Regla: Sombras Eliminadas (Container no tiene boxShadow por defecto aquí)
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min, // Se encoge al tamaño mínimo del contenido
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Handle for dragging (Estilizado oscuro)
+            // --- HEADER FIJO ---
+            const SizedBox(height: 12),
             Center(
               child: Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24, // Gris industrial para el handle
+                  color: Colors.white24,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
             if (title != null) ...[
-              Text(
-                title!,
-                textAlign: TextAlign.start,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white, // Texto claro sobre fondo oscuro
-                      fontSize: 18,
-                    ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Text(
+                  title!,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 18,
+                      ),
+                ),
               ),
               const SizedBox(height: 8),
-              // Regla: Usar Divider(color: Colors.white10) para separar secciones
               const Divider(color: Colors.white10, height: 24),
-            ],
+            ] else
+              const SizedBox(height: 24),
+
+            // --- CONTENIDO SCROLLABLE ---
+            // Flexible permite que esta parte se encoja si sale el teclado
+            // o crezca hasta el límite del constraint.
             Flexible(
               child: SingleChildScrollView(
-                // Ink para asegurar que los efectos InkWell se vean bien sobre el fondo oscuro
-                child: Material(
-                  color: Colors.transparent,
-                  child: content,
+                physics: const ClampingScrollPhysics(), // Scroll "sólido" estilo industrial
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: content,
+                  ),
                 ),
               ),
             ),
+
+            // --- ACCIONES FIJAS AL PIE ---
             if (actions != null && actions!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Divider(color: Colors.white10),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: actions!,
+              const Divider(color: Colors.white10, height: 1),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                // SafeArea inferior para proteger en iPhones sin botón home
+                child: SafeArea(
+                  top: false,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: actions!,
+                  ),
+                ),
               ),
-            ],
+            ] else
+              // Si no hay acciones, añadimos un safe area padding al final del contenido
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
           ],
         ),
       ),
@@ -124,16 +124,11 @@ class ModernBottomModal extends StatelessWidget {
       context: context,
       isDismissible: isDismissible,
       enableDrag: enableDrag,
-      backgroundColor: _kBackgroundColor, // Fondo del modal
-      elevation: 0, // Regla: Sombras eliminadas
-      // Ajustamos el shape del BottomSheet nativo para que coincida con el borde
-      shape: const RoundedRectangleBorder(
-        side: BorderSide(color: _kBorderColor),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(_kRadius),
-          topRight: Radius.circular(_kRadius),
-        ),
-      ),
+      // CLAVE: isScrollControlled permite que el modal crezca según su contenido
+      // y no se limite al 50% de la pantalla por defecto.
+      isScrollControlled: true, 
+      backgroundColor: Colors.transparent, // Lo hacemos transparente porque el Container maneja el fondo
+      elevation: 0,
       builder: (context) => ModernBottomModal(
         title: title,
         content: content,
