@@ -10,6 +10,11 @@ import '../../data/models/work_reports_response.dart';
 import '../../data/datasources/work_reports_datasource.dart';
 import '../../data/repositories/work_reports_repository_impl.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../photos/domain/usecases/create_photo_usecase.dart';
+import '../../../photos/domain/usecases/update_photo_usecase.dart';
+import '../../../photos/domain/usecases/delete_photo_usecase.dart';
+import '../../../photos/data/repositories/photos_repository_impl.dart';
+import '../../../photos/data/datasources/photos_datasource.dart';
 
 // Providers para dependencias
 final dioProvider = Provider((ref) => Dio());
@@ -21,38 +26,73 @@ final createWorkReportUseCaseProvider = Provider((ref) => CreateWorkReportUseCas
 final updateWorkReportUseCaseProvider = Provider((ref) => UpdateWorkReportUseCase(ref.watch(workReportsRepositoryProvider)));
 final deleteWorkReportUseCaseProvider = Provider((ref) => DeleteWorkReportUseCase(ref.watch(workReportsRepositoryProvider)));
 
+// Providers para fotos
+final photosDataSourceProvider = Provider((ref) => PhotosDataSourceImpl(ref.watch(authenticatedDioProvider)));
+final workReportsPhotosRepositoryProvider = Provider((ref) => PhotosRepositoryImpl(ref.watch(photosDataSourceProvider)));
+final createPhotoUseCaseProvider = Provider((ref) => CreatePhotoUseCase(ref.watch(workReportsPhotosRepositoryProvider)));
+final updatePhotoUseCaseProvider = Provider((ref) => UpdatePhotoUseCase(ref.watch(workReportsPhotosRepositoryProvider)));
+final deletePhotoUseCaseProvider = Provider((ref) => DeletePhotoUseCase(ref.watch(workReportsPhotosRepositoryProvider)));
+
 class WorkReportsState {
-  final WorkReportsResponse? response;
+  final List<WorkReport> reports;
   final bool isLoading;
+  final bool isLoadingMore;
   final String? error;
+  final String? search;
   final String? dateFrom;
   final String? dateTo;
+  final String? sortBy;
+  final String? sortOrder;
+  final int? perPage;
+  final int currentPage;
+  final bool hasMorePages;
+  final int? total;
 
   WorkReportsState({
-    this.response,
+    this.reports = const [],
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.error,
+    this.search,
     this.dateFrom,
     this.dateTo,
+    this.sortBy = 'report_date',
+    this.sortOrder = 'asc',
+    this.perPage = 10,
+    this.currentPage = 1,
+    this.hasMorePages = true,
+    this.total,
   });
 
-  List<WorkReport> get reports {
-    return response?.data ?? [];
-  }
-
   WorkReportsState copyWith({
-    WorkReportsResponse? response,
+    List<WorkReport>? reports,
     bool? isLoading,
+    bool? isLoadingMore,
     String? error,
+    String? search,
     String? dateFrom,
     String? dateTo,
+    String? sortBy,
+    String? sortOrder,
+    int? perPage,
+    int? currentPage,
+    bool? hasMorePages,
+    int? total,
   }) {
     return WorkReportsState(
-      response: response ?? this.response,
+      reports: reports ?? this.reports,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: error ?? this.error,
+      search: search ?? this.search,
       dateFrom: dateFrom ?? this.dateFrom,
       dateTo: dateTo ?? this.dateTo,
+      sortBy: sortBy ?? this.sortBy,
+      sortOrder: sortOrder ?? this.sortOrder,
+      perPage: perPage ?? this.perPage,
+      currentPage: currentPage ?? this.currentPage,
+      hasMorePages: hasMorePages ?? this.hasMorePages,
+      total: total ?? this.total,
     );
   }
 }
@@ -75,12 +115,32 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
 
   Future<void> loadWorkReports() async {
     if (mounted) {
-      state = state.copyWith(isLoading: true, error: null);
+      state = state.copyWith(
+        isLoading: true,
+        error: null,
+        reports: [],
+        currentPage: 1,
+        hasMorePages: true,
+      );
     }
     try {
-      final response = await getWorkReportsUseCase(dateFrom: state.dateFrom, dateTo: state.dateTo);
+      final response = await getWorkReportsUseCase(
+        search: state.search,
+        dateFrom: state.dateFrom,
+        dateTo: state.dateTo,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
+        perPage: state.perPage,
+        page: 1,
+      );
       if (mounted) {
-        state = state.copyWith(isLoading: false, response: response);
+        state = state.copyWith(
+          isLoading: false,
+          reports: response.data ?? [],
+          currentPage: 2,
+          hasMorePages: response.pagination?.hasMorePages ?? false,
+          total: response.pagination?.total,
+        );
       }
     } on DioException catch (e) {
       String errorMessage;
@@ -105,6 +165,59 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
         state = state.copyWith(
           isLoading: false,
           error: 'Error al cargar los reportes. Por favor, intenta nuevamente.',
+        );
+      }
+    }
+  }
+
+  Future<void> loadMoreWorkReports() async {
+    if (!mounted || state.isLoadingMore || !state.hasMorePages) return;
+
+    state = state.copyWith(isLoadingMore: true, error: null);
+    try {
+      final response = await getWorkReportsUseCase(
+        search: state.search,
+        dateFrom: state.dateFrom,
+        dateTo: state.dateTo,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
+        perPage: state.perPage,
+        page: state.currentPage,
+      );
+      if (mounted) {
+        final newReports = List<WorkReport>.from(state.reports)
+          ..addAll(response.data ?? []);
+        state = state.copyWith(
+          isLoadingMore: false,
+          reports: newReports,
+          currentPage: state.currentPage + 1,
+          hasMorePages: response.pagination?.hasMorePages ?? false,
+          total: response.pagination?.total,
+        );
+      }
+    } on DioException catch (e) {
+      String errorMessage;
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+      } else if (e.type == DioExceptionType.badResponse) {
+        errorMessage = 'Error del servidor. Inténtalo más tarde.';
+      } else {
+        errorMessage = 'Error al cargar más reportes. Por favor, intenta nuevamente.';
+      }
+      if (mounted) {
+        state = state.copyWith(
+          isLoadingMore: false,
+          error: errorMessage,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(
+          isLoadingMore: false,
+          error: 'Error al cargar más reportes. Por favor, intenta nuevamente.',
         );
       }
     }
@@ -135,7 +248,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     }
   }
 
-  Future<void> updateWorkReport(int id, int? projectId, int? employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature) async {
+  Future<void> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature) async {
     try {
       await updateWorkReportUseCase(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature);
       await loadWorkReports();
@@ -183,9 +296,30 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     }
   }
 
-  void setDateFilter(String? dateFrom, String? dateTo) {
-    state = state.copyWith(dateFrom: dateFrom, dateTo: dateTo);
+  void setFilters({
+    String? search,
+    String? dateFrom,
+    String? dateTo,
+    String? sortBy,
+    String? sortOrder,
+    int? perPage,
+  }) {
+    state = state.copyWith(
+      search: search,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+      perPage: perPage,
+      reports: [],
+      currentPage: 1,
+      hasMorePages: true,
+    );
     loadWorkReports();
+  }
+
+  void setDateFilter(String? dateFrom, String? dateTo) {
+    setFilters(dateFrom: dateFrom, dateTo: dateTo);
   }
 }
 

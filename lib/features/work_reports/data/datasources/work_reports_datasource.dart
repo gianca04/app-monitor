@@ -5,8 +5,13 @@ import 'package:monitor/core/constants/api_constants.dart';
 
 abstract class WorkReportsDataSource {
   Future<WorkReportsResponse> getWorkReports({
+    String? search,
     String? dateFrom,
     String? dateTo,
+    String? sortBy,
+    String? sortOrder,
+    int? perPage,
+    int? page,
   });
   Future<WorkReport> getWorkReport(int id);
   Future<WorkReport> createWorkReport(
@@ -27,8 +32,8 @@ abstract class WorkReportsDataSource {
   );
   Future<WorkReport> updateWorkReport(
     int id,
-    int? projectId,
-    int? employeeId,
+    int projectId,
+    int employeeId,
     String name,
     String reportDate,
     String? startTime,
@@ -65,12 +70,22 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
 
   @override
   Future<WorkReportsResponse> getWorkReports({
+    String? search,
     String? dateFrom,
     String? dateTo,
+    String? sortBy,
+    String? sortOrder,
+    int? perPage,
+    int? page,
   }) async {
     final queryParams = <String, dynamic>{};
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
     if (dateFrom != null) queryParams['date_from'] = dateFrom;
     if (dateTo != null) queryParams['date_to'] = dateTo;
+    if (sortBy != null) queryParams['sort_by'] = sortBy;
+    if (sortOrder != null) queryParams['sort_order'] = sortOrder;
+    if (perPage != null) queryParams['per_page'] = perPage;
+    if (page != null) queryParams['page'] = page;
 
     final response = await dio.get(
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}',
@@ -161,8 +176,8 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
   @override
   Future<WorkReport> updateWorkReport(
     int id,
-    int? projectId,
-    int? employeeId,
+    int projectId,
+    int employeeId,
     String name,
     String reportDate,
     String? startTime,
@@ -186,8 +201,8 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       }
 
       final Map<String, dynamic> mapData = {
-        if (projectId != null) 'project_id': projectId.toString(),
-        if (employeeId != null) 'employee_id': employeeId.toString(),
+        'project_id': projectId.toString(),
+        'employee_id': employeeId.toString(),
         'name': name,
         'report_date': reportDate,
         // APLICAMOS LA CORRECCIÓN AQUÍ:

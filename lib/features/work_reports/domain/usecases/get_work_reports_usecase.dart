@@ -6,7 +6,23 @@ class GetWorkReportsUseCase {
 
   GetWorkReportsUseCase(this.repository);
 
-  Future<WorkReportsResponse> call({String? dateFrom, String? dateTo}) async {
-    return await repository.getWorkReports(dateFrom: dateFrom, dateTo: dateTo);
+  Future<WorkReportsResponse> call({
+    String? search,
+    String? dateFrom,
+    String? dateTo,
+    String? sortBy,
+    String? sortOrder,
+    int? perPage,
+    int? page,
+  }) async {
+    return await repository.getWorkReports(
+      search: search,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+      perPage: perPage,
+      page: page,
+    );
   }
 }

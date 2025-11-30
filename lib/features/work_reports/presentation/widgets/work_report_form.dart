@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'dart:typed_data';
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
-import '../../../photos/presentation/providers/photos_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../employees/presentation/widgets/quick_search_modal.dart';
@@ -671,16 +670,16 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 photo['before_work_photo'] != null,
           )
           .toList();
-      print(
-        'Sending data: projectId: ${_selectedProject!.id}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos',
-      );
+      // print(
+      //   'Sending data: projectId: ${_selectedProject!.id!}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos',
+      // );
       setState(() => _isLoading = true);
       if (widget.report == null) {
         try {
           final newReport = await ref
               .read(workReportsProvider.notifier)
               .createWorkReport(
-                _selectedProject!.id as int,
+                _selectedProject!.id!,
                 int.parse(_employeeIdController.text),
                 _nameController.text,
                 _reportDateController.text,
@@ -707,7 +706,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               );
 
           // Invalidate the individual report provider to force reload
-          ref.invalidate(workReportProvider(newReport.id));
+          ref.invalidate(workReportProvider(newReport.id!));
 
           if (isOnline) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -759,8 +758,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               .read(workReportsProvider.notifier)
               .updateWorkReport(
                 widget.report!.id!,
-                _selectedProject!.id as int,
-                int.parse(_employeeIdController.text),
+                _selectedProject!.id!,
+                _selectedEmployee!.id!,
                 _nameController.text,
                 _reportDateController.text,
                 _startTimeController.text.isEmpty

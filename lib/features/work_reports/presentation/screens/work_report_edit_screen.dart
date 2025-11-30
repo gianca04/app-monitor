@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/work_report_form.dart';
+import '../widgets/work_report_edit_form.dart';
 import '../providers/work_reports_provider.dart';
 
 class WorkReportEditScreen extends ConsumerWidget {
@@ -27,7 +27,7 @@ class WorkReportEditScreen extends ConsumerWidget {
               ? Center(child: Text('Error: ${state.error}'))
               : state.report == null
                   ? const Center(child: Text('Report not found'))
-                  : WorkReportForm(report: state.report!),
+                  : WorkReportEditForm(report: state.report!),
     );
   }
 }

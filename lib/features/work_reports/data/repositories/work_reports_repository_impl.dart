@@ -10,8 +10,24 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
   WorkReportsRepositoryImpl(this.dataSource);
 
   @override
-  Future<WorkReportsResponse> getWorkReports({String? dateFrom, String? dateTo}) async {
-    return await dataSource.getWorkReports(dateFrom: dateFrom, dateTo: dateTo);
+  Future<WorkReportsResponse> getWorkReports({
+    String? search,
+    String? dateFrom,
+    String? dateTo,
+    String? sortBy,
+    String? sortOrder,
+    int? perPage,
+    int? page,
+  }) async {
+    return await dataSource.getWorkReports(
+      search: search,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+      perPage: perPage,
+      page: page,
+    );
   }
 
   @override
@@ -25,7 +41,7 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
   }
 
   @override
-  Future<WorkReport> updateWorkReport(int id, int? projectId, int? employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature) async {
+  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature) async {
     return await dataSource.updateWorkReport(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature);
   }
 

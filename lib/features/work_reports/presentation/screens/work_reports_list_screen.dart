@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:async';
 import '../providers/work_reports_provider.dart';
 import '../widgets/work_report_list_item.dart';
 import '../widgets/reports_empty_state.dart' as empty_state;
@@ -17,18 +18,49 @@ class WorkReportsListScreen extends ConsumerStatefulWidget {
 
 class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  Timer? _debounceTimer;
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchChanged);
+    _scrollController.addListener(_onScroll);
     Future.microtask(
       () => ref.read(workReportsProvider.notifier).loadWorkReports(),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentSearch = ref.read(workReportsProvider).search ?? '';
+    if (_searchController.text != currentSearch) {
+      _searchController.text = currentSearch;
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _scrollController.removeListener(_onScroll);
+    _searchController.dispose();
+    _scrollController.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      ref.read(workReportsProvider.notifier).setFilters(search: _searchController.text);
+    });
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      ref.read(workReportsProvider.notifier).loadMoreWorkReports();
+    }
   }
 
   @override
@@ -65,6 +97,8 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
           style: const TextStyle(color: Color(0xFFE1E4E8)),
         ),
         actions: [
+          // Selector de elementos por página
+          
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: state.isLoading
@@ -90,10 +124,20 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
                     error: state.error,
                   )
                 : ListView.separated(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(15.0),
-                    itemCount: state.reports.length,
+                    itemCount: state.reports.length + (state.isLoadingMore ? 1 : 0),
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
+                      if (index == state.reports.length) {
+                        // Loading indicator at the end
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16.0),
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
                       final report = state.reports[index];
                       return WorkReportListItem(
                         report: report,
@@ -165,15 +209,47 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
     DateTime? selectedTo = currentState.dateTo != null
         ? DateTime.parse(currentState.dateTo!)
         : null;
+    int selectedPerPage = currentState.perPage ?? 10;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('RANGO DE FECHAS'),
+          title: const Text('FILTROS Y CONFIGURACIÓN'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Información de resultados
+              if (currentState.total != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    'Total: ${currentState.total} reportes',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+
+              // Selector de elementos por página
+              DropdownButtonFormField<int>(
+                initialValue: selectedPerPage,
+                decoration: const InputDecoration(
+                  labelText: 'Elementos por página',
+                ),
+                items: [5, 10, 20, 50].map((value) {
+                  return DropdownMenuItem(
+                    value: value,
+                    child: Text('$value'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => selectedPerPage = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Filtros de fecha
               _DateInput(
                 label: 'DESDE',
                 date: selectedFrom,
@@ -194,13 +270,14 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
             ),
             TextButton(
               onPressed: () {
-                ref.read(workReportsProvider.notifier).setDateFilter(
-                      selectedFrom?.toIso8601String().split('T')[0],
-                      selectedTo?.toIso8601String().split('T')[0],
+                ref.read(workReportsProvider.notifier).setFilters(
+                      dateFrom: selectedFrom?.toIso8601String().split('T')[0],
+                      dateTo: selectedTo?.toIso8601String().split('T')[0],
+                      perPage: selectedPerPage,
                     );
                 Navigator.pop(context);
               },
-              child: const Text('FILTRAR'),
+              child: const Text('APLICAR'),
             ),
           ],
         ),
