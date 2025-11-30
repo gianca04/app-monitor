@@ -752,37 +752,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     : _suggestionsController.text,
                 _supervisorSignature,
                 _managerSignature,
-                validPhotos,
               );
-
-          // Update photos separately
-          for (int i = 0; i < _photos.length; i++) {
-            final photo = _photos[i];
-            if (photo['id'] != null) {
-              MultipartFile? photoFile = photo['photo_bytes'] != null
-                  ? MultipartFile.fromBytes(
-                      photo['photo_bytes'],
-                      filename: 'photo.jpg',
-                    )
-                  : null;
-              MultipartFile? beforePhotoFile =
-                  photo['before_work_photo_bytes'] != null
-                  ? MultipartFile.fromBytes(
-                      photo['before_work_photo_bytes'],
-                      filename: 'before.jpg',
-                    )
-                  : null;
-              await ref
-                  .read(photosProvider.notifier)
-                  .updatePhoto(
-                    photo['id'],
-                    photoFile,
-                    photo['descripcion'],
-                    beforePhotoFile,
-                    photo['before_work_descripcion'],
-                  );
-            }
-          }
 
           // Navigate back to the detail screen
           if (mounted) {

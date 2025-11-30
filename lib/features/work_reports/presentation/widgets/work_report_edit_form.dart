@@ -332,7 +332,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             _suggestionsController.text.isEmpty ? null : _suggestionsController.text,
             _supervisorSignature,
             _managerSignature,
-            validPhotos,
           );
 
           // Update photos separately
