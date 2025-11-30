@@ -6,6 +6,8 @@ enum ConnectivityDisplayMode {
   iconOnly,
   textOnly,
   iconAndText,
+  dotOnly,
+  badge,
 }
 
 class ConnectivityIndicator extends StatelessWidget {
@@ -46,6 +48,25 @@ class ConnectivityIndicator extends StatelessWidget {
             const SizedBox(width: 4),
             Text(text, style: TextStyle(color: color)),
           ],
+        );
+      case ConnectivityDisplayMode.dotOnly:
+        Color color = isOnline ? AppTheme.success : AppTheme.error;
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        );
+      case ConnectivityDisplayMode.badge:
+        IconData icon = isOnline ? Icons.wifi : Icons.wifi_off;
+        String label = isOnline ? 'ON' : 'OFF';
+        Color color = isOnline ? AppTheme.success : AppTheme.error;
+        return Badge(
+          label: Text(label, style: TextStyle(color: Colors.white, fontSize: 8)),
+          backgroundColor: color,
+          child: Icon(icon, color: color),
         );
     }
   }

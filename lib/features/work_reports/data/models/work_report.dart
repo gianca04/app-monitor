@@ -218,7 +218,7 @@ class Employee {
       documentNumber: json['document_number'] as String?,
       firstName: json['first_name'] as String?,
       lastName: json['last_name'] as String?,
-      fullName: json['fullName'] as String?,
+      fullName: json['full_name'] as String?,
       position: json['position'] != null ? Position.fromJson(json['position']) : null,
     );
   }

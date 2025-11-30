@@ -87,10 +87,6 @@ class QuickSearchNotifier extends StateNotifier<QuickSearchState> {
   QuickSearchNotifier(this.quickSearchUseCase) : super(QuickSearchState());
 
   Future<void> search(String query) async {
-    if (query.isEmpty) {
-      state = QuickSearchState();
-      return;
-    }
     state = state.copyWith(isLoading: true, error: null);
     try {
       final response = await quickSearchUseCase(query);

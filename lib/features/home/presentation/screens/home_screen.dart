@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:monitor/core/theme_config.dart';
+import '../../../settings/providers/connectivity_preferences_provider.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final connectivityAsync = ref.watch(connectivityStatusProvider);
+    final isOnline = connectivityAsync.maybeWhen(
+      data: (online) => online,
+      orElse: () => false,
+    );
 
     final Color borderColor = AppTheme.border; // Borde suave
     return Scaffold(
@@ -66,7 +74,8 @@ class HomeScreen extends StatelessWidget {
               label: "NUEVO REPORTE",
               icon: Icons.add_circle_outline,
               isPrimary: true,
-              onTap: () {},
+              enabled: isOnline,
+              onTap: isOnline ? () => context.go('/work-reports/create') : null,
             ),
             
             const SizedBox(height: 16),
@@ -227,27 +236,29 @@ class ActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool isPrimary;
-  final VoidCallback onTap;
+  final bool enabled;
+  final VoidCallback? onTap;
 
   const ActionButton({
     super.key,
     required this.label,
     required this.icon,
     required this.isPrimary,
-    required this.onTap,
+    this.enabled = true,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     // Si es primario borde ámbar, si no gris
-    final color = isPrimary ? AppTheme.primaryAccent : AppTheme.textSecondary; 
+    final color = (isPrimary && enabled) ? AppTheme.primaryAccent : AppTheme.textSecondary; 
     
     return Material(
       color: Colors.transparent, // Fondo transparente para ver el borde limpio
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(4),
-        splashColor: color.withOpacity(0.1), // Feedback de color acorde al borde
+        splashColor: enabled ? color.withOpacity(0.1) : null, // Feedback de color acorde al borde
         child: Container(
           height: 56,
           decoration: BoxDecoration(

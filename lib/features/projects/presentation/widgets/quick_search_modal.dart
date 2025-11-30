@@ -13,9 +13,14 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
   final TextEditingController _controller = TextEditingController();
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    // Hacer búsqueda inicial con cadena vacía si el controller está vacío
+    if (_controller.text.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(quickSearchProvider.notifier).search('');
+      });
+    }
   }
 
   @override

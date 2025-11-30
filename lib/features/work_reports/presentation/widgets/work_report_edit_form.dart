@@ -418,6 +418,30 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
               const Divider(color: Colors.white10),
               const SizedBox(height: 24),
 
+              SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kIndAccent,
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kIndRadius)),
+                  ),
+                  child: _isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.black))),
+                            SizedBox(width: 8),
+                            Text('CARGANDO...', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                          ],
+                        )
+                      : const Text('ACTUALIZAR REPORTE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                ),
+              ),
+              const SizedBox(height: 24),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -483,30 +507,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 ],
               ),
 
-              const SizedBox(height: 32),
-
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kIndAccent,
-                    foregroundColor: Colors.black,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kIndRadius)),
-                  ),
-                  child: _isLoading
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.black))),
-                            SizedBox(width: 8),
-                            Text('CARGANDO...', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)),
-                          ],
-                        )
-                      : const Text('ACTUALIZAR REPORTE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)),
-                ),
-              ),
               const SizedBox(height: 32),
             ],
           ),

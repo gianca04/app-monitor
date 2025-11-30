@@ -85,7 +85,9 @@ class _AppLayoutState extends State<AppLayout> {
             ConnectivityDisplayMode mode;
             switch (displayModeIndex) {
               case 0: mode = ConnectivityDisplayMode.iconOnly; break;
-              case 1: mode = ConnectivityDisplayMode.iconAndText; break; // Corregido nombre enum
+              case 1: mode = ConnectivityDisplayMode.iconAndText; break;
+              case 2: mode = ConnectivityDisplayMode.dotOnly; break;
+              case 3: mode = ConnectivityDisplayMode.badge; break;
               default: mode = ConnectivityDisplayMode.iconOnly;
             }
 
@@ -106,6 +108,7 @@ class _AppLayoutState extends State<AppLayout> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
                   children: [
+                    logoWidget,
                     ConnectivityIndicator(
                       mode: mode,
                       showWhenOnline: preferences.showWhenOnline,

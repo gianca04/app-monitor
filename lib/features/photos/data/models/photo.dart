@@ -16,16 +16,16 @@ class Photo {
   factory Photo.fromJson(Map<String, dynamic> json) {
     if (json.containsKey('afterWork')) {
       return Photo(
-        id: json['id'],
-        workReportId: json['workReportId'],
+        id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()),
+        workReportId: json['workReportId'] is int ? json['workReportId'] : int.parse(json['workReportId'].toString()),
         afterWork: AfterWork.fromJson(json['afterWork']),
         beforeWork: BeforeWork.fromJson(json['beforeWork']),
         timestamps: Timestamps.fromJson(json['timestamps']),
       );
     } else {
       return Photo(
-        id: json['id'],
-        workReportId: json['work_report_id'],
+        id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()),
+        workReportId: json['work_report_id'] is int ? json['work_report_id'] : int.parse(json['work_report_id'].toString()),
         afterWork: AfterWork(
           photoPath: json['photo_path'],
           description: json['descripcion'],

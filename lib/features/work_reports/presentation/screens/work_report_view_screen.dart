@@ -95,7 +95,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _SectionHeader(theme: theme, title: 'GENERAL INFORMATION', icon: Icons.info_outline),
+                                _SectionHeader(theme: theme, title: 'INFORMACIÓN GENERAL', icon: Icons.info_outline),
                                 const SizedBox(height: 12),
                                 Text(
                                   state.report!.name?.toUpperCase() ?? 'N/A',
@@ -136,9 +136,9 @@ class WorkReportViewScreen extends ConsumerWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _SectionHeader(theme: theme, title: 'EMPLOYEE', icon: Icons.person_outline),
+                                      _SectionHeader(theme: theme, title: 'SUPERVISOR', icon: Icons.person_outline),
                                       const SizedBox(height: 12),
-                                      _InfoRow(theme: theme, label: 'NAME', value: state.report!.employee?.fullName),
+                                      _InfoRow(theme: theme, label: 'NOMBRE', value: state.report!.employee?.fullName),
                                       const SizedBox(height: 8),
                                       _InfoRow(theme: theme, label: 'POSITION', value: state.report!.employee?.position?.name),
                                     ],
@@ -151,14 +151,14 @@ class WorkReportViewScreen extends ConsumerWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _SectionHeader(theme: theme, title: 'PROJECT', icon: Icons.work_outline),
+                                      _SectionHeader(theme: theme, title: 'PROYECTO', icon: Icons.work_outline),
                                       const SizedBox(height: 12),
-                                      _InfoRow(theme: theme, label: 'NAME', value: state.report!.project?.name),
+                                      _InfoRow(theme: theme, label: 'NOMBRE', value: state.report!.project?.name),
                                       const SizedBox(height: 8),
-                                      _InfoRow(theme: theme, label: 'STATUS', value: state.report!.project?.status),
+                                      _InfoRow(theme: theme, label: 'ESTADO', value: state.report!.project?.status),
                                       if (state.report!.project?.subClient != null) ...[
                                         const SizedBox(height: 8),
-                                        _InfoRow(theme: theme, label: 'CLIENT', value: state.report!.project?.subClient?.name),
+                                        _InfoRow(theme: theme, label: 'CLIENTE', value: state.report!.project?.subClient?.name),
                                       ]
                                     ],
                                   ),
@@ -174,21 +174,21 @@ class WorkReportViewScreen extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _SectionHeader(theme: theme, title: 'RESOURCES & EXECUTION', icon: Icons.construction),
+                                _SectionHeader(theme: theme, title: 'RECURSOS Y EJECUCIÓN', icon: Icons.construction),
                                 const SizedBox(height: 12),
-                                _ResourceBlock(theme: theme, title: 'TOOLS', htmlContent: state.report!.resources?.tools),
+                                _ResourceBlock(theme: theme, title: 'HERRAMIENTAS', htmlContent: state.report!.resources?.tools),
                                 const Divider(color: Colors.white10),
-                                _ResourceBlock(theme: theme, title: 'PERSONNEL', htmlContent: state.report!.resources?.personnel),
+                                _ResourceBlock(theme: theme, title: 'PERSONAL', htmlContent: state.report!.resources?.personnel),
                                 const Divider(color: Colors.white10),
                                 _ResourceBlock(
                                   theme: theme,
-                                  title: 'MATERIALS',
+                                  title: 'MATERIALES',
                                   htmlContent: (state.report!.resources?.materials?.isEmpty ?? true)
-                                      ? 'None'
+                                      ? ''
                                       : state.report!.resources!.materials,
                                 ),
                                 const Divider(color: Colors.white10),
-                                _ResourceBlock(theme: theme, title: 'SUGGESTIONS', htmlContent: state.report!.suggestions),
+                                _ResourceBlock(theme: theme, title: 'SUGERENCIAS', htmlContent: state.report!.suggestions),
                               ],
                             ),
                           ),
@@ -200,7 +200,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 8.0),
                               child: Text(
-                                'ATTACHED PHOTOS (${state.report!.summary?.photosCount ?? 0})',
+                                'EVIDENCIAS (${state.report!.summary?.photosCount ?? 0})',
                                 style: theme.textTheme.bodySmall?.copyWith(letterSpacing: 1.0, fontSize: 12),
                               ),
                             ),
@@ -213,7 +213,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _SectionHeader(theme: theme, title: 'VALIDATION', icon: Icons.verified_user_outlined),
+                                _SectionHeader(theme: theme, title: 'VALIDACIÓN', icon: Icons.verified_user_outlined),
                                 const SizedBox(height: 16),
                                 Row(
                                   children: [
@@ -402,7 +402,7 @@ class _PhotoEntryCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('BEFORE', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                        Text('ANTES', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         Container(
                            decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
@@ -422,7 +422,7 @@ class _PhotoEntryCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('AFTER', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                        Text('DESPUES', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         Container(
                            decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
