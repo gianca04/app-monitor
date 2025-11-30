@@ -5,7 +5,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 // Asegúrate de que las rutas a tus archivos sean correctas
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/settings/providers/connectivity_preferences_provider.dart';
-import '../widgets/connectivity_indicator.dart';
+import '../../features/settings/providers/connectivity_provider.dart';
+import '../../features/settings/presentation/widgets/connectivity_indicator.dart';
 
 class AppLayout extends StatefulWidget {
   final Widget child;
@@ -76,7 +77,7 @@ class _AppLayoutState extends State<AppLayout> {
         title: Consumer(
           builder: (context, ref, child) {
             final preferences = ref.watch(connectivityPreferencesNotifierProvider);
-            final connectivityAsync = ref.watch(connectivityStatusProvider);
+            final connectivityAsync = ref.watch(connectionStatusProvider);
             
             // Lógica de visualización mantenida
             final bool isEnabled = preferences.isEnabled;
@@ -85,7 +86,7 @@ class _AppLayoutState extends State<AppLayout> {
             ConnectivityDisplayMode mode;
             switch (displayModeIndex) {
               case 0: mode = ConnectivityDisplayMode.iconOnly; break;
-              case 1: mode = ConnectivityDisplayMode.iconAndText; break;
+              case 1: mode = ConnectivityDisplayMode.iconWithText; break;
               case 2: mode = ConnectivityDisplayMode.dotOnly; break;
               case 3: mode = ConnectivityDisplayMode.badge; break;
               default: mode = ConnectivityDisplayMode.iconOnly;
@@ -104,7 +105,7 @@ class _AppLayoutState extends State<AppLayout> {
             if (!isEnabled) return logoWidget;
 
             return connectivityAsync.when(
-              data: (isOnline) => Padding(
+              data: (status) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
                   children: [
@@ -112,9 +113,6 @@ class _AppLayoutState extends State<AppLayout> {
                     ConnectivityIndicator(
                       mode: mode,
                       showWhenOnline: preferences.showWhenOnline,
-                      isOnline: isOnline
-                      // Asumiendo que tu widget ConnectivityIndicator maneja 'isOnline' o 'status'
-                      // Ajusta según tu implementación previa (ConnectionStatus)
                     ),
                   ],
                 ),

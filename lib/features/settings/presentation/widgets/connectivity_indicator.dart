@@ -37,8 +37,8 @@ class ConnectivityIndicator extends ConsumerWidget {
         }
         return _buildIndicator(context, status, displayMode);
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: () => _buildIndicator(context, ConnectionStatus.offline, displayMode),
+      error: (_, __) => _buildIndicator(context, ConnectionStatus.offline, displayMode),
     );
   }
 

@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:monitor/core/theme_config.dart';
-import '../../../settings/providers/connectivity_preferences_provider.dart';
+import '../../../settings/providers/connectivity_provider.dart';
+import '../../../settings/services/connectivity_service.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final connectivityAsync = ref.watch(connectivityStatusProvider);
+    final connectivityAsync = ref.watch(connectionStatusProvider);
     final isOnline = connectivityAsync.maybeWhen(
-      data: (online) => online,
+      data: (status) => status == ConnectionStatus.online,
       orElse: () => false,
     );
 
@@ -75,7 +76,16 @@ class HomeScreen extends ConsumerWidget {
               icon: Icons.add_circle_outline,
               isPrimary: true,
               enabled: isOnline,
-              onTap: isOnline ? () => context.go('/work-reports/create') : null,
+              onTap: () async {
+                final connectivity = ref.read(connectionStatusProvider);
+                final isCurrentlyOnline = connectivity.maybeWhen(
+                  data: (status) => status == ConnectionStatus.online,
+                  orElse: () => false,
+                );
+                if (isCurrentlyOnline) {
+                  context.go('/work-reports/create');
+                }
+              },
             ),
             
             const SizedBox(height: 16),
@@ -253,7 +263,7 @@ class ActionButton extends StatelessWidget {
     // Si es primario borde ámbar, si no gris
     final color = (isPrimary && enabled) ? AppTheme.primaryAccent : AppTheme.textSecondary; 
     
-    return Material(
+    final buttonWidget = Material(
       color: Colors.transparent, // Fondo transparente para ver el borde limpio
       child: InkWell(
         onTap: enabled ? onTap : null,
@@ -283,6 +293,15 @@ class ActionButton extends StatelessWidget {
         ),
       ),
     );
+
+    if (!enabled) {
+      return Tooltip(
+        message: "Requiere conexión a internet",
+        child: buttonWidget,
+      );
+    }
+
+    return buttonWidget;
   }
 }
 
