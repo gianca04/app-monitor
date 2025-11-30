@@ -39,6 +39,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   List<Map<String, dynamic>> _photos = [];
 
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -272,8 +274,17 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 Image.memory(_managerSignatureBytes!, height: 100, fit: BoxFit.contain),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _submit,
-                child: Text(widget.report == null ? 'Create' : 'Update'),
+                onPressed: _isLoading ? null : _submit,
+                child: _isLoading
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          CircularProgressIndicator(),
+                          SizedBox(width: 8),
+                          Text('Cargando...'),
+                        ],
+                      )
+                    : Text(widget.report == null ? 'Create' : 'Update'),
               ),
             ],
           ),
@@ -285,6 +296,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       List<Map<String, dynamic>> validPhotos = _photos.where((photo) => photo['id'] != null || photo['photo'] != null || photo['before_work_photo'] != null).toList();
+      setState(() => _isLoading = true);
       if (widget.report == null) {
         try {
           final newReport = await ref.read(workReportsProvider.notifier).createWorkReport(
@@ -313,6 +325,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               SnackBar(content: Text('Error creating work report: $e')),
             );
           }
+        } finally {
+          setState(() => _isLoading = false);
         }
       } else {
         try {
@@ -364,6 +378,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               SnackBar(content: Text('Error updating work report: $e')),
             );
           }
+        } finally {
+          setState(() => _isLoading = false);
         }
       }
     }

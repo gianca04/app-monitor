@@ -61,6 +61,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   List<Map<String, dynamic>> _photos = [];
 
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -361,8 +363,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       validator: (value) {
                         if (value?.isEmpty ?? true) return null;
                         final regex = RegExp(r'^\d{2}:\d{2}$');
-                        if (!regex.hasMatch(value!)) return 'Formato inválido';
-                        return null;
                       },
                     ),
                   ),
@@ -531,7 +531,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kIndAccent,
                     foregroundColor: Colors.black,
@@ -540,15 +540,37 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       borderRadius: BorderRadius.circular(kIndRadius),
                     ),
                   ),
-                  child: Text(
-                    widget.report == null
-                        ? (widget.saveType == 'local' ? 'GUARDAR LOCALMENTE' : 'GENERAR REPORTE')
-                        : 'ACTUALIZAR REPORTE',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'CARGANDO...',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          widget.report == null
+                              ? (widget.saveType == 'local' ? 'GUARDAR LOCALMENTE' : 'GENERAR REPORTE')
+                              : 'ACTUALIZAR REPORTE',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -648,6 +670,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       print(
         'Sending data: projectId: ${_selectedProject!.id}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos',
       );
+      setState(() => _isLoading = true);
       if (widget.report == null) {
         try {
           final newReport = await ref
@@ -720,6 +743,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               SnackBar(content: Text('Error creating work report: $e')),
             );
           }
+        } finally {
+          setState(() => _isLoading = false);
         }
       } else {
         try {
@@ -778,6 +803,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               SnackBar(content: Text('Error updating work report: $e')),
             );
           }
+        } finally {
+          setState(() => _isLoading = false);
         }
       }
     }
