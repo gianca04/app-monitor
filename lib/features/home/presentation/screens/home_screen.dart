@@ -48,15 +48,7 @@ class HomeScreen extends StatelessWidget {
             const SectionTitle(title: "DATOS MAESTROS"),
             const SizedBox(height: 10),
             
-            // Tarjeta de Colaboradores
-            SyncStatusCard(
-              title: "Colaboradores",
-              subtitle: "Total: 14 activos",
-              lastSync: "12/10/2023 14:30",
-              borderColor: borderColor,
-            ),
             
-            const SizedBox(height: 12),
             
             // Tarjeta de Proyectos
             SyncStatusCard(

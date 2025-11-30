@@ -366,6 +366,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
           // Invalidate the individual report provider to force reload
           ref.invalidate(workReportProvider(widget.report!.id!));
+          // Invalidate the list provider to ensure the list is refreshed when returning
+          ref.invalidate(workReportsProvider);
 
           // Navigate back to the detail screen
           if (mounted) {

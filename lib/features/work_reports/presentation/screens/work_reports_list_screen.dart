@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/work_reports_provider.dart';
 import '../widgets/work_report_list_item.dart';
-import '../widgets/offline_banner.dart';
 import '../widgets/reports_empty_state.dart' as empty_state;
 import '../widgets/reports_fab_menu.dart' as fab_menu;
 // import 'package:monitor/core/theme_config.dart'; 
@@ -16,24 +15,20 @@ class WorkReportsListScreen extends ConsumerStatefulWidget {
       _WorkReportsListScreenState();
 }
 
-class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.index = 1; // Default WEB
-    Future.microtask(
-      () => ref.read(workReportsProvider.notifier).loadWorkReports(),
-    );
-  }
+class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(workReportsProvider.notifier).loadWorkReports(),
+    );
   }
 
   @override
@@ -45,28 +40,38 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen>
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('WORK REPORTS'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(49),
-          child: Column(
-            children: [
-              TabBar(
-                controller: _tabController,
-                indicatorColor: colorScheme.primary,
-                labelColor: colorScheme.primary,
-                unselectedLabelColor: colorScheme.onSurface.withOpacity(0.6),
-                tabs: const [Tab(text: 'LOCALES'), Tab(text: 'WEB')],
-                onTap: (index) {
-                  final filter =
-                      index == 0 ? ReportFilter.local : ReportFilter.cloud;
-                  ref.read(workReportsProvider.notifier).setFilter(filter);
-                },
-              ),
-              Container(height: 1, color: colorScheme.outline.withOpacity(0.2)),
-            ],
+        title: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Buscar reportes...',
+            hintStyle: TextStyle(color: const Color(0xFF8B949E)),
+            filled: true,
+            fillColor: const Color(0xFF0D1117),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4.0),
+              borderSide: const BorderSide(color: Color(0xFF30363D)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4.0),
+              borderSide: const BorderSide(color: Color(0xFF30363D)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4.0),
+              borderSide: const BorderSide(color: Color(0xFF6E7681)),
+            ),
+            prefixIcon: const Icon(Icons.search, color: Color(0xFFFFAB00)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
+          style: const TextStyle(color: Color(0xFFE1E4E8)),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: state.isLoading
+                ? null
+                : () => ref.read(workReportsProvider.notifier).loadWorkReports(),
+            tooltip: 'RECARGAR',
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () => _showDateFilterDialog(context, ref),
@@ -80,33 +85,25 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen>
             Center(child: CircularProgressIndicator(color: colorScheme.primary)),
 
           if (!state.isLoading)
-            Column(
-              children: [
-                if (state.isOffline) const OfflineBanner(),
-                Expanded(
-                  child: state.reports.isEmpty
-                      ? empty_state.ReportsEmptyState(
-                          isOffline: state.isOffline,
-                          error: state.error,
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(15.0),
-                          itemCount: state.reports.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final report = state.reports[index];
-                            return WorkReportListItem(
-                              report: report,
-                              onEdit: () => context.go(
-                                '/work-reports/${report.id}/edit',
-                              ),
-                              onDelete: () => _confirmDelete(context, ref, report.id!),
-                            );
-                          },
+            state.reports.isEmpty
+                ? empty_state.ReportsEmptyState(
+                    error: state.error,
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(15.0),
+                    itemCount: state.reports.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final report = state.reports[index];
+                      return WorkReportListItem(
+                        report: report,
+                        onEdit: () => context.go(
+                          '/work-reports/${report.id}/edit',
                         ),
-                ),
-              ],
-            ),
+                        onDelete: () => _confirmDelete(context, ref, report.id!),
+                      );
+                    },
+                  ),
 
           // El FAB ahora es un widget autónomo
           Positioned(
@@ -135,9 +132,19 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen>
             child: const Text('CANCELAR'),
           ),
           TextButton(
-            onPressed: () {
-              ref.read(workReportsProvider.notifier).deleteWorkReport(id);
+            onPressed: () async {
               Navigator.of(context).pop();
+              try {
+                await ref.read(workReportsProvider.notifier).deleteWorkReport(id);
+                // Success, list is reloaded automatically
+              } catch (e) {
+                // Error occurred, show SnackBar
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al eliminar el reporte: $e')),
+                  );
+                }
+              }
             },
             child: Text(
               'ELIMINAR',

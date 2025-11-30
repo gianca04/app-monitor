@@ -23,15 +23,15 @@ class _ReportsFabMenuState extends State<ReportsFabMenu> {
       children: [
         if (_isExpanded) ...[
           _FabOption(
-            icon: Icons.cloud_upload_outlined,
-            label: 'NUBE',
+            icon: Icons.save_as_outlined,
+            label: 'LOCAL',
             onTap: () => context.go('/work-reports/create?type=cloud'),
           ),
           const SizedBox(height: 12),
           _FabOption(
-            icon: Icons.save_as_outlined,
-            label: 'LOCAL',
-            onTap: () => context.go('/work-reports/create?type=local'),
+            icon: Icons.cloud_upload_outlined,
+            label: 'NUBE',
+            onTap: () => context.go('/work-reports/create?type=cloud'),
           ),
           const SizedBox(height: 12),
         ],

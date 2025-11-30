@@ -15,6 +15,7 @@ import '../../../projects/presentation/widgets/quick_search_modal.dart'
     as projects_modal;
 import '../../../projects/data/models/quick_search_response.dart';
 import '../../../settings/providers/connectivity_preferences_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import 'industrial_selector.dart';
 import 'sgnature_box.dart';
 import '../../../../core/theme_config.dart';
@@ -126,6 +127,32 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           'before_work_photo_bytes': null,
         });
       }
+    }
+
+    // Load current user employee if creating new report
+    if (widget.report == null) {
+      Future.microtask(() async {
+        final authNotifier = ref.read(authProvider.notifier);
+        final sharedPreferences = authNotifier.sharedPreferences;
+        final employeeId = sharedPreferences.getInt('employee_id');
+        if (employeeId != null) {
+          final firstName = sharedPreferences.getString('employee_first_name') ?? '';
+          final lastName = sharedPreferences.getString('employee_last_name') ?? '';
+          final documentNumber = sharedPreferences.getString('employee_document_number') ?? '';
+          final position = sharedPreferences.getString('employee_position') ?? '';
+          if (mounted) {
+            setState(() {
+              _selectedEmployee = EmployeeQuick(
+                id: employeeId,
+                fullName: '$firstName $lastName'.trim(),
+                documentNumber: documentNumber,
+                position: position,
+              );
+              _employeeIdController.text = employeeId.toString();
+            });
+          }
+        }
+      });
     }
   }
 
@@ -678,6 +705,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     : _suggestionsController.text,
                 validPhotos,
               );
+
+          // Invalidate the individual report provider to force reload
+          ref.invalidate(workReportProvider(newReport.id));
 
           if (isOnline) {
             ScaffoldMessenger.of(context).showSnackBar(

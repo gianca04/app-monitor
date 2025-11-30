@@ -10,10 +10,6 @@ import '../../features/work_reports/presentation/screens/work_report_edit_screen
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/Positions/presentation/screens/positions_list_screen.dart';
 import '../../features/Positions/presentation/screens/position_form_screen.dart';
-import '../../features/photos/presentation/screens/photos_list_screen.dart';
-import '../../features/photos/presentation/screens/photo_view_screen.dart';
-import '../../features/photos/presentation/screens/photo_create_screen.dart';
-import '../../features/photos/presentation/screens/photo_edit_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 
@@ -84,28 +80,6 @@ GoRouter appRouter(WidgetRef ref) {
             builder: (context, state) {
               final id = int.parse(state.pathParameters['id']!);
               return PositionFormScreen(positionId: id);
-            },
-          ),
-          GoRoute(
-            path: '/photos',
-            builder: (context, state) => const PhotosListScreen(),
-          ),
-          GoRoute(
-            path: '/photos/create',
-            builder: (context, state) => const PhotoCreateScreen(),
-          ),
-          GoRoute(
-            path: '/photos/:id',
-            builder: (context, state) {
-              final id = int.parse(state.pathParameters['id']!);
-              return PhotoViewScreen(id: id);
-            },
-          ),
-          GoRoute(
-            path: '/photos/:id/edit',
-            builder: (context, state) {
-              final id = int.parse(state.pathParameters['id']!);
-              return PhotoEditScreen(id: id);
             },
           ),
           GoRoute(
