@@ -89,6 +89,8 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
   final AsyncValue<bool> connectivityAsync;
   final Box<CachedWorkReport> workReportsBox;
 
+  bool mounted = true;
+
   WorkReportsNotifier(
     this.getWorkReportsUseCase,
     this.createWorkReportUseCase,
@@ -116,7 +118,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
   }
 
   Future<void> loadWorkReports() async {
-    state = state.copyWith(isLoading: true, error: null);
+    if (mounted) state = state.copyWith(isLoading: true, error: null);
     try {
       final isOnline = connectivityAsync.maybeWhen(
         data: (online) => online,
@@ -130,7 +132,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
             .map((cached) => WorkReport.fromJson(cached.json))
             .toList();
         final response = WorkReportsResponse(data: cachedReports, meta: null);
-        state = state.copyWith(isLoading: false, response: response, isOffline: true);
+        if (mounted) state = state.copyWith(isLoading: false, response: response, isOffline: true);
         return;
       }
 
@@ -148,7 +150,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
           final cached = CachedWorkReport(id: report.id ?? 0, jsonString: jsonEncode(report.toJson()), isPending: false, isLocal: false);
           await workReportsBox.put(report.id, cached);
         }
-        state = state.copyWith(isLoading: false, response: response, isOffline: false);
+        if (mounted) state = state.copyWith(isLoading: false, response: response, isOffline: false);
       } catch (serverError) {
         // Error del servidor: intentar cargar desde cache local como fallback
         final cachedReports = workReportsBox.values
@@ -159,7 +161,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
         if (cachedReports.isNotEmpty) {
           // Hay datos en cache: mostrarlos con mensaje informativo
           final response = WorkReportsResponse(data: cachedReports, meta: null);
-          state = state.copyWith(
+          if (mounted) state = state.copyWith(
             isLoading: false,
             response: response,
             error: 'No se pudo conectar al servidor. Mostrando datos locales guardados.',
@@ -167,7 +169,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
           );
         } else {
           // No hay datos en cache: mostrar error
-          state = state.copyWith(
+          if (mounted) state = state.copyWith(
             isLoading: false,
             error: 'No hay conexión al servidor y no hay datos locales disponibles.',
             isOffline: true,
@@ -176,7 +178,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
       }
     } catch (e) {
       // Error crítico (ej: problema con Hive)
-      state = state.copyWith(
+      if (mounted) state = state.copyWith(
         isLoading: false,
         error: 'Error al cargar los reportes. Por favor, intenta nuevamente.',
       );
@@ -222,7 +224,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
       // Reload the list to get updated data
       await loadWorkReports();
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      if (mounted) state = state.copyWith(error: e.toString());
     }
   }
 
@@ -232,7 +234,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
       // Reload the list to get updated data
       await loadWorkReports();
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      if (mounted) state = state.copyWith(error: e.toString());
     }
   }
 
@@ -253,7 +255,9 @@ final workReportsProvider = StateNotifierProvider<WorkReportsNotifier, WorkRepor
   final deleteUseCase = ref.watch(deleteWorkReportUseCaseProvider);
   final connectivityAsync = ref.watch(connectivityStatusProvider);
   final box = ref.watch(workReportsBoxProvider);
-  return WorkReportsNotifier(getUseCase, createUseCase, updateUseCase, deleteUseCase, connectivityAsync, box);
+  final notifier = WorkReportsNotifier(getUseCase, createUseCase, updateUseCase, deleteUseCase, connectivityAsync, box);
+  ref.onDispose(() => notifier.mounted = false);
+  return notifier;
 });
 
 // Provider para un reporte individual

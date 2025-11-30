@@ -633,31 +633,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         isOnline = actualOnline;
       }
 
-      // Validate photos
-      for (int i = 0; i < _photos.length; i++) {
-        final photo = _photos[i];
-        if (photo['photo'] != null &&
-            (photo['descripcion'] == null || photo['descripcion'].isEmpty)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Description is required for photo ${i + 1}'),
-            ),
-          );
-          return;
-        }
-        if (photo['before_work_photo'] != null &&
-            (photo['before_work_descripcion'] == null ||
-                photo['before_work_descripcion'].isEmpty)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Before work description is required for photo ${i + 1}',
-              ),
-            ),
-          );
-          return;
-        }
-      }
+      // Validate photos - descriptions are not required
+      // Removed validation for photo descriptions
 
       List<Map<String, dynamic>> validPhotos = _photos
           .where(
