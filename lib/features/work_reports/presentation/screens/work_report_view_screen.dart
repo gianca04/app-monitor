@@ -257,7 +257,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        'CREATED: ${state.report!.timestamps?.createdAt ?? '-'}',
+                                        'CREADO: ${state.report!.timestamps?.createdAt ?? '-'}',
                                         style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.5)),
                                         overflow: TextOverflow.ellipsis,
                                         maxLines: 1,

@@ -28,7 +28,7 @@ class SettingsScreen extends ConsumerWidget {
       backgroundColor: kIndustrialBg, // Fondo Oscuro Industrial
       appBar: AppBar(
         title: const Text(
-          'SETTINGS',
+          'AJUSTES',
           style: TextStyle(
             letterSpacing: 1.0,
             fontSize: 16,
