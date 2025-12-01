@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:typed_data';
+import 'industrial_signature_dialog.dart';
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
@@ -135,10 +136,14 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         final sharedPreferences = authNotifier.sharedPreferences;
         final employeeId = sharedPreferences.getInt('employee_id');
         if (employeeId != null) {
-          final firstName = sharedPreferences.getString('employee_first_name') ?? '';
-          final lastName = sharedPreferences.getString('employee_last_name') ?? '';
-          final documentNumber = sharedPreferences.getString('employee_document_number') ?? '';
-          final position = sharedPreferences.getString('employee_position') ?? '';
+          final firstName =
+              sharedPreferences.getString('employee_first_name') ?? '';
+          final lastName =
+              sharedPreferences.getString('employee_last_name') ?? '';
+          final documentNumber =
+              sharedPreferences.getString('employee_document_number') ?? '';
+          final position =
+              sharedPreferences.getString('employee_position') ?? '';
           if (mounted) {
             setState(() {
               _selectedEmployee = EmployeeQuick(
@@ -172,26 +177,83 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   }
 
   Future<void> _pickImage(bool isSupervisor) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    // Llamada limpia usando el método estático del Sheet
+    final Uint8List? signatureBytes = await IndustrialSignatureSheet.show(
+      context,
+      title: isSupervisor ? 'FIRMA DEL SUPERVISOR' : 'FIRMA GERENCIA / CLIENTE',
+    );
 
-    if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
+    // Lógica de negocio (Guardado)
+    if (signatureBytes != null) {
       final multipartFile = MultipartFile.fromBytes(
-        bytes,
-        filename: pickedFile.name,
+        signatureBytes,
+        filename: isSupervisor
+            ? 'supervisor_signature.png'
+            : 'manager_signature.png',
       );
 
       setState(() {
         if (isSupervisor) {
           _supervisorSignature = multipartFile;
-          _supervisorSignatureBytes = bytes;
+          _supervisorSignatureBytes = signatureBytes;
         } else {
           _managerSignature = multipartFile;
-          _managerSignatureBytes = bytes;
+          _managerSignatureBytes = signatureBytes;
         }
       });
     }
+  }
+
+  Widget _buildSignaturePreview(
+    String label,
+    Uint8List? bytes,
+    VoidCallback onRetake,
+  ) {
+    if (bytes == null) return const SizedBox(); // O un placeholder
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 4),
+        Container(
+          height: 120,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color:
+                Colors.white, // Fondo blanco para ver bien la firma negra/azul
+            border: Border.all(
+              color: AppTheme.success,
+            ), // Verde indicando "Firmado"
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Stack(
+            children: [
+              Center(child: Image.memory(bytes)),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: InkWell(
+                  onTap: onRetake,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   void _addPhoto() {
@@ -272,7 +334,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             padding: const EdgeInsets.all(16.0),
             children: [
               // --- SECTION 1: CONTEXT ---
-              _buildSectionHeader('CONTEXTO OPERATIVO'),
+              _buildSectionHeader(
+                Theme.of(context),
+                title: 'CONTEXTO OPERATIVO',
+                icon: Icons.location_on,
+              ),
               const SizedBox(height: 12),
 
               // Project Selector
@@ -328,7 +394,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               const SizedBox(height: 24),
 
               // --- SECTION 2: REPORT DETAILS ---
-              _buildSectionHeader('DETALLES DEL REPORTE'),
+              _buildSectionHeader(
+                Theme.of(context),
+                title: 'DETALLES DEL REPORTE',
+                icon: Icons.description,
+              ),
               const SizedBox(height: 12),
 
               TextFormField(
@@ -351,9 +421,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     child: TextFormField(
                       controller: _reportDateController,
                       readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'FECHA',
-                      ),
+                      decoration: const InputDecoration(labelText: 'FECHA'),
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
@@ -362,7 +430,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                           lastDate: DateTime(2101),
                         );
                         if (picked != null) {
-                          _reportDateController.text = picked.toIso8601String().split('T')[0];
+                          _reportDateController.text = picked
+                              .toIso8601String()
+                              .split('T')[0];
                         }
                       },
                       validator: (value) {
@@ -376,14 +446,17 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     child: TextFormField(
                       controller: _startTimeController,
                       readOnly: true,
-                      decoration: const InputDecoration(labelText: 'INICIO (HH:mm)'),
+                      decoration: const InputDecoration(
+                        labelText: 'INICIO (HH:mm)',
+                      ),
                       onTap: () async {
                         final picked = await showTimePicker(
                           context: context,
                           initialTime: TimeOfDay.now(),
                         );
                         if (picked != null) {
-                          _startTimeController.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          _startTimeController.text =
+                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
                         }
                       },
                       validator: (value) {
@@ -397,14 +470,17 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     child: TextFormField(
                       controller: _endTimeController,
                       readOnly: true,
-                      decoration: const InputDecoration(labelText: 'FIN (HH:mm)'),
+                      decoration: const InputDecoration(
+                        labelText: 'FIN (HH:mm)',
+                      ),
                       onTap: () async {
                         final picked = await showTimePicker(
                           context: context,
                           initialTime: TimeOfDay.now(),
                         );
                         if (picked != null) {
-                          _endTimeController.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          _endTimeController.text =
+                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
                         }
                       },
                       validator: (value) {
@@ -432,7 +508,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               const SizedBox(height: 24),
 
               // --- SECTION 3: RESOURCES ---
-              _buildSectionHeader('RECURSOS UTILIZADOS'),
+              _buildSectionHeader(
+                Theme.of(context),
+                title: 'RECURSOS UTILIZADOS',
+                icon: Icons.build,
+              ),
               const SizedBox(height: 12),
 
               TextFormField(
@@ -479,7 +559,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildSectionHeader('EVIDENCIA FOTOGRÁFICA'),
+                  _buildSectionHeader(
+                    Theme.of(context),
+                    title: 'EVIDENCIA FOTOGRÁFICA',
+                    icon: Icons.photo,
+                  ),
                   TextButton.icon(
                     onPressed: _addPhoto,
                     icon: const Icon(Icons.add, size: 16, color: kIndAccent),
@@ -528,29 +612,40 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               const Divider(color: Colors.white10),
               const SizedBox(height: 24),
 
-              // --- SECTION 5: VALIDATION ---
-              _buildSectionHeader('VALIDACIÓN Y FIRMAS'),
+              // ... dentro de tu build ...
+              _buildSectionHeader(
+                Theme.of(context),
+                title: 'VALIDACIÓN Y FIRMAS',
+                icon: Icons.edit,
+              ), // Asumo que este widget ya lo tienes estilizado
               const SizedBox(height: 12),
 
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Slot Supervisor
                   Expanded(
                     child: SignatureBox(
                       title: 'SUPERVISOR',
-                      bytes: _supervisorSignatureBytes,
-                      onTap: () => _pickImage(true),
+                      bytes:
+                          _supervisorSignatureBytes, // Variable de estado Uint8List?
+                      onTap: () => _pickImage(true), // true = es supervisor
                     ),
                   ),
-                  const SizedBox(width: 12),
+
+                  const SizedBox(width: 12), // Separación industrial
+                  // Slot Gerencia
                   Expanded(
                     child: SignatureBox(
                       title: 'GERENCIA / CLIENTE',
-                      bytes: _managerSignatureBytes,
-                      onTap: () => _pickImage(false),
+                      bytes:
+                          _managerSignatureBytes, // Variable de estado Uint8List?
+                      onTap: () =>
+                          _pickImage(false), // false = es gerente/cliente
                     ),
                   ),
                 ],
-              ),
+              ), // --- SECTION 5: VALIDATION ---
 
               const SizedBox(height: 32),
 
@@ -575,7 +670,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.black,
+                                ),
                               ),
                             ),
                             SizedBox(width: 8),
@@ -590,7 +687,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                         )
                       : Text(
                           widget.report == null
-                              ? (widget.saveType == 'local' ? 'GUARDAR LOCALMENTE' : 'GENERAR REPORTE')
+                              ? (widget.saveType == 'local'
+                                    ? 'GUARDAR LOCALMENTE'
+                                    : 'GENERAR REPORTE')
                               : 'ACTUALIZAR REPORTE',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
@@ -608,15 +707,25 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   }
 
   // --- Helper: Títulos de Sección ---
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: kIndAccent,
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.5,
-      ),
+  Widget _buildSectionHeader(
+    ThemeData theme, {
+    required String title,
+    IconData? icon,
+  }) {
+    return Row(
+      children: [
+        if (icon != null) Icon(icon, color: kIndAccent, size: 16),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            color: kIndAccent,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ],
     );
   }
 
@@ -648,7 +757,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       if (widget.saveType == 'cloud') {
         if (!actualOnline) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No hay conexión para guardar en la nube')),
+            const SnackBar(
+              content: Text('No hay conexión para guardar en la nube'),
+            ),
           );
           return;
         }

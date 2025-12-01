@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:typed_data';
+import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
+import 'dart:ui' as ui;
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
@@ -125,23 +127,54 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   }
 
   Future<void> _pickImage(bool isSupervisor) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final GlobalKey<SfSignaturePadState> signaturePadKey = GlobalKey();
 
-    if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
-      final multipartFile = MultipartFile.fromBytes(bytes, filename: pickedFile.name);
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(isSupervisor ? 'Firma del Supervisor' : 'Firma de Gerencia / Cliente'),
+        content: SizedBox(
+          height: 300,
+          width: 300,
+          child: SfSignaturePad(
+            key: signaturePadKey,
+            backgroundColor: Colors.white,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              signaturePadKey.currentState?.clear();
+            },
+            child: const Text('Limpiar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final image = await signaturePadKey.currentState!.toImage();
+              final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+              final bytes = byteData!.buffer.asUint8List();
+              final multipartFile = MultipartFile.fromBytes(
+                bytes,
+                filename: 'signature.png',
+              );
 
-      setState(() {
-        if (isSupervisor) {
-          _supervisorSignature = multipartFile;
-          _supervisorSignatureBytes = bytes;
-        } else {
-          _managerSignature = multipartFile;
-          _managerSignatureBytes = bytes;
-        }
-      });
-    }
+              setState(() {
+                if (isSupervisor) {
+                  _supervisorSignature = multipartFile;
+                  _supervisorSignatureBytes = bytes;
+                } else {
+                  _managerSignature = multipartFile;
+                  _managerSignatureBytes = bytes;
+                }
+              });
+
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _addPhoto() {
@@ -266,7 +299,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           child: ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              _buildSectionHeader('CONTEXTO OPERATIVO'),
+              _buildSectionHeader(
+                Theme.of(context),
+                title: 'CONTEXTO OPERATIVO',
+                icon: Icons.location_on,
+              ),
               const SizedBox(height: 12),
 
               IndustrialSelector(
@@ -313,7 +350,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
               const Divider(color: Colors.white10),
               const SizedBox(height: 24),
 
-              _buildSectionHeader('DETALLES DEL REPORTE'),
+              _buildSectionHeader(
+                Theme.of(context),
+                title: 'DETALLES DEL REPORTE',
+                icon: Icons.description,
+              ),
               const SizedBox(height: 12),
 
               TextFormField(
@@ -387,7 +428,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
               const Divider(color: Colors.white10),
               const SizedBox(height: 24),
 
-              _buildSectionHeader('RECURSOS UTILIZADOS'),
+              _buildSectionHeader(
+                Theme.of(context),
+                title: 'RECURSOS UTILIZADOS',
+                icon: Icons.build,
+              ),
               const SizedBox(height: 12),
 
               TextFormField(
@@ -445,7 +490,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildSectionHeader('EVIDENCIA FOTOGRÁFICA'),
+                  _buildSectionHeader(
+                    Theme.of(context),
+                    title: 'EVIDENCIA FOTOGRÁFICA',
+                    icon: Icons.photo,
+                  ),
                   TextButton.icon(
                     onPressed: _addPhoto,
                     icon: const Icon(Icons.add, size: 16, color: kIndAccent),
@@ -484,10 +533,15 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
               const Divider(color: Colors.white10),
               const SizedBox(height: 24),
 
-              _buildSectionHeader('VALIDACIÓN Y FIRMAS'),
+              _buildSectionHeader(
+                Theme.of(context),
+                title: 'VALIDACIÓN Y FIRMAS',
+                icon: Icons.edit,
+              ),
               const SizedBox(height: 12),
 
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: SignatureBox(
@@ -515,10 +569,21 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(color: kIndAccent, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+  Widget _buildSectionHeader(ThemeData theme, {required String title, IconData? icon}) {
+    return Row(
+      children: [
+        if (icon != null) Icon(icon, color: kIndAccent, size: 16),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            color: kIndAccent,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ],
     );
   }
 

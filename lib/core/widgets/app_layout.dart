@@ -76,29 +76,39 @@ class _AppLayoutState extends State<AppLayout> {
         ),
         title: Consumer(
           builder: (context, ref, child) {
-            final preferences = ref.watch(connectivityPreferencesNotifierProvider);
+            final preferences = ref.watch(
+              connectivityPreferencesNotifierProvider,
+            );
             final connectivityAsync = ref.watch(connectionStatusProvider);
-            
+
             // Lógica de visualización mantenida
             final bool isEnabled = preferences.isEnabled;
             final int displayModeIndex = preferences.displayMode;
-            
+
             ConnectivityDisplayMode mode;
             switch (displayModeIndex) {
-              case 0: mode = ConnectivityDisplayMode.iconOnly; break;
-              case 1: mode = ConnectivityDisplayMode.iconWithText; break;
-              case 2: mode = ConnectivityDisplayMode.dotOnly; break;
-              case 3: mode = ConnectivityDisplayMode.badge; break;
-              default: mode = ConnectivityDisplayMode.iconOnly;
+              case 0:
+                mode = ConnectivityDisplayMode.iconOnly;
+                break;
+              case 1:
+                mode = ConnectivityDisplayMode.iconWithText;
+                break;
+              case 2:
+                mode = ConnectivityDisplayMode.dotOnly;
+                break;
+              case 3:
+                mode = ConnectivityDisplayMode.badge;
+                break;
+              default:
+                mode = ConnectivityDisplayMode.iconOnly;
             }
 
             Widget logoWidget = Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SvgPicture.asset(
                 'assets/images/svg/logo.svg',
-                height: 24, width: 24,
-                // Color filter opcional si el logo no contrasta
-                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                height: 24,
+                width: 24,
               ),
             );
 
@@ -131,7 +141,7 @@ class _AppLayoutState extends State<AppLayout> {
         ],
       ),
       body: widget.child,
-      
+
       // Reemplazo de SalomonBottomBar por implementación Industrial
       bottomNavigationBar: _IndustrialBottomBar(
         currentIndex: _selectedIndex,
@@ -140,7 +150,10 @@ class _AppLayoutState extends State<AppLayout> {
         borderColor: _kBorderColor,
         items: [
           _IndustrialBarItem(icon: Icons.grid_view, label: "INICIO"),
-          _IndustrialBarItem(icon: Icons.table_chart_outlined, label: "REPORTES"),
+          _IndustrialBarItem(
+            icon: Icons.table_chart_outlined,
+            label: "REPORTES",
+          ),
           _IndustrialBarItem(icon: Icons.person_outline, label: "PERFIL"),
           _IndustrialBarItem(icon: Icons.tune, label: "AJUSTES"),
         ],
@@ -184,7 +197,7 @@ class _IndustrialBottomBar extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           // Añadimos MainAxisSize.min para asegurar que la fila no intente crecer verticalmente
-          mainAxisSize: MainAxisSize.min, 
+          mainAxisSize: MainAxisSize.min,
           children: items.asMap().entries.map((entry) {
             final int index = entry.key;
             final _IndustrialBarItem item = entry.value;
@@ -200,9 +213,14 @@ class _IndustrialBottomBar extends StatelessWidget {
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? activeColor.withOpacity(0.1) : Colors.transparent,
+                    color: isSelected
+                        ? activeColor.withOpacity(0.1)
+                        : Colors.transparent,
                     border: isSelected
                         ? Border.all(color: activeColor)
                         : Border.all(color: Colors.transparent),
@@ -225,7 +243,7 @@ class _IndustrialBottomBar extends StatelessWidget {
                             widthFactor: isSelected ? 1.0 : 0.0,
                             // --- LA CORRECCIÓN CLAVE ESTÁ AQUÍ ---
                             // Forzamos a que la altura sea exactamente la del texto
-                            heightFactor: 1.0, 
+                            heightFactor: 1.0,
                             // -------------------------------------
                             child: Padding(
                               padding: const EdgeInsets.only(left: 8.0),
@@ -256,6 +274,7 @@ class _IndustrialBottomBar extends StatelessWidget {
     );
   }
 }
+
 class _IndustrialBarItem {
   final IconData icon;
   final String label;
@@ -277,7 +296,7 @@ class _ProfileIcon extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Colores del sistema
     final borderColor = Colors.grey.shade700;
-    final menuBgColor = const Color(0xFF1E1E1E); 
+    final menuBgColor = const Color(0xFF1E1E1E);
     final textColor = Colors.white;
 
     return Theme(
@@ -294,7 +313,7 @@ class _ProfileIcon extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.transparent, 
+            color: Colors.transparent,
             border: Border.all(color: borderColor),
             borderRadius: BorderRadius.circular(4),
           ),
@@ -304,7 +323,7 @@ class _ProfileIcon extends ConsumerWidget {
             color: Colors.grey.shade300,
           ),
         ),
-        
+
         // MENÚ FLOTANTE
         elevation: 0,
         offset: const Offset(0, 45),
@@ -312,12 +331,12 @@ class _ProfileIcon extends ConsumerWidget {
           side: BorderSide(color: borderColor, width: 1),
           borderRadius: BorderRadius.circular(4),
         ),
-        
+
         // LÓGICA
         onSelected: (Menu item) {
           switch (item) {
             case Menu.itemOne:
-               GoRouter.of(context).go('/profile');
+              GoRouter.of(context).go('/profile');
               break;
             case Menu.itemTwo:
               GoRouter.of(context).go('/settings');
@@ -327,7 +346,7 @@ class _ProfileIcon extends ConsumerWidget {
               break;
           }
         },
-        
+
         // ITEMS
         itemBuilder: (BuildContext context) => <PopupMenuEntry<Menu>>[
           _buildMenuItem(
@@ -341,7 +360,7 @@ class _ProfileIcon extends ConsumerWidget {
             text: 'CONFIGURACIÓN',
             icon: Icons.settings_outlined,
           ),
-          const PopupMenuDivider(height: 1), 
+          const PopupMenuDivider(height: 1),
           _buildMenuItem(
             value: Menu.itemThree,
             text: 'CERRAR SESIÓN',
@@ -360,13 +379,17 @@ class _ProfileIcon extends ConsumerWidget {
     bool isDestructive = false,
   }) {
     final color = isDestructive ? Colors.redAccent : Colors.white;
-    
+
     return PopupMenuItem<Menu>(
       value: value,
       height: 40,
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color.withOpacity(isDestructive ? 1 : 0.7)),
+          Icon(
+            icon,
+            size: 18,
+            color: color.withOpacity(isDestructive ? 1 : 0.7),
+          ),
           const SizedBox(width: 12),
           Text(
             text,
