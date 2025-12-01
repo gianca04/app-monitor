@@ -22,8 +22,8 @@ final settingsBoxProvider = FutureProvider<Box>((ref) async {
 // Provider for ProjectLocalDataSource
 final projectLocalDataSourceProvider = FutureProvider<ProjectLocalDataSource>((ref) async {
   final projectBox = await ref.watch(projectBoxProvider.future);
-  final settingsBox = await ref.watch(settingsBoxProvider.future);
-  return ProjectLocalDataSourceImpl(projectBox: projectBox, settingsBox: settingsBox);
+  final sharedPreferences = ref.watch(sharedPreferencesProvider);
+  return ProjectLocalDataSourceImpl(projectBox: projectBox, sharedPreferences: sharedPreferences);
 });
 
 // Provider for ProjectRemoteDataSource

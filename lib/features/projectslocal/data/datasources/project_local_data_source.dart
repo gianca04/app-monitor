@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/project_hive_model.dart';
 
@@ -11,9 +12,12 @@ abstract class ProjectLocalDataSource {
 
 class ProjectLocalDataSourceImpl implements ProjectLocalDataSource {
   final Box<ProjectHiveModel> projectBox;
-  final Box settingsBox; // Una caja pequeña para guardar fechas de config
+  final SharedPreferences sharedPreferences;
 
-  ProjectLocalDataSourceImpl({required this.projectBox, required this.settingsBox});
+  ProjectLocalDataSourceImpl({
+    required this.projectBox,
+    required this.sharedPreferences,
+  });
 
   @override
   Future<void> cacheProject(ProjectHiveModel project) async {
@@ -29,11 +33,11 @@ class ProjectLocalDataSourceImpl implements ProjectLocalDataSource {
 
   @override
   String? getLastSyncTime() {
-    return settingsBox.get('last_sync_at');
+    return sharedPreferences.getString('last_projects_sync');
   }
 
   @override
   Future<void> saveLastSyncTime(String timestamp) async {
-    await settingsBox.put('last_sync_at', timestamp);
+    await sharedPreferences.setString('last_projects_sync', timestamp);
   }
 }

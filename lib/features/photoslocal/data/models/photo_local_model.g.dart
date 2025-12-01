@@ -8,7 +8,7 @@ part of 'photo_local_model.dart';
 
 class PhotoLocalModelAdapter extends TypeAdapter<PhotoLocalModel> {
   @override
-  final int typeId = 0;
+  final int typeId = 4;
 
   @override
   PhotoLocalModel read(BinaryReader reader) {

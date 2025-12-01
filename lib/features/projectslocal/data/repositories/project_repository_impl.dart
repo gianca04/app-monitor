@@ -18,34 +18,35 @@ class ProjectRepositoryImpl implements ProjectRepository {
   @override
   Future<Either<Failure, void>> syncProjects() async {
     try {
-      // 1. Obtener la fecha de la última sincro desde Hive
-      final lastSync = localDataSource.getLastSyncTime();
+      bool hasMore = true;
 
-      // 2. Pedir a Laravel solo los cambios (Delta)
-      // La respuesta incluye data nueva, editada y borrada (soft deleted)
-      final response = await remoteDataSource.getProjectsDiff(lastSync);
+      while (hasMore) {
+        // 1. Obtener la fecha de la última sincro desde Hive
+        final lastSync = localDataSource.getLastSyncTime();
 
-      // 3. Procesar la lista
-      for (var item in response.data) { // item es un Map<String, dynamic>
+        // 2. Pedir a Laravel solo los cambios (Delta)
+        final response = await remoteDataSource.getProjectsDiff(lastSync);
 
-        // A. Verificar si el registro fue borrado en el servidor
-        if (item['deleted_at'] != null) {
-          // Si tiene fecha de borrado, lo eliminamos de Hive
-          await localDataSource.deleteProject(item['id']);
+        // 3. Procesar los deletes
+        if (response.data.delete.isNotEmpty) {
+          for (var item in response.data.delete) {
+            await localDataSource.deleteProject(item['id']);
+          }
         }
-        // B. Si no está borrado, es nuevo o editado
-        else {
-          // Convertimos JSON a Modelo Hive (Solo extrae ID y Name)
-          final projectModel = ProjectHiveModel.fromJson(item);
-          // Guardamos en Hive (Upsert: inserta o actualiza automáticamente)
-          await localDataSource.cacheProject(projectModel);
-        }
-      }
 
-      // 4. Guardar el nuevo timestamp que nos envió Laravel en 'meta'
-      // Esto es crucial para la próxima vez
-      if (response.meta['current_sync_at'] != null) {
-        await localDataSource.saveLastSyncTime(response.meta['current_sync_at']);
+        // 4. Procesar los upserts
+        if (response.data.upsert.isNotEmpty) {
+          for (var item in response.data.upsert) {
+            final projectModel = ProjectHiveModel.fromJson(item);
+            await localDataSource.cacheProject(projectModel);
+          }
+        }
+
+        // 5. Guardar el next_sync_token
+        await localDataSource.saveLastSyncTime(response.syncInfo.nextSyncToken);
+
+        // 6. Decidir si continuar
+        hasMore = response.syncInfo.hasMore;
       }
 
       return Right(null);

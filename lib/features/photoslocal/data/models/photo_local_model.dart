@@ -5,7 +5,7 @@ import 'timestamps_model.dart';
 
 part 'photo_local_model.g.dart';
 
-@HiveType(typeId: 0)
+@HiveType(typeId: 4)
 class PhotoLocalModel extends HiveObject {
   @HiveField(0)
   int? id;

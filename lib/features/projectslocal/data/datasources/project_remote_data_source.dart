@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 
 abstract class ProjectRemoteDataSource {
-  Future<ProjectsDiffResponse> getProjectsDiff(String? lastSync);
+  Future<ProjectsSyncResponse> getProjectsDiff(String? lastSync);
 }
 
 class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
@@ -12,22 +12,71 @@ class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
   ProjectRemoteDataSourceImpl({required this.dio});
 
   @override
-  Future<ProjectsDiffResponse> getProjectsDiff(String? lastSync) async {
+  Future<ProjectsSyncResponse> getProjectsDiff(String? lastSync) async {
     final url = '${ApiConstants.baseUrl}${ApiConstants.projectsSyncEndpoint}';
-    final queryParams = lastSync != null ? {'last_sync_at': lastSync} : null;
+    final queryParams = {'last_sync_at': lastSync ?? '2000-01-01T00:00:00Z'};
 
-    final response = await dio.get(url, queryParameters: queryParams);
+    try {
+      final response = await dio.get(url, queryParameters: queryParams);
+      print('Sincronización exitosa: ${response.data}');
+      return ProjectsSyncResponse.fromJson(response.data);
+    } catch (e) {
+      print('Error en sincronización: $e');
+      rethrow;
+    }
+  }
+}
 
-    return ProjectsDiffResponse(
-      data: List<Map<String, dynamic>>.from(response.data['data']),
-      meta: Map<String, dynamic>.from(response.data['meta']),
+class ProjectsSyncResponse {
+  final bool success;
+  final SyncInfo syncInfo;
+  final SyncData data;
+
+  ProjectsSyncResponse({
+    required this.success,
+    required this.syncInfo,
+    required this.data,
+  });
+
+  factory ProjectsSyncResponse.fromJson(Map<String, dynamic> json) {
+    return ProjectsSyncResponse(
+      success: json['success'] as bool,
+      syncInfo: SyncInfo.fromJson(json['sync_info'] as Map<String, dynamic>),
+      data: SyncData.fromJson(json['data'] as Map<String, dynamic>),
     );
   }
 }
 
-class ProjectsDiffResponse {
-  final List<Map<String, dynamic>> data;
-  final Map<String, dynamic> meta;
+class SyncInfo {
+  final bool hasMore;
+  final String nextSyncToken;
 
-  ProjectsDiffResponse({required this.data, required this.meta});
+  SyncInfo({
+    required this.hasMore,
+    required this.nextSyncToken,
+  });
+
+  factory SyncInfo.fromJson(Map<String, dynamic> json) {
+    return SyncInfo(
+      hasMore: json['has_more'] as bool,
+      nextSyncToken: json['next_sync_token'] as String,
+    );
+  }
+}
+
+class SyncData {
+  final List<Map<String, dynamic>> upsert;
+  final List<Map<String, dynamic>> delete;
+
+  SyncData({
+    required this.upsert,
+    required this.delete,
+  });
+
+  factory SyncData.fromJson(Map<String, dynamic> json) {
+    return SyncData(
+      upsert: List<Map<String, dynamic>>.from(json['upsert'] ?? []),
+      delete: List<Map<String, dynamic>>.from(json['delete'] ?? []),
+    );
+  }
 }
