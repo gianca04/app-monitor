@@ -18,7 +18,7 @@ import '../../../photos/domain/usecases/create_photo_usecase.dart';
 import '../../../photos/domain/usecases/update_photo_usecase.dart';
 import '../../../photos/domain/usecases/delete_photo_usecase.dart';
 import 'industrial_selector.dart';
-import 'sgnature_box.dart';
+import 'signature_box.dart';
 import 'industrial_signature_dialog.dart';
 import '../../../../core/theme_config.dart';
 

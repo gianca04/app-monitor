@@ -17,7 +17,7 @@ import '../../../projects/data/models/quick_search_response.dart';
 import '../../../settings/providers/connectivity_preferences_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'industrial_selector.dart';
-import 'sgnature_box.dart';
+import 'signature_box.dart';
 import '../../../../core/theme_config.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---

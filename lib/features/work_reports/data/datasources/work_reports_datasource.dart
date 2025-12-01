@@ -225,15 +225,7 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       print('✅ [CREATE] Response status: ${response.statusCode}');
 
       final replacedData = _replaceUrls(response.data);
-      final workReport = WorkReport.fromJson(replacedData['data']);
-
-      // Fetch the full work report to ensure photos are included with replaced URLs
-      if (workReport.id != null) {
-        print('🔄 [CREATE] Fetching full work report to load photos');
-        return await getWorkReport(workReport.id!);
-      } else {
-        return workReport;
-      }
+      return WorkReport.fromJson(replacedData['data']);
     } on DioException catch (e) {
       print("❌ [CREATE] ERROR DIO: ${e.message}");
       if (e.response != null) {

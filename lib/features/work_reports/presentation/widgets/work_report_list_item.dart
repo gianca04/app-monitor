@@ -138,7 +138,7 @@ class WorkReportListItem extends StatelessWidget {
                   Row(
                     children: [
                       _IndustrialActionButton(
-                        label: 'EDIT',
+                         // 'EDITAR'
                         icon: Icons.edit_outlined,
                         onTap: onEdit ?? () => context.go('/work-reports/${report.id}/edit'),
                         theme: theme,
@@ -146,7 +146,7 @@ class WorkReportListItem extends StatelessWidget {
                       if (onDelete != null) ...[
                         const SizedBox(width: 8),
                         _IndustrialActionButton(
-                          label: 'DEL', // Abreviado para ahorrar espacio
+                          //label: 'DEL', // Abreviado para ahorrar espacio
                           icon: Icons.delete_outline,
                           onTap: onDelete,
                           color: theme.colorScheme.error,
@@ -225,14 +225,14 @@ class _FooterInfo extends StatelessWidget {
 }
 
 class _IndustrialActionButton extends StatelessWidget {
-  final String label;
+  final String? label;
   final IconData icon;
   final VoidCallback? onTap;
   final Color? color;
   final ThemeData theme;
 
   const _IndustrialActionButton({
-    required this.label,
+    this.label,
     required this.icon,
     required this.theme,
     this.onTap,
@@ -256,15 +256,17 @@ class _IndustrialActionButton extends StatelessWidget {
           child: Row(
             children: [
               Icon(icon, size: 14, color: finalColor),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: finalColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
+              if (label != null) ...[
+                const SizedBox(width: 6),
+                Text(
+                  label!,
+                  style: TextStyle(
+                    color: finalColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
