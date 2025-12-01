@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:monitor/core/theme_config.dart';
 import '../../../settings/providers/connectivity_provider.dart';
 import '../../../settings/services/connectivity_service.dart';
+import '../../../projectslocal/presentation/providers/project_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  String _formatLastSync(String lastSync) {
+    try {
+      final dateTime = DateTime.parse(lastSync);
+      final formatter = DateFormat('dd/MM/yyyy HH:mm');
+      return formatter.format(dateTime);
+    } catch (e) {
+      return lastSync;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,11 +72,36 @@ class HomeScreen extends ConsumerWidget {
             
             
             // Tarjeta de Proyectos
-            SyncStatusCard(
-              title: "Proyectos",
-              subtitle: "Asignados: 3",
-              lastSync: "12/10/2023 09:15",
-              borderColor: borderColor,
+            Consumer(
+              builder: (context, ref, child) {
+                final projectsCountAsync = ref.watch(projectsCountProvider);
+                final lastSyncAsync = ref.watch(lastSyncProvider);
+                final syncState = ref.watch(syncStateProvider);
+
+                final projectsCount = projectsCountAsync.maybeWhen(
+                  data: (count) => count,
+                  orElse: () => 0,
+                );
+
+                final lastSync = lastSyncAsync.maybeWhen(
+                  data: (sync) => sync != null ? _formatLastSync(sync) : 'Nunca',
+                  orElse: () => 'Cargando...',
+                );
+
+                return SyncStatusCard(
+                  title: "Proyectos",
+                  subtitle: "Sincronizados: $projectsCount",
+                  lastSync: lastSync,
+                  borderColor: borderColor,
+                  isLoading: syncState.isLoading,
+                  error: syncState.error,
+                  success: syncState.success,
+                  onSync: () async {
+                    final notifier = ref.read(syncStateProvider.notifier);
+                    await notifier.syncProjects();
+                  },
+                );
+              },
             ),
 
             const SizedBox(height: 32),
@@ -169,6 +206,10 @@ class SyncStatusCard extends StatelessWidget {
   final String subtitle;
   final String lastSync;
   final Color borderColor;
+  final bool isLoading;
+  final String? error;
+  final bool success;
+  final VoidCallback? onSync;
 
   const SyncStatusCard({
     super.key,
@@ -176,6 +217,10 @@ class SyncStatusCard extends StatelessWidget {
     required this.subtitle,
     required this.lastSync,
     required this.borderColor,
+    this.isLoading = false,
+    this.error,
+    this.success = false,
+    this.onSync,
   });
 
   @override
@@ -183,7 +228,7 @@ class SyncStatusCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {},
+        onTap: isLoading ? null : onSync,
         borderRadius: BorderRadius.circular(4),
         child: Container(
           decoration: BoxDecoration(
@@ -198,24 +243,55 @@ class SyncStatusCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 16, 
-                            fontWeight: FontWeight.w600, 
-                            color: AppTheme.textPrimary
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 16, 
+                              fontWeight: FontWeight.w600, 
+                              color: AppTheme.textPrimary
+                            ),
                           ),
-                        ),
-                        Text(
-                          subtitle,
-                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                        ),
-                      ],
+                          Text(
+                            subtitle,
+                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                          ),
+                          if (error != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                error!,
+                                style: const TextStyle(fontSize: 10, color: Colors.redAccent),
+                              ),
+                            ),
+                          if (success)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Sincronización exitosa',
+                                style: TextStyle(fontSize: 10, color: Colors.greenAccent),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                    const Icon(Icons.sync, color: AppTheme.textSecondary),
+                    if (isLoading)
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                        ),
+                      )
+                    else
+                      Icon(
+                        success ? Icons.check_circle : Icons.sync,
+                        color: success ? Colors.greenAccent : AppTheme.textSecondary
+                      ),
                   ],
                 ),
               ),
@@ -227,9 +303,11 @@ class SyncStatusCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.access_time, size: 14, color: AppTheme.textSecondary),
                     const SizedBox(width: 8),
-                    Text(
-                      "Última sinc.: $lastSync",
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    Expanded(
+                      child: Text(
+                        "Última sinc.: $lastSync",
+                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      ),
                     ),
                   ],
                 ),

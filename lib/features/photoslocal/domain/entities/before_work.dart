@@ -1,0 +1,4 @@
+enum BeforeWork {
+  yes,
+  no,
+}

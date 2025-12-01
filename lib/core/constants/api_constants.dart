@@ -6,4 +6,5 @@ class ApiConstants {
   static const String photosEndpoint = '/api/photos';
   static const String employeesEndpoint = '/api/employees';
   static const String projectsEndpoint = '/api/projects';
+  static const String projectsSyncEndpoint = '/api/projects/sync';
 }
