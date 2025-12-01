@@ -509,7 +509,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     onPressed: _addPhoto,
                     icon: const Icon(Icons.add, size: 16, color: kIndAccent),
                     label: const Text(
-                      'AGREGAR FOTO',
+                      'AGREGAR',
                       style: TextStyle(color: kIndAccent),
                     ),
                   ),

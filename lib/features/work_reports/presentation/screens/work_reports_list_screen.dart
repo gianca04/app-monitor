@@ -6,6 +6,7 @@ import '../providers/work_reports_provider.dart';
 import '../widgets/work_report_list_item.dart';
 import '../widgets/reports_empty_state.dart' as empty_state;
 import '../widgets/reports_fab_menu.dart' as fab_menu;
+import 'package:monitor/core/widgets/modern_bottom_modal.dart';
 // import 'package:monitor/core/theme_config.dart'; 
 
 class WorkReportsListScreen extends ConsumerStatefulWidget {
@@ -211,77 +212,75 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
         : null;
     int selectedPerPage = currentState.perPage ?? 10;
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('FILTROS Y CONFIGURACIÓN'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Información de resultados
-              if (currentState.total != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Text(
-                    'Total: ${currentState.total} reportes',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+    ModernBottomModal.show(
+      context,
+      title: 'FILTROS Y CONFIGURACIÓN',
+      content: StatefulBuilder(
+        builder: (context, setState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Información de resultados
+            if (currentState.total != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Text(
+                  'Total: ${currentState.total} reportes',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
+              ),
 
-              // Selector de elementos por página
-              DropdownButtonFormField<int>(
-                initialValue: selectedPerPage,
-                decoration: const InputDecoration(
-                  labelText: 'Elementos por página',
-                ),
-                items: [5, 10, 20, 50].map((value) {
-                  return DropdownMenuItem(
-                    value: value,
-                    child: Text('$value'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => selectedPerPage = value);
-                  }
-                },
+            // Selector de elementos por página
+            DropdownButtonFormField<int>(
+              initialValue: selectedPerPage,
+              decoration: const InputDecoration(
+                labelText: 'Elementos por página',
               ),
-              const SizedBox(height: 16),
-
-              // Filtros de fecha
-              _DateInput(
-                label: 'DESDE',
-                date: selectedFrom,
-                onPick: (d) => setState(() => selectedFrom = d),
-              ),
-              const SizedBox(height: 16),
-              _DateInput(
-                label: 'HASTA',
-                date: selectedTo,
-                onPick: (d) => setState(() => selectedTo = d),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCELAR'),
-            ),
-            TextButton(
-              onPressed: () {
-                ref.read(workReportsProvider.notifier).setFilters(
-                      dateFrom: selectedFrom?.toIso8601String().split('T')[0],
-                      dateTo: selectedTo?.toIso8601String().split('T')[0],
-                      perPage: selectedPerPage,
-                    );
-                Navigator.pop(context);
+              items: [5, 10, 20, 50].map((value) {
+                return DropdownMenuItem(
+                  value: value,
+                  child: Text('$value'),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => selectedPerPage = value);
+                }
               },
-              child: const Text('APLICAR'),
+            ),
+            const SizedBox(height: 16),
+
+            // Filtros de fecha
+            _DateInput(
+              label: 'DESDE',
+              date: selectedFrom,
+              onPick: (d) => setState(() => selectedFrom = d),
+            ),
+            const SizedBox(height: 16),
+            _DateInput(
+              label: 'HASTA',
+              date: selectedTo,
+              onPick: (d) => setState(() => selectedTo = d),
             ),
           ],
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('CANCELAR'),
+        ),
+        TextButton(
+          onPressed: () {
+            ref.read(workReportsProvider.notifier).setFilters(
+                  dateFrom: selectedFrom?.toIso8601String().split('T')[0],
+                  dateTo: selectedTo?.toIso8601String().split('T')[0],
+                  perPage: selectedPerPage,
+                );
+            Navigator.pop(context);
+          },
+          child: const Text('APLICAR'),
+        ),
+      ],
     );
   }
 }

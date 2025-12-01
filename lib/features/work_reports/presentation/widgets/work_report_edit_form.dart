@@ -487,7 +487,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   TextButton.icon(
                     onPressed: _addPhoto,
                     icon: const Icon(Icons.add, size: 16, color: kIndAccent),
-                    label: const Text('AGREGAR FOTO', style: TextStyle(color: kIndAccent)),
+                    label: const Text('AGREGAR', style: TextStyle(color: kIndAccent)),
                   ),
                 ],
               ),

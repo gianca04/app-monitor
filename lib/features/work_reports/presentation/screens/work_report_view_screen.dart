@@ -5,6 +5,7 @@ import 'package:flutter_html/flutter_html.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
 import '../../../../core/widgets/industrial_card.dart';
+import '../../../../core/widgets/modern_bottom_modal.dart';
 
 class WorkReportViewScreen extends ConsumerWidget {
   final int id;
@@ -534,6 +535,86 @@ class _PhotoEntryCard extends StatelessWidget {
   final dynamic photo; // Tipar esto correctamente con tu modelo si es posible
   const _PhotoEntryCard({required this.theme, required this.photo});
 
+  void _showPhotoModal(BuildContext context, String url, String title, String? description) {
+    ModernBottomModal.show(
+      context,
+      title: title,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => _showFullScreenPhoto(context, url, title, description),
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: ImageViewer(url: url),
+            ),
+          ),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Html(
+              data: description,
+              style: {
+                "body": Style(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: FontSize(14),
+                ),
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showFullScreenPhoto(BuildContext context, String url, String title, String? description) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            title: Text(title, style: const TextStyle(color: Colors.white)),
+            leading: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 8.0,
+                  child: Center(
+                    child: ImageViewer(url: url),
+                  ),
+                ),
+              ),
+              if (description != null && description.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.black.withOpacity(0.8),
+                  child: Html(
+                    data: description,
+                    style: {
+                      "body": Style(
+                        color: Colors.white,
+                        fontSize: FontSize(16),
+                      ),
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -580,11 +661,19 @@ class _PhotoEntryCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white10),
+                        GestureDetector(
+                          onTap: () => _showPhotoModal(
+                            context,
+                            photo.beforeWork.photoPath!,
+                            'FOTO ANTES DEL TRABAJO',
+                            photo.beforeWork.description,
                           ),
-                          child: ImageViewer(url: photo.beforeWork.photoPath!),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: ImageViewer(url: photo.beforeWork.photoPath!),
+                          ),
                         ),
                         Html(
                           data: photo.beforeWork.description ?? '',
@@ -617,11 +706,19 @@ class _PhotoEntryCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white10),
+                        GestureDetector(
+                          onTap: () => _showPhotoModal(
+                            context,
+                            photo.afterWork.photoPath!,
+                            'FOTO DESPUÉS DEL TRABAJO',
+                            photo.afterWork.description,
                           ),
-                          child: ImageViewer(url: photo.afterWork.photoPath!),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: ImageViewer(url: photo.afterWork.photoPath!),
+                          ),
                         ),
                         Html(
                           data: photo.afterWork.description ?? '',
