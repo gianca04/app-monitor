@@ -1,11 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:typed_data';
-import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
-import 'dart:ui' as ui;
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
@@ -20,6 +19,7 @@ import '../../../photos/domain/usecases/update_photo_usecase.dart';
 import '../../../photos/domain/usecases/delete_photo_usecase.dart';
 import 'industrial_selector.dart';
 import 'sgnature_box.dart';
+import 'industrial_signature_dialog.dart';
 import '../../../../core/theme_config.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
@@ -55,10 +55,10 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   EmployeeQuick? _selectedEmployee;
   ProjectQuick? _selectedProject;
 
-  MultipartFile? _supervisorSignature;
-  MultipartFile? _managerSignature;
-  Uint8List? _supervisorSignatureBytes;
-  Uint8List? _managerSignatureBytes;
+  String? _supervisorSignature;
+  String? _managerSignature;
+  String? _supervisorSignatureBytes;
+  String? _managerSignatureBytes;
 
   List<Map<String, dynamic>> _photos = [];
 
@@ -108,6 +108,22 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         });
       }
     }
+
+    // Initialize signatures - handle both URLs and base64
+    final supervisorSig = widget.report.signatures?.supervisor;
+    final managerSig = widget.report.signatures?.manager;
+
+    // Store original signatures (could be URLs or base64)
+    _supervisorSignature = supervisorSig;
+    _managerSignature = managerSig;
+
+    // For display, use the same values (SignatureBox now handles both URLs and base64)
+    _supervisorSignatureBytes = supervisorSig;
+    _managerSignatureBytes = managerSig;
+
+    print('🔍 [INIT] Initialized signatures from report:');
+    print('🔍 [INIT] supervisor: ${_supervisorSignature != null ? "${_supervisorSignature!.substring(0, 50)}..." : "null"}');
+    print('🔍 [INIT] manager: ${_managerSignature != null ? "${_managerSignature!.substring(0, 50)}..." : "null"}');
   }
 
   @override
@@ -127,54 +143,27 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   }
 
   Future<void> _pickImage(bool isSupervisor) async {
-    final GlobalKey<SfSignaturePadState> signaturePadKey = GlobalKey();
-
-    await showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(isSupervisor ? 'Firma del Supervisor' : 'Firma de Gerencia / Cliente'),
-        content: SizedBox(
-          height: 300,
-          width: 300,
-          child: SfSignaturePad(
-            key: signaturePadKey,
-            backgroundColor: Colors.white,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              signaturePadKey.currentState?.clear();
-            },
-            child: const Text('Limpiar'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final image = await signaturePadKey.currentState!.toImage();
-              final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-              final bytes = byteData!.buffer.asUint8List();
-              final multipartFile = MultipartFile.fromBytes(
-                bytes,
-                filename: 'signature.png',
-              );
-
-              setState(() {
-                if (isSupervisor) {
-                  _supervisorSignature = multipartFile;
-                  _supervisorSignatureBytes = bytes;
-                } else {
-                  _managerSignature = multipartFile;
-                  _managerSignatureBytes = bytes;
-                }
-              });
-
-              Navigator.of(dialogContext).pop();
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
+    print('🔍 [FORM] Starting _pickImage for ${isSupervisor ? "supervisor" : "manager"}');
+    // Llamada limpia usando el método estático del Sheet
+    final String? signatureBase64 = await IndustrialSignatureSheet.show(
+      context,
+      title: isSupervisor ? 'FIRMA DEL SUPERVISOR' : 'FIRMA GERENCIA / CLIENTE',
     );
+
+    print('🔍 [FORM] Await completed, signatureBase64: ${signatureBase64 != null ? "present (${signatureBase64.length} chars)" : "null"}');
+
+    // Lógica de negocio (Guardado)
+    if (signatureBase64 != null) {
+      setState(() {
+        if (isSupervisor) {
+          _supervisorSignature = signatureBase64;
+          _supervisorSignatureBytes = signatureBase64;
+        } else {
+          _managerSignature = signatureBase64;
+          _managerSignatureBytes = signatureBase64;
+        }
+      });
+    }
   }
 
   void _addPhoto() {
@@ -546,7 +535,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   Expanded(
                     child: SignatureBox(
                       title: 'SUPERVISOR',
-                      bytes: _supervisorSignatureBytes,
+                      base64: _supervisorSignatureBytes,
                       onTap: () => _pickImage(true),
                     ),
                   ),
@@ -554,7 +543,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   Expanded(
                     child: SignatureBox(
                       title: 'GERENCIA / CLIENTE',
-                      bytes: _managerSignatureBytes,
+                      base64: _managerSignatureBytes,
                       onTap: () => _pickImage(false),
                     ),
                   ),
@@ -598,8 +587,13 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         return;
       }
 
+      print('🔍 [SUBMIT] Starting submit with signatures:');
+      print('🔍 [SUBMIT] _supervisorSignature: ${_supervisorSignature != null ? "present (${_supervisorSignature!.length} chars)" : "null"}');
+      print('🔍 [SUBMIT] _managerSignature: ${_managerSignature != null ? "present (${_managerSignature!.length} chars)" : "null"}');
+
       setState(() => _isLoading = true);
       try {
+        print('🔍 [SUBMIT] Calling updateWorkReport...');
         await ref.read(workReportsProvider.notifier).updateWorkReport(
           widget.report.id!,
           _selectedProject!.id!,
@@ -617,6 +611,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           _managerSignature,
         );
 
+        print('✅ [SUBMIT] Update successful');
         ref.invalidate(workReportProvider(widget.report.id!));
         ref.invalidate(workReportsProvider);
 
@@ -624,6 +619,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           context.go('/work-reports/${widget.report.id}');
         }
       } on DioException catch (e) {
+        print('❌ [SUBMIT] DioException: ${e.message}');
         String errorMessage = 'Error updating work report';
         if (e.response?.data != null && e.response!.data['errors'] != null) {
           final errors = e.response!.data['errors'] as Map<String, dynamic>;
@@ -635,6 +631,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
         }
       } catch (e) {
+        print('❌ [SUBMIT] Exception: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating work report: $e')));
         }

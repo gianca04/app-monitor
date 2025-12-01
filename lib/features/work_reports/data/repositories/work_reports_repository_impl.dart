@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../../domain/repositories/work_reports_repository.dart';
 import '../datasources/work_reports_datasource.dart';
 import '../models/work_report.dart';
@@ -36,12 +35,12 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
   }
 
   @override
-  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos) async {
-    return await dataSource.createWorkReport(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, null, null, photos);
+  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos, String? supervisorSignature, String? managerSignature) async {
+    return await dataSource.createWorkReport(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature, photos);
   }
 
   @override
-  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature) async {
+  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, String? supervisorSignature, String? managerSignature) async {
     return await dataSource.updateWorkReport(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature);
   }
 

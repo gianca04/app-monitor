@@ -6,7 +6,6 @@ import '../../domain/usecases/create_work_report_usecase.dart';
 import '../../domain/usecases/update_work_report_usecase.dart';
 import '../../domain/usecases/delete_work_report_usecase.dart';
 import '../../data/models/work_report.dart';
-import '../../data/models/work_reports_response.dart';
 import '../../data/datasources/work_reports_datasource.dart';
 import '../../data/repositories/work_reports_repository_impl.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -223,12 +222,20 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     }
   }
 
-  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos) async {
+  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos, String? supervisorSignature, String? managerSignature) async {
     try {
-      final newReport = await createWorkReportUseCase(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, photos);
+      print('📝 [PROVIDER] Starting createWorkReport with signatures:');
+      print('📝 [PROVIDER] supervisorSignature: ${supervisorSignature != null ? 'present (${supervisorSignature.length} chars)' : 'null'}');
+      print('📝 [PROVIDER] managerSignature: ${managerSignature != null ? 'present (${managerSignature.length} chars)' : 'null'}');
+
+      final newReport = await createWorkReportUseCase(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, photos, supervisorSignature, managerSignature);
+
+      print('✅ [PROVIDER] createWorkReport successful, new report ID: ${newReport.id}');
+
       await loadWorkReports();
       return newReport;
     } on DioException catch (e) {
+      print('❌ [PROVIDER] createWorkReport failed with DioException: ${e.message}');
       String errorMessage;
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
@@ -243,13 +250,18 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
       if (mounted) state = state.copyWith(error: errorMessage);
       rethrow;
     } catch (e) {
+      print('❌ [PROVIDER] createWorkReport failed with error: $e');
       if (mounted) state = state.copyWith(error: 'Error al crear el reporte. Por favor, intenta nuevamente.');
       rethrow;
     }
   }
 
-  Future<void> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature) async {
+  Future<void> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, String? supervisorSignature, String? managerSignature) async {
     try {
+      print('📝 [PROVIDER] Starting updateWorkReport with signatures:');
+      print('📝 [PROVIDER] supervisorSignature: ${supervisorSignature != null ? 'present (${supervisorSignature.length} chars)' : 'null'}');
+      print('📝 [PROVIDER] managerSignature: ${managerSignature != null ? 'present (${managerSignature.length} chars)' : 'null'}');
+
       await updateWorkReportUseCase(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature);
       await loadWorkReports();
     } on DioException catch (e) {

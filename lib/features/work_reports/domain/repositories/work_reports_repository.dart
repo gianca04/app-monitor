@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../../data/models/work_report.dart';
 import '../../data/models/work_reports_response.dart';
 
@@ -13,7 +12,7 @@ abstract class WorkReportsRepository {
     int? page,
   });
   Future<WorkReport> getWorkReport(int id);
-  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos);
-  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, MultipartFile? supervisorSignature, MultipartFile? managerSignature);
+  Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos, String? supervisorSignature, String? managerSignature);
+  Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, String? supervisorSignature, String? managerSignature);
   Future<void> deleteWorkReport(int id);
 }

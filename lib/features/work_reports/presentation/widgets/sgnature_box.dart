@@ -1,23 +1,24 @@
-import 'dart:typed_data';
+import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:monitor/core/theme_config.dart';
 
 class SignatureBox extends StatelessWidget {
   final String title;
-  final Uint8List? bytes;
+  final String? base64;
   final VoidCallback onTap;
 
   const SignatureBox({
     super.key,
     required this.title,
-    required this.bytes,
+    required this.base64,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasSignature = bytes != null;
+    final hasSignature = base64 != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +56,7 @@ class SignatureBox extends StatelessWidget {
                 ),
               ),
               child: hasSignature
-                  ? _buildSignedContent(bytes!)
+                  ? _buildSignedContent(base64!)
                   : _buildEmptyState(theme),
             ),
           ),
@@ -65,18 +66,14 @@ class SignatureBox extends StatelessWidget {
   }
 
   // Estado: FIRMADO
-  Widget _buildSignedContent(Uint8List data) {
+  Widget _buildSignedContent(String data) {
     return Stack(
       children: [
         // La imagen de la firma
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Center(
-            child: Image.memory(
-              data,
-              fit: BoxFit.contain,
-              width: double.infinity,
-            ),
+            child: _buildSignatureImage(data),
           ),
         ),
         // Badge de "Editar" en la esquina
@@ -98,6 +95,77 @@ class SignatureBox extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  // Método para manejar tanto URLs como base64
+  Widget _buildSignatureImage(String data) {
+    print('🖼️ [SIGNATURE_BOX] Building signature image for data: ${data.substring(0, min(50, data.length))}...');
+
+    // Si es una URL (empieza con http/https)
+    if (data.startsWith('http://') || data.startsWith('https://')) {
+      print('🖼️ [SIGNATURE_BOX] Loading as network image: $data');
+      return Image.network(
+        data,
+        fit: BoxFit.contain,
+        width: double.infinity,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            print('🖼️ [SIGNATURE_BOX] Network image loaded successfully');
+            return child;
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ [SIGNATURE_BOX] Error loading network image: $error');
+          print('❌ [SIGNATURE_BOX] Stack trace: $stackTrace');
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.red, size: 32),
+          );
+        },
+      );
+    }
+    // Si es base64 (contiene el prefijo data:image)
+    else if (data.contains('data:image/png;base64,')) {
+      print('🖼️ [SIGNATURE_BOX] Loading as base64 image');
+      try {
+        final bytes = base64Decode(data.split(',').last);
+        print('🖼️ [SIGNATURE_BOX] Base64 decoded successfully, ${bytes.length} bytes');
+        return Image.memory(
+          bytes,
+          fit: BoxFit.contain,
+          width: double.infinity,
+        );
+      } catch (e) {
+        print('❌ [SIGNATURE_BOX] Error decoding base64: $e');
+        // Si falla el decode, mostrar error
+        return const Center(
+          child: Icon(Icons.broken_image, color: Colors.red, size: 32),
+        );
+      }
+    }
+    // Caso por defecto (URL relativa o formato desconocido)
+    else {
+      print('🖼️ [SIGNATURE_BOX] Loading as fallback network image: $data');
+      return Image.network(
+        data,
+        fit: BoxFit.contain,
+        width: double.infinity,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            print('🖼️ [SIGNATURE_BOX] Fallback network image loaded successfully');
+            return child;
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ [SIGNATURE_BOX] Error loading fallback network image: $error');
+          print('❌ [SIGNATURE_BOX] Stack trace: $stackTrace');
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.red, size: 32),
+          );
+        },
+      );
+    }
   }
 
   // Estado: VACÍO (Placeholder)

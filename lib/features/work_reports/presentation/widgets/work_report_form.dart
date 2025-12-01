@@ -55,10 +55,10 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   EmployeeQuick? _selectedEmployee;
   ProjectQuick? _selectedProject;
 
-  MultipartFile? _supervisorSignature;
-  MultipartFile? _managerSignature;
-  Uint8List? _supervisorSignatureBytes;
-  Uint8List? _managerSignatureBytes;
+  String? _supervisorSignature;
+  String? _managerSignature;
+  String? _supervisorSignatureBytes;
+  String? _managerSignatureBytes;
 
   List<Map<String, dynamic>> _photos = [];
 
@@ -178,82 +178,23 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   Future<void> _pickImage(bool isSupervisor) async {
     // Llamada limpia usando el método estático del Sheet
-    final Uint8List? signatureBytes = await IndustrialSignatureSheet.show(
+    final String? signatureBase64 = await IndustrialSignatureSheet.show(
       context,
       title: isSupervisor ? 'FIRMA DEL SUPERVISOR' : 'FIRMA GERENCIA / CLIENTE',
     );
 
     // Lógica de negocio (Guardado)
-    if (signatureBytes != null) {
-      final multipartFile = MultipartFile.fromBytes(
-        signatureBytes,
-        filename: isSupervisor
-            ? 'supervisor_signature.png'
-            : 'manager_signature.png',
-      );
-
+    if (signatureBase64 != null) {
       setState(() {
         if (isSupervisor) {
-          _supervisorSignature = multipartFile;
-          _supervisorSignatureBytes = signatureBytes;
+          _supervisorSignature = signatureBase64;
+          _supervisorSignatureBytes = signatureBase64;
         } else {
-          _managerSignature = multipartFile;
-          _managerSignatureBytes = signatureBytes;
+          _managerSignature = signatureBase64;
+          _managerSignatureBytes = signatureBase64;
         }
       });
     }
-  }
-
-  Widget _buildSignaturePreview(
-    String label,
-    Uint8List? bytes,
-    VoidCallback onRetake,
-  ) {
-    if (bytes == null) return const SizedBox(); // O un placeholder
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: 4),
-        Container(
-          height: 120,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color:
-                Colors.white, // Fondo blanco para ver bien la firma negra/azul
-            border: Border.all(
-              color: AppTheme.success,
-            ), // Verde indicando "Firmado"
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Stack(
-            children: [
-              Center(child: Image.memory(bytes)),
-              Positioned(
-                top: 4,
-                right: 4,
-                child: InkWell(
-                  onTap: onRetake,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Icon(
-                      Icons.edit,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 
   void _addPhoto() {
@@ -461,7 +402,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       },
                       validator: (value) {
                         if (value?.isEmpty ?? true) return null;
-                        final regex = RegExp(r'^\d{2}:\d{2}$');
+                        return null;
                       },
                     ),
                   ),
@@ -623,12 +564,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Slot Supervisor
                   Expanded(
                     child: SignatureBox(
                       title: 'SUPERVISOR',
-                      bytes:
-                          _supervisorSignatureBytes, // Variable de estado Uint8List?
+                      base64:
+                          _supervisorSignatureBytes, // Variable de estado String?
                       onTap: () => _pickImage(true), // true = es supervisor
                     ),
                   ),
@@ -638,8 +578,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                   Expanded(
                     child: SignatureBox(
                       title: 'GERENCIA / CLIENTE',
-                      bytes:
-                          _managerSignatureBytes, // Variable de estado Uint8List?
+                      base64:
+                          _managerSignatureBytes, // Variable de estado String?
                       onTap: () =>
                           _pickImage(false), // false = es gerente/cliente
                     ),
@@ -787,6 +727,10 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       setState(() => _isLoading = true);
       if (widget.report == null) {
         try {
+          print('📝 [FORM] Starting create work report with signatures:');
+          print('📝 [FORM] _supervisorSignature: ${_supervisorSignature != null ? 'present (${_supervisorSignature!.length} chars)' : 'null'}');
+          print('📝 [FORM] _managerSignature: ${_managerSignature != null ? 'present (${_managerSignature!.length} chars)' : 'null'}');
+
           final newReport = await ref
               .read(workReportsProvider.notifier)
               .createWorkReport(
@@ -814,6 +758,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     ? null
                     : _suggestionsController.text,
                 validPhotos,
+                _supervisorSignature,
+                _managerSignature,
               );
 
           // Invalidate the individual report provider to force reload

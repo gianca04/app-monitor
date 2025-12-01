@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
 import 'package:monitor/core/theme_config.dart';
@@ -12,8 +12,9 @@ class IndustrialSignatureSheet extends StatefulWidget {
   const IndustrialSignatureSheet({super.key, required this.title});
 
   // Método estático helper para facilitar la llamada
-  static Future<Uint8List?> show(BuildContext context, {required String title}) {
-    return showModalBottomSheet<Uint8List>(
+  static Future<String?> show(BuildContext context, {required String title}) {
+    print('🔍 [MODAL] Opening signature modal...');
+    return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true, // Vital para que crezca
       backgroundColor: Colors.transparent, // El modal maneja el fondo
@@ -21,7 +22,10 @@ class IndustrialSignatureSheet extends StatefulWidget {
       enableDrag: false, // Mejor false para firmas para evitar cerrar al dibujar
       isDismissible: false,
       builder: (context) => IndustrialSignatureSheet(title: title),
-    );
+    ).then((result) {
+      print('🔍 [MODAL] Modal closed with result: ${result != null ? "present (${result.length} chars)" : "null"}');
+      return result;
+    });
   }
 
   @override
@@ -40,6 +44,7 @@ class _IndustrialSignatureSheetState extends State<IndustrialSignatureSheet> {
       // 1. CONTENT: Solo el área de firma
       content: Container(
         height: 250,
+        width: 250, // Ratio 1:1 para imágenes cuadradas
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: AppTheme.borderHighContrast),
@@ -64,7 +69,7 @@ class _IndustrialSignatureSheetState extends State<IndustrialSignatureSheet> {
                   style: TextStyle(color: Colors.grey.withOpacity(0.5), fontSize: 10),
                 ),
               ),
-              // El Pad
+              // El Pad - Configurado para ratio 1:1
               SfSignaturePad(
                 key: _signaturePadKey,
                 minimumStrokeWidth: 2.0,
@@ -108,13 +113,25 @@ class _IndustrialSignatureSheetState extends State<IndustrialSignatureSheet> {
   }
 
   Future<void> _handleSave() async {
+    print('🔍 [SIGNATURE] Starting signature conversion...');
     // Lógica de conversión
     final data = await _signaturePadKey.currentState!.toImage(pixelRatio: 3.0);
+    print('🔍 [SIGNATURE] Image captured from signature pad');
     final byteData = await data.toByteData(format: ui.ImageByteFormat.png);
 
     if (byteData != null && mounted) {
       final bytes = byteData.buffer.asUint8List();
-      Navigator.of(context).pop(bytes); // Retornamos los bytes al cerrar
+      print('🔍 [SIGNATURE] Bytes length: ${bytes.length}');
+      final base64String = 'data:image/png;base64,${base64Encode(bytes)}';
+      print('🔍 [SIGNATURE] Base64 string length: ${base64String.length}');
+      print('🔍 [SIGNATURE] Base64 string starts with: ${base64String.substring(0, 50)}...');
+      print('🔍 [SIGNATURE] About to close modal with result...');
+      Navigator.of(context).pop(base64String); // Retornamos la cadena base64 al cerrar
+      print('🔍 [SIGNATURE] Modal closed successfully');
+    } else {
+      print('❌ [SIGNATURE] Failed to get byte data or widget not mounted');
+      print('🔍 [SIGNATURE] About to close modal with null...');
+      Navigator.of(context).pop(null);
     }
   }
 }
