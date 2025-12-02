@@ -11,13 +11,13 @@ class WorkReportsLocalRepositoryImpl implements WorkReportsLocalRepository {
   WorkReportsLocalRepositoryImpl({required this.localDataSource});
 
   @override
-  Future<Either<Failure, void>> saveWorkReport(
+  Future<Either<Failure, int>> saveWorkReport(
     WorkReportLocalEntity report,
   ) async {
     try {
       final model = WorkReportLocalModel.fromEntity(report);
-      await localDataSource.saveWorkReport(model);
-      return const Right(null);
+      final id = await localDataSource.saveWorkReport(model);
+      return Right(id);
     } catch (e) {
       return Left(CacheFailure(e.toString()));
     }
@@ -49,13 +49,13 @@ class WorkReportsLocalRepositoryImpl implements WorkReportsLocalRepository {
   }
 
   @override
-  Future<Either<Failure, void>> updateWorkReport(
+  Future<Either<Failure, int>> updateWorkReport(
     WorkReportLocalEntity report,
   ) async {
     try {
       final model = WorkReportLocalModel.fromEntity(report);
-      await localDataSource.updateWorkReport(model);
-      return const Right(null);
+      final id = await localDataSource.updateWorkReport(model);
+      return Right(id);
     } catch (e) {
       return Left(CacheFailure(e.toString()));
     }

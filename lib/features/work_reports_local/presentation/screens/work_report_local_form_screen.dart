@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,6 +44,7 @@ class _WorkReportLocalFormScreenState
 
   // Photos management
   final List<Map<String, dynamic>> _photos = [];
+  int? _savedReportId; // Para guardar el ID del reporte después de crearlo
 
   @override
   void initState() {
@@ -86,10 +88,11 @@ class _WorkReportLocalFormScreenState
           context.pop();
         }
       },
-      (report) {
+      (report) async {
         if (mounted) {
           setState(() {
             _existingReport = report;
+            _savedReportId = report.id;
             _nameController.text = report.name;
             _descriptionController.text = report.description ?? '';
             _startTimeController.text = report.startTime ?? '';
@@ -100,6 +103,41 @@ class _WorkReportLocalFormScreenState
             _suggestionsController.text = report.suggestions ?? '';
             _selectedProjectId = report.projectId;
             _selectedEmployeeId = report.employeeId;
+          });
+
+          // Load existing photos
+          await _loadPhotos(report.id!);
+        }
+      },
+    );
+  }
+
+  Future<void> _loadPhotos(int reportId) async {
+    final getPhotosUseCase = ref.read(
+      getPhotosByWorkReportLocalUseCaseProvider,
+    );
+    final result = await getPhotosUseCase(reportId);
+
+    result.fold(
+      (failure) {
+        // Silently fail if no photos exist
+        print('No photos found for report: ${failure.message}');
+      },
+      (photos) {
+        if (mounted) {
+          setState(() {
+            _photos.clear();
+            for (var photo in photos) {
+              _photos.add({
+                'id': photo.id,
+                'descripcion': photo.descripcion ?? '',
+                'before_work_descripcion': photo.beforeWorkDescripcion ?? '',
+                'photo_path': photo.photoPath,
+                'before_work_photo_path': photo.beforeWorkPhotoPath,
+                'photo_bytes': null,
+                'before_work_photo_bytes': null,
+              });
+            }
           });
         }
       },
@@ -173,10 +211,9 @@ class _WorkReportLocalFormScreenState
         ? await ref.read(createWorkReportLocalUseCaseProvider)(entity)
         : await ref.read(updateWorkReportLocalUseCaseProvider)(entity);
 
-    setState(() => _isLoading = false);
-
     result.fold(
       (failure) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${failure.message}'),
@@ -184,20 +221,108 @@ class _WorkReportLocalFormScreenState
           ),
         );
       },
-      (_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.reportId == null
-                  ? 'Reporte guardado exitosamente'
-                  : 'Reporte actualizado exitosamente',
+      (savedReportId) async {
+        // Save photos after report is saved
+        _savedReportId = savedReportId;
+        await _savePhotos(savedReportId);
+
+        setState(() => _isLoading = false);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.reportId == null
+                    ? 'Reporte guardado exitosamente'
+                    : 'Reporte actualizado exitosamente',
+              ),
+              backgroundColor: AppTheme.primaryAccent,
             ),
-            backgroundColor: AppTheme.primaryAccent,
-          ),
-        );
-        context.go('/work-reports-local');
+          );
+          context.go('/work-reports-local');
+        }
       },
     );
+  }
+
+  Future<void> _savePhotos(int reportId) async {
+    for (var photo in _photos) {
+      try {
+        String? photoPath;
+        String? beforeWorkPhotoPath;
+
+        // Save "after work" photo if exists
+        if (photo['photo_bytes'] != null) {
+          photoPath = await _saveImageToLocal(photo['photo_bytes']);
+        } else if (photo['photo_path'] != null) {
+          photoPath = photo['photo_path'];
+        }
+
+        // Save "before work" photo if exists
+        if (photo['before_work_photo_bytes'] != null) {
+          beforeWorkPhotoPath = await _saveImageToLocal(
+            photo['before_work_photo_bytes'],
+          );
+        } else if (photo['before_work_photo_path'] != null) {
+          beforeWorkPhotoPath = photo['before_work_photo_path'];
+        }
+
+        final photoEntity = WorkReportPhotoLocalEntity(
+          id: photo['id'],
+          workReportId: reportId,
+          photoPath: photoPath,
+          beforeWorkPhotoPath: beforeWorkPhotoPath,
+          descripcion: photo['descripcion']?.isEmpty ?? true
+              ? null
+              : photo['descripcion'],
+          beforeWorkDescripcion:
+              photo['before_work_descripcion']?.isEmpty ?? true
+              ? null
+              : photo['before_work_descripcion'],
+          createdAt: photo['id'] == null
+              ? DateTime.now().toIso8601String()
+              : null,
+          updatedAt: DateTime.now().toIso8601String(),
+        );
+
+        if (photo['id'] == null) {
+          // Create new photo
+          await ref.read(createWorkReportPhotoLocalUseCaseProvider)(
+            photoEntity,
+          );
+        } else {
+          // Update existing photo
+          await ref.read(updateWorkReportPhotoLocalUseCaseProvider)(
+            photoEntity,
+          );
+        }
+      } catch (e) {
+        print('Error saving photo: $e');
+      }
+    }
+  }
+
+  Future<String> _saveImageToLocal(Uint8List imageBytes) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final imagesDir = Directory('${directory.path}/work_report_photos');
+
+      if (!await imagesDir.exists()) {
+        await imagesDir.create(recursive: true);
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'photo_$timestamp.jpg';
+      final filePath = '${imagesDir.path}/$fileName';
+
+      final file = File(filePath);
+      await file.writeAsBytes(imageBytes);
+
+      return filePath;
+    } catch (e) {
+      print('Error saving image: $e');
+      rethrow;
+    }
   }
 
   Future<void> _delete() async {
@@ -260,6 +385,105 @@ class _WorkReportLocalFormScreenState
         context.go('/work-reports-local');
       },
     );
+  }
+
+  void _addPhoto() {
+    setState(() {
+      _photos.add({
+        'id': null,
+        'descripcion': '',
+        'before_work_descripcion': '',
+        'photo_path': null,
+        'before_work_photo_path': null,
+        'photo_bytes': null,
+        'before_work_photo_bytes': null,
+      });
+    });
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      final photo = _photos[index];
+
+      // If photo has an ID, we should delete it from database
+      if (photo['id'] != null && _savedReportId != null) {
+        ref.read(deleteWorkReportPhotoLocalUseCaseProvider)(photo['id']);
+      }
+
+      _photos.removeAt(index);
+    });
+  }
+
+  Future<void> _pickPhotoImage(int index, bool isAfterWork) async {
+    final picker = ImagePicker();
+
+    // Show dialog to choose camera or gallery
+    final source = await showDialog<ImageSource>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text(
+          'Seleccionar fuente',
+          style: TextStyle(color: AppTheme.textPrimary),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.camera_alt,
+                color: AppTheme.primaryAccent,
+              ),
+              title: const Text(
+                'Cámara',
+                style: TextStyle(color: AppTheme.textPrimary),
+              ),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library,
+                color: AppTheme.primaryAccent,
+              ),
+              title: const Text(
+                'Galería',
+                style: TextStyle(color: AppTheme.textPrimary),
+              ),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final pickedFile = await picker.pickImage(source: source);
+
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+
+        setState(() {
+          if (isAfterWork) {
+            _photos[index]['photo_bytes'] = bytes;
+            _photos[index]['photo_path'] = pickedFile.path;
+          } else {
+            _photos[index]['before_work_photo_bytes'] = bytes;
+            _photos[index]['before_work_photo_path'] = pickedFile.path;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar imagen: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -450,6 +674,53 @@ class _WorkReportLocalFormScreenState
                 const Divider(color: Colors.white10),
                 const SizedBox(height: 24),
 
+                // Photo Evidence Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSectionHeader('EVIDENCIA FOTOGRÁFICA'),
+                    TextButton.icon(
+                      onPressed: _addPhoto,
+                      icon: const Icon(
+                        Icons.add,
+                        size: 16,
+                        color: AppTheme.primaryAccent,
+                      ),
+                      label: const Text(
+                        'AGREGAR',
+                        style: TextStyle(color: AppTheme.primaryAccent),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                if (_photos.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white10,
+                        style: BorderStyle.solid,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'No hay evidencia adjunta',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  ),
+
+                ..._photos.asMap().entries.map((entry) {
+                  return _buildPhotoEntry(entry.key, entry.value);
+                }),
+
+                const SizedBox(height: 24),
+                const Divider(color: Colors.white10),
+                const SizedBox(height: 24),
+
                 // Suggestions
                 _buildSectionHeader('OBSERVACIONES'),
                 const SizedBox(height: 8),
@@ -568,6 +839,176 @@ class _WorkReportLocalFormScreenState
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
         borderSide: const BorderSide(color: AppTheme.border),
+      ),
+    );
+  }
+
+  Widget _buildPhotoEntry(int index, Map<String, dynamic> photo) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        border: Border.all(color: AppTheme.border),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with photo number and remove button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'FOTO #${index + 1}',
+                style: const TextStyle(
+                  color: AppTheme.primaryAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.redAccent,
+                  size: 20,
+                ),
+                onPressed: () => _removePhoto(index),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // After Work Photo Section
+          const Text(
+            'DESPUÉS DEL TRABAJO',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // After work photo preview/button
+          GestureDetector(
+            onTap: () => _pickPhotoImage(index, true),
+            child: Container(
+              height: 150,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                border: Border.all(color: AppTheme.border),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: _buildPhotoPreview(
+                photo['photo_bytes'],
+                photo['photo_path'],
+                'Agregar foto después',
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // After work description
+          TextFormField(
+            initialValue: photo['descripcion'] ?? '',
+            decoration: _inputDecoration(
+              label: 'Descripción',
+              icon: Icons.description,
+            ),
+            maxLines: 2,
+            onChanged: (value) => photo['descripcion'] = value,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Before Work Photo Section
+          const Text(
+            'ANTES DEL TRABAJO',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Before work photo preview/button
+          GestureDetector(
+            onTap: () => _pickPhotoImage(index, false),
+            child: Container(
+              height: 150,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                border: Border.all(color: AppTheme.border),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: _buildPhotoPreview(
+                photo['before_work_photo_bytes'],
+                photo['before_work_photo_path'],
+                'Agregar foto antes',
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Before work description
+          TextFormField(
+            initialValue: photo['before_work_descripcion'] ?? '',
+            decoration: _inputDecoration(
+              label: 'Descripción',
+              icon: Icons.description,
+            ),
+            maxLines: 2,
+            onChanged: (value) => photo['before_work_descripcion'] = value,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoPreview(
+    Uint8List? bytes,
+    String? path,
+    String placeholder,
+  ) {
+    if (bytes != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.memory(bytes, fit: BoxFit.cover),
+      );
+    } else if (path != null && path.isNotEmpty) {
+      final file = File(path);
+      if (file.existsSync()) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.file(file, fit: BoxFit.cover),
+        );
+      }
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.add_photo_alternate,
+            color: AppTheme.textSecondary,
+            size: 40,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            placeholder,
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+          ),
+        ],
       ),
     );
   }

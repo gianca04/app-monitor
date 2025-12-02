@@ -8,7 +8,7 @@ class UpdateWorkReportLocalUseCase {
 
   UpdateWorkReportLocalUseCase(this.repository);
 
-  Future<Either<Failure, void>> call(WorkReportLocalEntity report) async {
+  Future<Either<Failure, int>> call(WorkReportLocalEntity report) async {
     return await repository.updateWorkReport(report);
   }
 }
