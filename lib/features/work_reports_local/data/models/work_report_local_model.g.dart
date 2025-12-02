@@ -28,13 +28,17 @@ class WorkReportLocalModelAdapter extends TypeAdapter<WorkReportLocalModel> {
       timestamps: fields[8] as TimestampsLocalModel?,
       startTime: fields[9] as String?,
       endTime: fields[10] as String?,
+      isSynced: fields[11] as bool?,
+      syncedServerId: fields[12] as int?,
+      syncError: fields[13] as String?,
+      lastSyncAttempt: fields[14] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, WorkReportLocalModel obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +60,15 @@ class WorkReportLocalModelAdapter extends TypeAdapter<WorkReportLocalModel> {
       ..writeByte(9)
       ..write(obj.startTime)
       ..writeByte(10)
-      ..write(obj.endTime);
+      ..write(obj.endTime)
+      ..writeByte(11)
+      ..write(obj.isSynced)
+      ..writeByte(12)
+      ..write(obj.syncedServerId)
+      ..writeByte(13)
+      ..write(obj.syncError)
+      ..writeByte(14)
+      ..write(obj.lastSyncAttempt);
   }
 
   @override

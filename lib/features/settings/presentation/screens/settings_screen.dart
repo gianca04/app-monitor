@@ -8,7 +8,6 @@ import '../widgets/connectivity_indicator.dart';
 import 'package:monitor/features/settings/providers/connectivity_preferences_provider.dart';
 import 'package:monitor/core/theme_config.dart';
 import 'package:monitor/core/widgets/industrial_tile.dart';
-import 'package:monitor/core/widgets/industrial_card.dart';
 
 // Constantes del sistema de diseño Industrial
 const kIndustrialBg = AppTheme.background;

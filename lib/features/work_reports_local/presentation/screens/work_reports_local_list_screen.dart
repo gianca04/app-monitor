@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme_config.dart';
 import '../../domain/entities/work_report_local_entity.dart';
 import '../providers/work_reports_local_provider.dart';
+import '../../../settings/providers/connectivity_preferences_provider.dart';
 
 class WorkReportsLocalListScreen extends ConsumerWidget {
   const WorkReportsLocalListScreen({super.key});
@@ -21,7 +22,12 @@ class WorkReportsLocalListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final getAllUseCase = ref.watch(getAllWorkReportsLocalUseCaseProvider);
+    final reportsAsync = ref.watch(workReportsLocalListProvider);
+    final unsyncedCountAsync = ref.watch(unsyncedWorkReportsLocalCountProvider);
+    final isOnline = ref.watch(connectivityStatusProvider).maybeWhen(
+      data: (status) => status,
+      orElse: () => false,
+    );
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -36,94 +42,137 @@ class WorkReportsLocalListScreen extends ConsumerWidget {
           ),
         ),
         iconTheme: const IconThemeData(color: AppTheme.textPrimary),
-      ),
-      body: FutureBuilder(
-        future: getAllUseCase(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppTheme.primaryAccent,
-                ),
-              ),
-            );
-          }
-
-          if (snapshot.hasData) {
-            return snapshot.data!.fold(
-              (failure) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.redAccent,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error: ${failure.message}',
-                      style: const TextStyle(color: AppTheme.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              (reports) {
-                if (reports.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.folder_open,
-                          size: 64,
-                          color: AppTheme.textSecondary.withOpacity(0.5),
+        actions: [
+          // Sync button
+          unsyncedCountAsync.when(
+            data: (count) {
+              if (count == 0) return const SizedBox.shrink();
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.cloud_upload),
+                    onPressed: isOnline ? () => _syncAll(context, ref) : null,
+                    tooltip: isOnline 
+                        ? 'Sincronizar reportes' 
+                        : 'Sin conexión',
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No hay reportes locales',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 16,
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$count',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Los reportes creados sin conexión\naparecerán aquí',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 12,
-                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  );
-                }
-
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: reports.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final report = reports[index];
-                    return _WorkReportCard(
-                      report: report,
-                      formatDate: _formatDate,
-                    );
-                  },
-                );
-              },
+                ],
+              );
+            },
+            loading: () => const SizedBox(
+              width: 40,
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+      body: reportsAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              AppTheme.primaryAccent,
+            ),
+          ),
+        ),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.redAccent,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error: ${error.toString()}',
+                style: const TextStyle(color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref.read(workReportsLocalListProvider.notifier).refresh(),
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+        data: (reports) {
+          if (reports.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.folder_open,
+                    size: 64,
+                    color: AppTheme.textSecondary.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No hay reportes locales',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Los reportes creados sin conexión\naparecerán aquí',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 
-          return const Center(
-            child: Text(
-              'Cargando...',
-              style: TextStyle(color: AppTheme.textSecondary),
-            ),
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: reports.length,
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final report = reports[index];
+              return _WorkReportCard(
+                report: report,
+                formatDate: _formatDate,
+              );
+            },
           );
         },
       ),
@@ -136,7 +185,130 @@ class WorkReportsLocalListScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _syncAll(BuildContext context, WidgetRef ref) async {
+    final listNotifier = ref.read(workReportsLocalListProvider.notifier);
+    
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Sincronizando reportes...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final stats = await listNotifier.syncAll();
+      
+      if (context.mounted) {
+        // Close loading dialog safely
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        
+        if (stats != null) {
+          final total = stats['total'] as int;
+          final success = stats['success'] as int;
+          final failed = stats['failed'] as int;
+          
+          if (context.mounted) {
+            showDialog(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                backgroundColor: AppTheme.surface,
+                title: const Text(
+                  'Sincronización Completada',
+                  style: TextStyle(color: AppTheme.textPrimary),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total: $total',
+                      style: const TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    Text(
+                      'Exitosos: $success',
+                      style: const TextStyle(color: Colors.greenAccent),
+                    ),
+                    if (failed > 0)
+                      Text(
+                        'Fallidos: $failed',
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                    if (failed > 0 && stats['errors'] != null) ...[
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Errores:',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...(stats['errors'] as List<String>).map(
+                        (error) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '• $error',
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      if (Navigator.of(dialogContext).canPop()) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      // The list is already refreshed by the syncAll method
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        // Close loading dialog safely
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
 }
+
 
 class _WorkReportCard extends StatelessWidget {
   final WorkReportLocalEntity report;
@@ -256,7 +428,9 @@ class _WorkReportCard extends StatelessWidget {
 
               // Footer - Status indicators
               if (report.supervisorSignature != null ||
-                  report.managerSignature != null)
+                  report.managerSignature != null ||
+                  report.isSynced ||
+                  report.syncError != null)
                 Column(
                   children: [
                     const Divider(height: 1, color: Colors.white10),
@@ -265,19 +439,30 @@ class _WorkReportCard extends StatelessWidget {
                         horizontal: 16,
                         vertical: 8,
                       ),
-                      child: Row(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          if (report.supervisorSignature != null)
-                            _StatusChip(
-                              icon: Icons.check_circle_outline,
-                              label: 'Firma Supervisor',
+                          if (report.isSynced)
+                            const _StatusChip(
+                              icon: Icons.cloud_done,
+                              label: 'Sincronizado',
                               color: Colors.greenAccent,
                             ),
-                          if (report.supervisorSignature != null &&
-                              report.managerSignature != null)
-                            const SizedBox(width: 8),
+                          if (!report.isSynced && report.syncError != null)
+                            const _StatusChip(
+                              icon: Icons.error_outline,
+                              label: 'Error Sync',
+                              color: Colors.redAccent,
+                            ),
+                          if (report.supervisorSignature != null)
+                            const _StatusChip(
+                              icon: Icons.check_circle_outline,
+                              label: 'Firma Supervisor',
+                              color: Colors.blueAccent,
+                            ),
                           if (report.managerSignature != null)
-                            _StatusChip(
+                            const _StatusChip(
                               icon: Icons.check_circle_outline,
                               label: 'Firma Gerente',
                               color: Colors.blueAccent,

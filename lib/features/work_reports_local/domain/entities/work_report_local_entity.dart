@@ -4,7 +4,9 @@ class WorkReportLocalEntity {
   final int projectId;
   final String name;
   final String? description;
+  /// Ruta del archivo de imagen de la firma del supervisor
   final String? supervisorSignature;
+  /// Ruta del archivo de imagen de la firma del gerente
   final String? managerSignature;
   final String? suggestions;
   final String? createdAt;
@@ -14,6 +16,10 @@ class WorkReportLocalEntity {
   final String? materials;
   final String? startTime;
   final String? endTime;
+  final bool isSynced;
+  final int? syncedServerId;
+  final String? syncError;
+  final String? lastSyncAttempt;
 
   WorkReportLocalEntity({
     this.id,
@@ -31,6 +37,10 @@ class WorkReportLocalEntity {
     this.materials,
     this.startTime,
     this.endTime,
+    this.isSynced = false,
+    this.syncedServerId,
+    this.syncError,
+    this.lastSyncAttempt,
   });
 
   WorkReportLocalEntity copyWith({
@@ -49,6 +59,10 @@ class WorkReportLocalEntity {
     String? materials,
     String? startTime,
     String? endTime,
+    bool? isSynced,
+    int? syncedServerId,
+    String? syncError,
+    String? lastSyncAttempt,
   }) {
     return WorkReportLocalEntity(
       id: id ?? this.id,
@@ -66,6 +80,10 @@ class WorkReportLocalEntity {
       materials: materials ?? this.materials,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
+      isSynced: isSynced ?? this.isSynced,
+      syncedServerId: syncedServerId ?? this.syncedServerId,
+      syncError: syncError ?? this.syncError,
+      lastSyncAttempt: lastSyncAttempt ?? this.lastSyncAttempt,
     );
   }
 }

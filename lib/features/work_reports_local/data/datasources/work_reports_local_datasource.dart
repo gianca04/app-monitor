@@ -7,6 +7,9 @@ abstract class WorkReportsLocalDataSource {
   Future<List<WorkReportLocalModel>> getAllWorkReports();
   Future<int> updateWorkReport(WorkReportLocalModel report);
   Future<void> deleteWorkReport(int id);
+  Future<List<WorkReportLocalModel>> getUnsyncedWorkReports();
+  Future<void> markAsSynced(int localId, int serverId);
+  Future<void> markSyncError(int localId, String error);
 }
 
 class WorkReportsLocalDataSourceImpl implements WorkReportsLocalDataSource {
@@ -49,5 +52,62 @@ class WorkReportsLocalDataSourceImpl implements WorkReportsLocalDataSource {
   @override
   Future<void> deleteWorkReport(int id) async {
     await workReportsBox.delete(id);
+  }
+
+  @override
+  Future<List<WorkReportLocalModel>> getUnsyncedWorkReports() async {
+    return workReportsBox.values
+        .where((report) => !(report.isSynced ?? false))
+        .toList();
+  }
+
+  @override
+  Future<void> markAsSynced(int localId, int serverId) async {
+    final report = workReportsBox.get(localId);
+    if (report != null) {
+      final updatedReport = WorkReportLocalModel(
+        id: report.id,
+        employeeId: report.employeeId,
+        projectId: report.projectId,
+        name: report.name,
+        description: report.description,
+        resources: report.resources,
+        signatures: report.signatures,
+        suggestions: report.suggestions,
+        timestamps: report.timestamps,
+        startTime: report.startTime,
+        endTime: report.endTime,
+        isSynced: true,
+        syncedServerId: serverId,
+        syncError: null,
+        lastSyncAttempt: DateTime.now().toIso8601String(),
+      );
+      await workReportsBox.put(localId, updatedReport);
+    }
+  }
+
+  @override
+  Future<void> markSyncError(int localId, String error) async {
+    final report = workReportsBox.get(localId);
+    if (report != null) {
+      final updatedReport = WorkReportLocalModel(
+        id: report.id,
+        employeeId: report.employeeId,
+        projectId: report.projectId,
+        name: report.name,
+        description: report.description,
+        resources: report.resources,
+        signatures: report.signatures,
+        suggestions: report.suggestions,
+        timestamps: report.timestamps,
+        startTime: report.startTime,
+        endTime: report.endTime,
+        isSynced: false,
+        syncedServerId: report.syncedServerId,
+        syncError: error,
+        lastSyncAttempt: DateTime.now().toIso8601String(),
+      );
+      await workReportsBox.put(localId, updatedReport);
+    }
   }
 }

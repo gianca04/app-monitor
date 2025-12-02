@@ -41,6 +41,18 @@ class WorkReportLocalModel extends HiveObject {
   @HiveField(10)
   final String? endTime;
 
+  @HiveField(11)
+  final bool? isSynced;
+
+  @HiveField(12)
+  final int? syncedServerId;
+
+  @HiveField(13)
+  final String? syncError;
+
+  @HiveField(14)
+  final String? lastSyncAttempt;
+
   WorkReportLocalModel({
     this.id,
     required this.employeeId,
@@ -53,6 +65,10 @@ class WorkReportLocalModel extends HiveObject {
     this.timestamps,
     this.startTime,
     this.endTime,
+    this.isSynced = false,
+    this.syncedServerId,
+    this.syncError,
+    this.lastSyncAttempt,
   });
 
   // Convert from Domain Entity
@@ -79,6 +95,10 @@ class WorkReportLocalModel extends HiveObject {
       ),
       startTime: entity.startTime,
       endTime: entity.endTime,
+      isSynced: entity.isSynced,
+      syncedServerId: entity.syncedServerId,
+      syncError: entity.syncError,
+      lastSyncAttempt: entity.lastSyncAttempt,
     );
   }
 
@@ -100,6 +120,10 @@ class WorkReportLocalModel extends HiveObject {
       materials: resources?.materials,
       startTime: startTime,
       endTime: endTime,
+      isSynced: isSynced ?? false,
+      syncedServerId: syncedServerId,
+      syncError: syncError,
+      lastSyncAttempt: lastSyncAttempt,
     );
   }
 }

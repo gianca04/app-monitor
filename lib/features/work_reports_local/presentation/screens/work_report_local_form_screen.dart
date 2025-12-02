@@ -6,6 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/theme_config.dart';
+import '../../../../core/widgets/modern_bottom_modal.dart';
+import '../../../work_reports/presentation/widgets/industrial_selector.dart';
+import '../../../work_reports/presentation/widgets/signature_box.dart';
+import '../../../work_reports/presentation/widgets/industrial_signature_dialog.dart';
 import '../../domain/entities/work_report_local_entity.dart';
 import '../providers/work_reports_local_provider.dart';
 import '../../../projectslocal/presentation/providers/project_providers.dart';
@@ -24,7 +28,7 @@ class WorkReportLocalFormScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkReportLocalFormScreenState
-    extends ConsumerState<WorkReportLocalFormScreen> {
+    extends ConsumerState<WorkReportLocalFormScreen> with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -34,6 +38,7 @@ class _WorkReportLocalFormScreenState
   final _personnelController = TextEditingController();
   final _materialsController = TextEditingController();
   final _suggestionsController = TextEditingController();
+  final _projectController = TextEditingController();
 
   int? _selectedProjectId;
   int? _selectedEmployeeId;
@@ -42,6 +47,10 @@ class _WorkReportLocalFormScreenState
   bool _isLoading = false;
   WorkReportLocalEntity? _existingReport;
 
+  // Signatures management
+  String? _supervisorSignature;
+  String? _managerSignature;
+
   // Photos management
   final List<Map<String, dynamic>> _photos = [];
   int? _savedReportId; // Para guardar el ID del reporte después de crearlo
@@ -49,10 +58,41 @@ class _WorkReportLocalFormScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCurrentUser();
     if (widget.reportId != null) {
       _loadExistingReport();
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // No hacer nada aquí, solo mantener el método vacío
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Recargar cuando la app vuelve a estar en primer plano
+    if (state == AppLifecycleState.resumed && widget.reportId != null) {
+      _loadExistingReport();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    _toolsController.dispose();
+    _personnelController.dispose();
+    _materialsController.dispose();
+    _suggestionsController.dispose();
+    _projectController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -103,6 +143,9 @@ class _WorkReportLocalFormScreenState
             _suggestionsController.text = report.suggestions ?? '';
             _selectedProjectId = report.projectId;
             _selectedEmployeeId = report.employeeId;
+            // Cargar firmas existentes
+            _supervisorSignature = report.supervisorSignature;
+            _managerSignature = report.managerSignature;
           });
 
           // Load existing photos
@@ -144,19 +187,6 @@ class _WorkReportLocalFormScreenState
     );
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _startTimeController.dispose();
-    _endTimeController.dispose();
-    _toolsController.dispose();
-    _personnelController.dispose();
-    _materialsController.dispose();
-    _suggestionsController.dispose();
-    super.dispose();
-  }
-
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -187,8 +217,8 @@ class _WorkReportLocalFormScreenState
       description: _descriptionController.text.isEmpty
           ? null
           : _descriptionController.text,
-      supervisorSignature: _existingReport?.supervisorSignature,
-      managerSignature: _existingReport?.managerSignature,
+      supervisorSignature: _supervisorSignature,
+      managerSignature: _managerSignature,
       suggestions: _suggestionsController.text.isEmpty
           ? null
           : _suggestionsController.text,
@@ -251,19 +281,12 @@ class _WorkReportLocalFormScreenState
         String? photoPath;
         String? beforeWorkPhotoPath;
 
-        // Save "after work" photo if exists
-        if (photo['photo_bytes'] != null) {
-          photoPath = await _saveImageToLocal(photo['photo_bytes']);
-        } else if (photo['photo_path'] != null) {
+        // Use the already saved local paths
+        if (photo['photo_path'] != null) {
           photoPath = photo['photo_path'];
         }
 
-        // Save "before work" photo if exists
-        if (photo['before_work_photo_bytes'] != null) {
-          beforeWorkPhotoPath = await _saveImageToLocal(
-            photo['before_work_photo_bytes'],
-          );
-        } else if (photo['before_work_photo_path'] != null) {
+        if (photo['before_work_photo_path'] != null) {
           beforeWorkPhotoPath = photo['before_work_photo_path'];
         }
 
@@ -414,6 +437,23 @@ class _WorkReportLocalFormScreenState
     });
   }
 
+  Future<void> _pickSignature(bool isSupervisor) async {
+    final String? signatureBase64 = await IndustrialSignatureSheet.show(
+      context,
+      title: isSupervisor ? 'FIRMA DEL SUPERVISOR' : 'FIRMA GERENCIA / CLIENTE',
+    );
+
+    if (signatureBase64 != null) {
+      setState(() {
+        if (isSupervisor) {
+          _supervisorSignature = signatureBase64;
+        } else {
+          _managerSignature = signatureBase64;
+        }
+      });
+    }
+  }
+
   Future<void> _pickPhotoImage(int index, bool isAfterWork) async {
     final picker = ImagePicker();
 
@@ -464,13 +504,16 @@ class _WorkReportLocalFormScreenState
       if (pickedFile != null) {
         final bytes = await pickedFile.readAsBytes();
 
+        // Save image locally immediately when selected
+        final localPath = await _saveImageToLocal(bytes);
+
         setState(() {
           if (isAfterWork) {
             _photos[index]['photo_bytes'] = bytes;
-            _photos[index]['photo_path'] = pickedFile.path;
+            _photos[index]['photo_path'] = localPath; // Use local path instead of original
           } else {
             _photos[index]['before_work_photo_bytes'] = bytes;
-            _photos[index]['before_work_photo_path'] = pickedFile.path;
+            _photos[index]['before_work_photo_path'] = localPath; // Use local path instead of original
           }
         });
       }
@@ -486,6 +529,80 @@ class _WorkReportLocalFormScreenState
     }
   }
 
+  Future<void> _selectProject(List<dynamic> projects) async {
+    String searchQuery = '';
+
+    final selectedId = await ModernBottomModal.show<int>(
+      context,
+      title: 'Seleccionar Proyecto',
+      content: StatefulBuilder(
+        builder: (context, setState) {
+          final filteredProjects = searchQuery.isEmpty
+              ? projects
+              : projects.where((project) =>
+                  project.name.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Search field
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Buscar proyecto...',
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary),
+                    filled: true,
+                    fillColor: AppTheme.surface,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: const BorderSide(color: AppTheme.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: const BorderSide(color: AppTheme.primaryAccent, width: 1.5),
+                    ),
+                  ),
+                  style: const TextStyle(color: AppTheme.textPrimary),
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+              // Projects list
+              SizedBox(
+                height: 300,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: filteredProjects.map((project) {
+                    return ListTile(
+                      title: Text(
+                        project.name,
+                        style: const TextStyle(color: AppTheme.textPrimary),
+                      ),
+                      onTap: () => Navigator.of(context).pop(project.id),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (selectedId != null) {
+      setState(() {
+        _selectedProjectId = selectedId;
+        final selectedProject = projects.firstWhere((p) => p.id == selectedId);
+        _projectController.text = selectedProject.name;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final projectsBoxAsync = ref.watch(projectBoxProvider);
@@ -494,15 +611,14 @@ class _WorkReportLocalFormScreenState
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/work-reports-local'),
+        ),
         title: Text(
           widget.reportId == null
-              ? 'CREAR REPORTE LOCAL'
-              : 'EDITAR REPORTE LOCAL',
-          style: const TextStyle(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
+              ? 'Crear Reporte Local'
+              : 'Editar Reporte Local',
         ),
         iconTheme: const IconThemeData(color: AppTheme.textPrimary),
         actions: [
@@ -517,6 +633,12 @@ class _WorkReportLocalFormScreenState
         data: (projectsBox) {
           final projects = projectsBox.values.toList();
 
+          // Set project name if selected and not set
+          if (_selectedProjectId != null && _projectController.text.isEmpty) {
+            final project = projects.firstWhere((p) => p.id == _selectedProjectId);
+            _projectController.text = project.name;
+          }
+
           return Form(
             key: _formKey,
             child: ListView(
@@ -525,26 +647,11 @@ class _WorkReportLocalFormScreenState
                 // Project Selection
                 _buildSectionHeader('PROYECTO'),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: _selectedProjectId,
-                  decoration: _inputDecoration(
-                    label: 'Seleccionar proyecto',
-                    icon: Icons.business,
-                  ),
-                  dropdownColor: AppTheme.surface,
-                  items: projects.map((project) {
-                    return DropdownMenuItem<int>(
-                      value: project.id,
-                      child: Text(
-                        project.name,
-                        style: const TextStyle(color: AppTheme.textPrimary),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() => _selectedProjectId = value);
-                  },
-                  validator: (value) => value == null ? 'Requerido' : null,
+                IndustrialSelector(
+                  label: 'Seleccionar proyecto',
+                  value: _projectController.text.isEmpty ? null : _projectController.text,
+                  icon: Icons.business,
+                  onTap: () => _selectProject(projects),
                 ),
 
                 const SizedBox(height: 16),
@@ -731,6 +838,34 @@ class _WorkReportLocalFormScreenState
                     icon: Icons.lightbulb_outline,
                   ),
                   maxLines: 3,
+                ),
+
+                const SizedBox(height: 24),
+                const Divider(color: Colors.white10),
+                const SizedBox(height: 24),
+
+                // Signatures Section
+                _buildSectionHeader('VALIDACIÓN Y FIRMAS'),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SignatureBox(
+                        title: 'SUPERVISOR',
+                        base64: _supervisorSignature,
+                        onTap: () => _pickSignature(true),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SignatureBox(
+                        title: 'GERENCIA / CLIENTE',
+                        base64: _managerSignature,
+                        onTap: () => _pickSignature(false),
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 32),

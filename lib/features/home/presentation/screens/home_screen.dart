@@ -43,12 +43,24 @@ class HomeScreen extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: TechCard(
-                    title: "Por Sincronizar",
-                    value: "12", // Dato dinámico
-                    icon: Icons.cloud_upload_outlined,
-                    accentColor: Colors.orangeAccent,
-                    borderColor: borderColor,
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final unsyncedCountAsync = ref.watch(
+                        unsyncedWorkReportsLocalCountProvider,
+                      );
+                      final unsyncedCount = unsyncedCountAsync.maybeWhen(
+                        data: (count) => count,
+                        orElse: () => 0,
+                      );
+
+                      return TechCard(
+                        title: "Por Sincronizar",
+                        value: "$unsyncedCount",
+                        icon: Icons.cloud_upload_outlined,
+                        accentColor: Colors.orangeAccent,
+                        borderColor: borderColor,
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),

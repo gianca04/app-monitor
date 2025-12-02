@@ -8,4 +8,9 @@ abstract class WorkReportsLocalRepository {
   Future<Either<Failure, List<WorkReportLocalEntity>>> getAllWorkReports();
   Future<Either<Failure, int>> updateWorkReport(WorkReportLocalEntity report);
   Future<Either<Failure, void>> deleteWorkReport(int id);
+  
+  // Sync methods
+  Future<Either<Failure, WorkReportLocalEntity>> syncWorkReport(int localId);
+  Future<Either<Failure, Map<String, dynamic>>> syncAllWorkReports();
+  Future<Either<Failure, List<WorkReportLocalEntity>>> getUnsyncedWorkReports();
 }
