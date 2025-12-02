@@ -23,6 +23,7 @@ import 'industrial_selector.dart';
 import 'signature_box.dart';
 import 'industrial_signature_dialog.dart';
 import '../../../../core/theme_config.dart';
+import '../../../../core/services/quill_converter_providers.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
 const Color kIndBg = AppTheme.background;
@@ -177,18 +178,53 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   Future<void> _initToolsController() async {
     try {
       final text = widget.report.resources?.tools ?? '';
-      try {
-        final delta = jsonDecode(text);
-        if (delta is List) {
-          _toolsController = FleatherController(
-            document: ParchmentDocument.fromJson(delta),
-          );
-        } else {
-          throw const FormatException('Not a list');
-        }
-      } catch (_) {
-        _toolsController = FleatherController(
-          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+      if (text.isEmpty) {
+        _toolsController = FleatherController();
+      } else {
+        // Try to convert HTML to Quill Delta
+        final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
+        final result = await convertHtmlToQuill(text);
+        
+        result.fold(
+          (failure) {
+            // If conversion fails, try as JSON or plain text
+            try {
+              final delta = jsonDecode(text);
+              if (delta is Map && delta['ops'] != null) {
+                _toolsController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else if (delta is List) {
+                _toolsController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta),
+                );
+              } else {
+                throw const FormatException('Not a valid format');
+              }
+            } catch (_) {
+              _toolsController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
+          (conversionResult) {
+            // Successfully converted HTML to Quill
+            try {
+              final delta = jsonDecode(conversionResult.content);
+              if (delta is Map && delta['ops'] != null) {
+                _toolsController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else {
+                throw const FormatException('Invalid format');
+              }
+            } catch (e) {
+              print('Error parsing converted Quill: $e');
+              _toolsController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
         );
       }
     } catch (err, st) {
@@ -203,18 +239,53 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   Future<void> _initPersonnelController() async {
     try {
       final text = widget.report.resources?.personnel ?? '';
-      try {
-        final delta = jsonDecode(text);
-        if (delta is List) {
-          _personnelController = FleatherController(
-            document: ParchmentDocument.fromJson(delta),
-          );
-        } else {
-          throw const FormatException('Not a list');
-        }
-      } catch (_) {
-        _personnelController = FleatherController(
-          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+      if (text.isEmpty) {
+        _personnelController = FleatherController();
+      } else {
+        // Try to convert HTML to Quill Delta
+        final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
+        final result = await convertHtmlToQuill(text);
+        
+        result.fold(
+          (failure) {
+            // If conversion fails, try as JSON or plain text
+            try {
+              final delta = jsonDecode(text);
+              if (delta is Map && delta['ops'] != null) {
+                _personnelController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else if (delta is List) {
+                _personnelController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta),
+                );
+              } else {
+                throw const FormatException('Not a valid format');
+              }
+            } catch (_) {
+              _personnelController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
+          (conversionResult) {
+            // Successfully converted HTML to Quill
+            try {
+              final delta = jsonDecode(conversionResult.content);
+              if (delta is Map && delta['ops'] != null) {
+                _personnelController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else {
+                throw const FormatException('Invalid format');
+              }
+            } catch (e) {
+              print('Error parsing converted Quill: $e');
+              _personnelController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
         );
       }
     } catch (err, st) {
@@ -229,18 +300,53 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   Future<void> _initMaterialsController() async {
     try {
       final text = widget.report.resources?.materials ?? '';
-      try {
-        final delta = jsonDecode(text);
-        if (delta is List) {
-          _materialsController = FleatherController(
-            document: ParchmentDocument.fromJson(delta),
-          );
-        } else {
-          throw const FormatException('Not a list');
-        }
-      } catch (_) {
-        _materialsController = FleatherController(
-          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+      if (text.isEmpty) {
+        _materialsController = FleatherController();
+      } else {
+        // Try to convert HTML to Quill Delta
+        final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
+        final result = await convertHtmlToQuill(text);
+        
+        result.fold(
+          (failure) {
+            // If conversion fails, try as JSON or plain text
+            try {
+              final delta = jsonDecode(text);
+              if (delta is Map && delta['ops'] != null) {
+                _materialsController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else if (delta is List) {
+                _materialsController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta),
+                );
+              } else {
+                throw const FormatException('Not a valid format');
+              }
+            } catch (_) {
+              _materialsController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
+          (conversionResult) {
+            // Successfully converted HTML to Quill
+            try {
+              final delta = jsonDecode(conversionResult.content);
+              if (delta is Map && delta['ops'] != null) {
+                _materialsController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else {
+                throw const FormatException('Invalid format');
+              }
+            } catch (e) {
+              print('Error parsing converted Quill: $e');
+              _materialsController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
         );
       }
     } catch (err, st) {
@@ -1127,6 +1233,67 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
       setState(() => _isLoading = true);
       try {
         print('🔍 [SUBMIT] Calling updateWorkReport...');
+        
+        // Convert Quill Delta to HTML for tools, personnel, and materials
+        final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
+        
+        String? toolsHtml;
+        if (_toolsController != null && 
+            _toolsController!.document.toPlainText().trim().isNotEmpty) {
+          final toolsDelta = jsonEncode({
+            'ops': _toolsController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(toolsDelta);
+          result.fold(
+            (failure) {
+              print('⚠️ [SUBMIT] Failed to convert tools to HTML: ${failure.message}');
+              toolsHtml = jsonEncode(_toolsController!.document.toDelta().toJson());
+            },
+            (conversionResult) {
+              toolsHtml = conversionResult.content;
+              print('✅ [SUBMIT] Tools converted to HTML');
+            },
+          );
+        }
+        
+        String? personnelHtml;
+        if (_personnelController != null && 
+            _personnelController!.document.toPlainText().trim().isNotEmpty) {
+          final personnelDelta = jsonEncode({
+            'ops': _personnelController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(personnelDelta);
+          result.fold(
+            (failure) {
+              print('⚠️ [SUBMIT] Failed to convert personnel to HTML: ${failure.message}');
+              personnelHtml = jsonEncode(_personnelController!.document.toDelta().toJson());
+            },
+            (conversionResult) {
+              personnelHtml = conversionResult.content;
+              print('✅ [SUBMIT] Personnel converted to HTML');
+            },
+          );
+        }
+        
+        String? materialsHtml;
+        if (_materialsController != null && 
+            _materialsController!.document.toPlainText().trim().isNotEmpty) {
+          final materialsDelta = jsonEncode({
+            'ops': _materialsController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(materialsDelta);
+          result.fold(
+            (failure) {
+              print('⚠️ [SUBMIT] Failed to convert materials to HTML: ${failure.message}');
+              materialsHtml = jsonEncode(_materialsController!.document.toDelta().toJson());
+            },
+            (conversionResult) {
+              materialsHtml = conversionResult.content;
+              print('✅ [SUBMIT] Materials converted to HTML');
+            },
+          );
+        }
+        
         await ref
             .read(workReportsProvider.notifier)
             .updateWorkReport(
@@ -1145,21 +1312,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   : jsonEncode(
                       _descriptionController!.document.toDelta().toJson(),
                     ),
-              _toolsController?.document.toPlainText().trim().isEmpty ?? true
-                  ? null
-                  : jsonEncode(_toolsController!.document.toDelta().toJson()),
-              _personnelController?.document.toPlainText().trim().isEmpty ??
-                      true
-                  ? null
-                  : jsonEncode(
-                      _personnelController!.document.toDelta().toJson(),
-                    ),
-              _materialsController?.document.toPlainText().trim().isEmpty ??
-                      true
-                  ? null
-                  : jsonEncode(
-                      _materialsController!.document.toDelta().toJson(),
-                    ),
+              toolsHtml,
+              personnelHtml,
+              materialsHtml,
               _suggestionsController?.document.toPlainText().trim().isEmpty ??
                       true
                   ? null

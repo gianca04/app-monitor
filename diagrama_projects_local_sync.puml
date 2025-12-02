@@ -1,0 +1,121 @@
+@startuml Projects Local Sync Process
+
+title Diagrama de Proceso - Sincronización de Proyectos Locales
+
+actor Usuario
+participant "HomeScreen\no SyncScreen" as Screen
+participant "SyncNotifier" as Notifier
+participant "ProjectRepository" as Repo
+participant "ProjectRemote\nDataSource" as RemoteDS
+participant "ProjectLocal\nDataSource" as LocalDS
+participant "Servidor API" as API
+participant "Hive Box\n(projects)" as Hive
+participant "SharedPreferences" as Prefs
+
+== Verificar Estado Actual ==
+Usuario -> Screen: Abre pantalla
+Screen -> Screen: Observa projectsCountProvider
+Screen -> Hive: Cuenta proyectos almacenados
+Hive --> Screen: N proyectos locales
+Screen -> Screen: Observa lastSyncProvider
+Screen -> LocalDS: getLastSyncTime()
+LocalDS -> Prefs: getString('last_projects_sync')
+Prefs --> LocalDS: Timestamp o null
+LocalDS --> Screen: Última sincronización
+Screen -> Usuario: Muestra:\n"N proyectos locales\nÚltima sync: [fecha]"
+
+== Iniciar Sincronización ==
+Usuario -> Screen: Presiona "Sincronizar Proyectos"
+Screen -> Notifier: syncProjects()
+Notifier -> Notifier: Actualiza estado (isLoading=true)
+Notifier --> Screen: Estado cargando
+Screen -> Usuario: Muestra indicador de progreso
+
+== Obtener Datos del Servidor ==
+Notifier -> Repo: syncProjects()
+Repo -> RemoteDS: getProjects()
+RemoteDS -> API: GET /projects (todos los activos)
+API -> API: Consulta base de datos
+API -> API: Filtra proyectos activos
+API --> RemoteDS: List<ProjectDto>\n[todos los proyectos]
+RemoteDS -> RemoteDS: Convierte DTOs a modelos
+RemoteDS --> Repo: List<ProjectModel>
+
+== Procesar y Almacenar Localmente ==
+loop Para cada proyecto recibido
+    Repo -> Repo: Convierte a ProjectHiveModel
+    Repo -> LocalDS: cacheProject(projectHiveModel)
+    LocalDS -> LocalDS: Verifica si ID existe
+    
+    alt Proyecto ya existe
+        LocalDS -> Hive: put(id, updatedProject) [ACTUALIZA]
+        note right: Upsert: actualiza datos existentes
+    else Proyecto nuevo
+        LocalDS -> Hive: put(id, newProject) [CREA]
+        note right: Upsert: crea nuevo registro
+    end
+    
+    Hive --> LocalDS: Confirmación
+end
+
+== Registrar Sincronización Exitosa ==
+Repo -> LocalDS: saveLastSyncTime(DateTime.now())
+LocalDS -> Prefs: setString('last_projects_sync', timestamp)
+Prefs --> LocalDS: Confirmación
+LocalDS --> Repo: Confirmación
+Repo --> Notifier: Success (Right)
+Notifier -> Notifier: Actualiza estado\n(isLoading=false, success=true)
+Notifier -> Notifier: Invalida providers para refrescar
+Notifier --> Screen: Éxito
+
+== Actualizar Interfaz ==
+Screen -> Screen: Observa cambios en providers
+Screen -> Hive: Recuenta proyectos
+Hive --> Screen: N proyectos actualizados
+Screen -> LocalDS: Lee nuevo lastSyncTime
+LocalDS -> Prefs: getString('last_projects_sync')
+Prefs --> LocalDS: Timestamp nuevo
+LocalDS --> Screen: Timestamp actualizado
+Screen -> Usuario: Muestra mensaje:\n"Sincronización exitosa\nN proyectos actualizados\nÚltima sync: [ahora]"
+
+== Manejo de Error de Red ==
+alt Error de conexión
+    RemoteDS -> API: GET /projects
+    API --> RemoteDS: ConnectionException
+    RemoteDS --> Repo: NetworkFailure
+    Repo --> Notifier: Left(NetworkFailure)
+    Notifier -> Notifier: Actualiza estado\n(isLoading=false, error=message)
+    Notifier --> Screen: Error de red
+    Screen -> Usuario: Muestra mensaje:\n"Sin conexión a internet\nProyectos locales disponibles"
+    note right: Datos locales anteriores\nsiguen disponibles
+end
+
+== Manejo de Error del Servidor ==
+alt Error del servidor
+    RemoteDS -> API: GET /projects
+    API --> RemoteDS: ServerException (500, 503, etc.)
+    RemoteDS --> Repo: ServerFailure
+    Repo --> Notifier: Left(ServerFailure)
+    Notifier -> Notifier: Actualiza estado\n(isLoading=false, error=message)
+    Notifier --> Screen: Error del servidor
+    Screen -> Usuario: Muestra mensaje:\n"Error del servidor\nIntenta más tarde"
+end
+
+== Uso Offline de Proyectos ==
+Usuario -> Screen: Necesita crear reporte (sin internet)
+Screen -> Screen: Accede a proyectos locales
+Screen -> Hive: Lee proyectos almacenados
+Hive --> Screen: List<ProjectHiveModel>
+Screen -> Usuario: Muestra proyectos disponibles\npara selección offline
+note right: Sistema funciona offline\ngracias a caché local
+
+== Sincronización Automática (Opcional) ==
+note over Screen, Notifier
+  **Posible implementación futura:**
+  - Timer periódico (ej: cada hora)
+  - Trigger al detectar conectividad
+  - Background sync con WorkManager
+  - Sync al iniciar app si pasó X tiempo
+end note
+
+@enduml

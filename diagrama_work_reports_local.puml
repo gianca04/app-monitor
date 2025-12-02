@@ -1,0 +1,157 @@
+@startuml Work Reports Local Process
+
+title Diagrama de Proceso - Reportes de Trabajo Locales (Offline-First)
+
+actor Usuario
+participant "WorkReportsLocal\nListScreen" as List
+participant "WorkReportsLocal\nListNotifier" as Notifier
+participant "GetAllWorkReportsLocal\nUseCase" as GetAllUC
+participant "CreateWorkReportLocal\nUseCase" as CreateUC
+participant "UpdateWorkReportLocal\nUseCase" as UpdateUC
+participant "DeleteWorkReportLocal\nUseCase" as DeleteUC
+participant "SyncAllWorkReportsLocal\nUseCase" as SyncAllUC
+participant "SyncWorkReportLocal\nUseCase" as SyncOneUC
+participant "WorkReportsLocalRepository" as Repo
+participant "WorkReportsLocal\nDataSource" as LocalDS
+participant "WorkReports\nDataSource (Remote)" as RemoteDS
+participant "Hive Box\n(Local Storage)" as Hive
+participant "Servidor API" as API
+
+== Cargar Lista de Reportes Locales ==
+Usuario -> List: Abre pantalla de reportes locales
+List -> Notifier: Inicializa (auto-carga)
+Notifier -> GetAllUC: call()
+GetAllUC -> Repo: getAllWorkReports()
+Repo -> LocalDS: getAllWorkReports()
+LocalDS -> Hive: workReportsBox.values.toList()
+Hive --> LocalDS: List<WorkReportLocalModel>
+LocalDS --> Repo: List<WorkReportLocalModel>
+Repo -> Repo: Convierte a entidades
+Repo --> GetAllUC: List<WorkReportLocalEntity>
+GetAllUC --> Notifier: List<WorkReportLocalEntity>
+Notifier -> Notifier: Actualiza estado
+Notifier --> List: AsyncValue.data(reportes)
+List -> Usuario: Muestra lista con indicadores\n(sincronizado/pendiente)
+
+== Crear Reporte Local (Sin Internet) ==
+Usuario -> List: Presiona "Crear Local"
+List -> Usuario: Muestra formulario
+Usuario -> List: Completa datos, firmas y fotos
+Usuario -> List: Presiona "Guardar Local"
+List -> Notifier: (indirectamente vía provider)
+Notifier -> CreateUC: call(WorkReportLocalEntity)
+CreateUC -> Repo: createWorkReport()
+Repo -> Repo: Convierte entidad a modelo
+Repo -> LocalDS: saveWorkReport(model)
+LocalDS -> LocalDS: Genera ID local único
+LocalDS -> LocalDS: Establece isSynced = false
+LocalDS -> Hive: put(id, report)
+Hive --> LocalDS: ID generado
+LocalDS --> Repo: ID del reporte local
+Repo --> CreateUC: ID
+CreateUC --> Notifier: ID
+Notifier -> Notifier: Recarga lista
+Notifier --> List: Éxito
+List -> Usuario: Mensaje de confirmación\n"Reporte guardado localmente"
+
+== Editar Reporte Local ==
+Usuario -> List: Selecciona reporte no sincronizado
+List -> Usuario: Muestra formulario con datos
+Usuario -> List: Modifica campos
+Usuario -> List: Presiona "Actualizar"
+List -> Notifier: (vía provider)
+Notifier -> UpdateUC: call(id, WorkReportLocalEntity)
+UpdateUC -> Repo: updateWorkReport()
+Repo -> Repo: Convierte entidad a modelo
+Repo -> LocalDS: updateWorkReport(model)
+LocalDS -> LocalDS: Verifica que ID exista
+LocalDS -> Hive: put(id, updatedReport)
+Hive --> LocalDS: ID
+LocalDS --> Repo: ID
+Repo --> UpdateUC: ID
+UpdateUC --> Notifier: ID
+Notifier -> Notifier: Recarga lista
+Notifier --> List: Éxito
+List -> Usuario: Confirmación de actualización
+
+== Eliminar Reporte Local ==
+Usuario -> List: Presiona "Eliminar" en reporte local
+List -> Usuario: Solicita confirmación
+Usuario -> List: Confirma eliminación
+List -> Notifier: (vía provider)
+Notifier -> DeleteUC: call(id)
+DeleteUC -> Repo: deleteWorkReport()
+Repo -> LocalDS: deleteWorkReport(id)
+LocalDS -> Hive: delete(id)
+Hive --> LocalDS: void
+LocalDS --> Repo: void
+Repo --> DeleteUC: void
+DeleteUC --> Notifier: void
+Notifier -> Notifier: Recarga lista
+Notifier --> List: Éxito
+List -> Usuario: Confirmación de eliminación
+
+== Sincronizar Todos los Reportes ==
+Usuario -> List: Presiona "Sincronizar Todo"
+List -> Notifier: syncAll()
+Notifier -> SyncAllUC: call()
+SyncAllUC -> Repo: syncAllWorkReports()
+Repo -> LocalDS: getUnsyncedWorkReports()
+LocalDS -> Hive: Filtra reportes con isSynced=false
+Hive --> LocalDS: List<ReportesNoSincronizados>
+LocalDS --> Repo: List<ReportesNoSincronizados>
+
+loop Para cada reporte no sincronizado
+    Repo -> RemoteDS: createWorkReport(datos)
+    RemoteDS -> RemoteDS: Convierte firmas/fotos a MultipartFile
+    RemoteDS -> API: POST /work-reports (FormData)
+    
+    alt Sincronización Exitosa
+        API --> RemoteDS: WorkReport con serverID
+        RemoteDS --> Repo: WorkReport
+        Repo -> LocalDS: markAsSynced(localId, serverId)
+        LocalDS -> Hive: Actualiza isSynced=true, syncedServerId
+        Hive --> LocalDS: Confirmación
+        Repo -> Repo: syncSuccess++
+    else Error de Sincronización
+        API --> RemoteDS: Error
+        RemoteDS --> Repo: Exception
+        Repo -> LocalDS: markSyncError(localId, errorMsg)
+        LocalDS -> Hive: Guarda error y timestamp
+        Hive --> LocalDS: Confirmación
+        Repo -> Repo: syncFailed++
+    end
+end
+
+Repo --> SyncAllUC: Map{success: N, failed: M, total: X}
+SyncAllUC --> Notifier: Estadísticas de sincronización
+Notifier -> Notifier: Recarga lista para mostrar cambios
+Notifier --> List: Resultado con estadísticas
+List -> Usuario: Muestra resumen:\n"X sincronizados, Y fallidos"
+
+== Sincronizar Reporte Individual ==
+Usuario -> List: Presiona "Sincronizar" en un reporte específico
+List -> List: (usa SyncOneUC similar a SyncAllUC)
+note right: Mismo flujo que "Sincronizar Todos"\npero solo procesa un reporte
+
+== Ver Estado de Sincronización ==
+Usuario -> List: Observa lista
+List -> List: Muestra indicadores visuales
+note right
+  - Ícono verde: Sincronizado
+  - Ícono naranja: Pendiente
+  - Ícono rojo: Error de sincronización
+  - Badge con contador de pendientes
+end note
+
+== Manejo de Errores Locales ==
+note over LocalDS, Hive: Si falla operación local
+Hive --> LocalDS: Exception
+LocalDS --> Repo: Failure
+Repo --> GetAllUC: Failure
+GetAllUC --> Notifier: Failure
+Notifier -> Notifier: Actualiza estado con error
+Notifier --> List: AsyncValue.error()
+List -> Usuario: Muestra mensaje de error
+
+@enduml

@@ -1,0 +1,140 @@
+@startuml Employees Quick Search Process
+
+title Diagrama de Proceso - Búsqueda Rápida de Empleados
+
+actor Usuario
+participant "WorkReportForm\n(Necesita Empleado)" as Form
+participant "QuickSearchModal\n(Employees)" as Modal
+participant "EmployeesProvider" as Provider
+participant "QuickSearchEmployees\nUseCase" as UseCase
+participant "EmployeesRepository" as Repo
+participant "EmployeesDataSource" as DS
+participant "Servidor API" as API
+
+== Abrir Modal de Búsqueda ==
+Usuario -> Form: Presiona campo "Seleccionar Empleado"
+Form -> Modal: Abre modal de búsqueda
+Modal -> Usuario: Muestra campo de búsqueda vacío
+
+== Búsqueda con Debouncing ==
+Usuario -> Modal: Escribe "Juan"
+Modal -> Modal: Inicia timer de debouncing (300ms)
+Usuario -> Modal: Continúa escribiendo " Pérez"
+Modal -> Modal: Reinicia timer en cada tecla
+note right: Sistema espera 300ms de\ninactividad antes de buscar
+
+== Ejecutar Búsqueda ==
+Modal -> Modal: Timer expira (usuario pausó)
+Modal -> Provider: quickSearch("Juan Pérez")
+Provider -> UseCase: call("Juan Pérez")
+UseCase -> Repo: quickSearch("Juan Pérez")
+Repo -> DS: quickSearch("Juan Pérez")
+DS -> API: GET /employees/quick-search?query=Juan Pérez
+API -> API: Busca en campos:\n- first_name (nombre)\n- last_name (apellido)\n- document_number (documento)\n- position (cargo)
+API -> API: Filtra solo empleados activos
+API -> API: Limita resultados (10-20 primeros)
+API --> DS: QuickSearchResponse\n[{id, full_name, document, position, photo}]
+DS --> Repo: QuickSearchResponse
+Repo --> UseCase: QuickSearchResponse
+UseCase --> Provider: QuickSearchResponse
+Provider --> Modal: List<Employee> (resumida)
+Modal -> Usuario: Muestra lista con:\n- Foto de perfil\n- Nombre completo\n- Documento\n- Cargo
+
+== Seleccionar Empleado ==
+Usuario -> Modal: Hace clic en empleado deseado
+Modal -> Form: Devuelve empleado seleccionado\n(id, nombre, documento, cargo)
+Form -> Form: Actualiza campo con empleado
+Form -> Usuario: Muestra empleado seleccionado\ncon su información
+
+== Búsqueda por Documento ==
+Usuario -> Modal: Escribe "12345678"
+Modal -> Modal: Espera debouncing
+Modal -> Provider: quickSearch("12345678")
+Provider -> UseCase: call("12345678")
+UseCase -> Repo: quickSearch("12345678")
+Repo -> DS: quickSearch("12345678")
+DS -> API: GET /employees/quick-search?query=12345678
+API -> API: Busca principalmente en document_number
+API -> API: Encuentra coincidencia exacta
+API --> DS: QuickSearchResponse\n[empleado con ese documento]
+DS --> Repo: QuickSearchResponse
+Repo --> UseCase: QuickSearchResponse
+UseCase --> Provider: QuickSearchResponse
+Provider --> Modal: Employee encontrado
+Modal -> Usuario: Muestra empleado con documento
+
+== Búsqueda por Cargo ==
+Usuario -> Modal: Escribe "Supervisor"
+Modal -> Provider: quickSearch("Supervisor")
+note right: Mismo flujo que búsqueda por nombre
+Provider -> UseCase: call("Supervisor")
+UseCase -> Repo: quickSearch("Supervisor")
+Repo -> DS: quickSearch("Supervisor")
+DS -> API: GET /employees/quick-search?query=Supervisor
+API -> API: Busca en campo position
+API --> DS: Múltiples empleados con cargo "Supervisor"
+DS --> Repo: QuickSearchResponse
+Repo --> UseCase: QuickSearchResponse
+UseCase --> Provider: QuickSearchResponse
+Provider --> Modal: List<Employee> supervisores
+Modal -> Usuario: Muestra lista de supervisores
+
+== Sin Resultados ==
+Usuario -> Modal: Escribe "EmpleadoInexistente"
+Modal -> Provider: quickSearch("EmpleadoInexistente")
+Provider -> UseCase: call("EmpleadoInexistente")
+UseCase -> Repo: quickSearch("EmpleadoInexistente")
+Repo -> DS: quickSearch("EmpleadoInexistente")
+DS -> API: GET /employees/quick-search?query=EmpleadoInexistente
+API -> API: No encuentra coincidencias
+API --> DS: QuickSearchResponse con data=[]
+DS --> Repo: QuickSearchResponse vacía
+Repo --> UseCase: QuickSearchResponse vacía
+UseCase --> Provider: QuickSearchResponse vacía
+Provider --> Modal: Lista vacía
+Modal -> Usuario: Muestra mensaje:\n"No se encontraron empleados"
+
+== Refinar Búsqueda ==
+Usuario -> Modal: Borra y escribe texto más específico
+Modal -> Modal: Reinicia proceso de debouncing
+note right: Usuario puede refinar la búsqueda\nvarias veces hasta encontrar\nel empleado correcto
+
+== Limpiar y Cancelar ==
+Usuario -> Modal: Borra todo el texto
+Modal -> Modal: Limpia resultados
+Modal -> Usuario: Vuelve a estado inicial
+Usuario -> Modal: Presiona "Cancelar"
+Modal -> Form: Cierra sin selección
+Form -> Usuario: Campo permanece sin cambios
+
+== Manejo de Errores ==
+note over DS, API: Error de conexión o servidor
+API --> DS: DioException
+DS --> Repo: Exception
+Repo --> UseCase: Exception
+UseCase --> Provider: Exception
+Provider --> Modal: Error state
+Modal -> Usuario: Muestra mensaje:\n"Error al buscar empleados.\nVerifica tu conexión."
+
+== Optimizaciones ==
+note right of Modal
+  **Debouncing**: 300-500ms espera
+  **Resultados limitados**: Top 10-20
+  **Búsqueda multi-campo**: nombre, documento, cargo
+  **Solo activos**: Excluye empleados inactivos
+  **Ordenamiento**: Relevancia + alfabético
+  **Cache local**: Últimas búsquedas (opcional)
+end note
+
+== Información Adicional Mostrada ==
+note right of Modal
+  Por cada empleado en resultados:
+  - Foto de perfil (avatar)
+  - Nombre completo
+  - Tipo y número de documento
+  - Cargo/Posición
+  - Departamento (opcional)
+  - Estado (Activo)
+end note
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml Authentication Process Diagram
+
+title Diagrama de Proceso de Autenticación
+
+actor Usuario
+participant "LoginScreen" as LS
+participant "AuthNotifier" as AN
+participant "LoginUseCase" as UC
+participant "AuthRepository" as AR
+participant "AuthDataSource" as DS
+participant "Servidor API" as API
+
+== Inicio del Proceso ==
+Usuario -> LS: Ingresa email y password
+LS -> LS: Valida formulario
+
+== Llamada a Autenticación ==
+LS -> AN: login(email, password)
+AN -> AN: Crea LoginRequest
+
+AN -> UC: call(LoginRequest)
+UC -> AR: login(LoginRequest)
+AR -> DS: login(LoginRequest)
+
+== Comunicación con Servidor ==
+DS -> API: POST /login (JSON con email/password)
+API --> DS: Respuesta (token, user, employee, etc.)
+
+== Procesamiento de Respuesta ==
+DS --> AR: LoginResponse
+AR --> UC: LoginResponse
+UC --> AN: LoginResponse
+
+== Almacenamiento y Estado ==
+AN -> AN: Guarda token en SecureStorage
+AN -> AN: Guarda datos en SharedPreferences
+AN -> AN: Actualiza estado (isLoggedIn = true)
+
+== Navegación ==
+AN --> LS: Notifica éxito
+LS -> Usuario: Muestra SnackBar y navega a /home
+
+== Manejo de Errores ==
+note right: Si ocurre un error en cualquier paso
+DS --> AR: Lanza AuthException/NetworkException/etc.
+AR --> UC: Propaga excepción
+UC --> AN: Propaga excepción
+AN -> AN: Actualiza estado (error message)
+AN --> LS: Notifica error
+LS -> Usuario: Muestra mensaje de error
+
+@enduml

@@ -75,42 +75,7 @@ class SettingsScreen extends ConsumerWidget {
           _buildSectionHeader(context, 'SISTEMA'),
           const SizedBox(height: 12),
 
-          _IndustrialCardContainer(
-            children: [
-              _buildIndustrialTile(
-                icon: Icons.notifications_outlined,
-                title: 'Notificaciones',
-                subtitle: 'Alertas del sistema',
-                trailing: CupertinoSwitch(
-                  activeColor: kIndustrialAccent,
-                  value: true,
-                  onChanged: (value) {},
-                ),
-              ),
-              const Divider(height: 1, color: Colors.white10),
-              //_buildIndustrialTile(
-              //  icon: Icons.language,
-              //  title: 'Idioma',
-              //  subtitle: 'Español (ES)',
-              //  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              //  onTap: () {},
-              //),
-              const Divider(height: 1, color: Colors.white10),
-              _buildIndustrialTile(
-                icon: Icons.dark_mode_outlined,
-                title: 'Tema oscuro',
-                subtitle: 'Forzado por sistema',
-                trailing: CupertinoSwitch(
-                  activeColor: kIndustrialAccent, // Ámbar
-                  value: true,
-                  onChanged: (value) {},
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 32),
-
+          
           // Sección de Información
           _buildSectionHeader(context, 'ACERCA DE'),
           const SizedBox(height: 12),
@@ -212,26 +177,6 @@ class SettingsScreen extends ConsumerWidget {
             onChanged: preferences.isEnabled
                 ? (value) async {
                     await notifier.updatePreference(showWhenOnline: value);
-                  }
-                : null,
-          ),
-        ),
-
-        const Divider(height: 1, color: Colors.white10),
-
-        // Notificaciones
-        _buildIndustrialTile(
-          icon: Icons.notifications_outlined,
-          title: 'Alertas de estado',
-          subtitle: 'Notificar cambios de red',
-          enabled: preferences.isEnabled,
-          trailing: CupertinoSwitch(
-            activeColor: kIndustrialAccent,
-            trackColor: Colors.grey[800],
-            value: preferences.showNotifications,
-            onChanged: preferences.isEnabled
-                ? (value) async {
-                    await notifier.updatePreference(showNotifications: value);
                   }
                 : null,
           ),

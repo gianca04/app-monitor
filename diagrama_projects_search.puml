@@ -1,0 +1,90 @@
+@startuml Projects Quick Search Process
+
+title Diagrama de Proceso - Búsqueda Rápida de Proyectos
+
+actor Usuario
+participant "WorkReportForm\n(Necesita Proyecto)" as Form
+participant "QuickSearchModal\n(Projects)" as Modal
+participant "ProjectsProvider" as Provider
+participant "QuickSearchProjects\nUseCase" as UseCase
+participant "ProjectsRepository" as Repo
+participant "ProjectsDataSource" as DS
+participant "Servidor API" as API
+
+== Abrir Modal de Búsqueda ==
+Usuario -> Form: Presiona campo "Seleccionar Proyecto"
+Form -> Modal: Abre modal de búsqueda
+Modal -> Usuario: Muestra campo de búsqueda vacío
+
+== Búsqueda con Debouncing ==
+Usuario -> Modal: Escribe "Cons..."
+Modal -> Modal: Inicia timer de debouncing (300ms)
+Usuario -> Modal: Continúa escribiendo "trucción"
+Modal -> Modal: Reinicia timer
+note right: Timer se reinicia en cada\ntecla hasta que usuario\nse detiene 300ms
+
+== Ejecutar Búsqueda ==
+Modal -> Modal: Timer expira después de pausa
+Modal -> Provider: quickSearch("Construcción")
+Provider -> UseCase: call("Construcción")
+UseCase -> Repo: quickSearch("Construcción")
+Repo -> DS: quickSearch("Construcción")
+DS -> API: GET /projects/quick-search?query=Construcción
+API -> API: Busca en campos:\n- nombre\n- código\n- descripción\n- ubicación
+API -> API: Limita resultados (típicamente 10-20)
+API --> DS: QuickSearchResponse\n[{id, name, code, client, status, location}]
+DS --> Repo: QuickSearchResponse
+Repo --> UseCase: QuickSearchResponse
+UseCase --> Provider: QuickSearchResponse
+Provider --> Modal: List<Project> (resumida)
+Modal -> Usuario: Muestra lista de resultados\ncon información relevante
+
+== Seleccionar Proyecto ==
+Usuario -> Modal: Hace clic en proyecto deseado
+Modal -> Form: Devuelve proyecto seleccionado\n(id, nombre, detalles)
+Form -> Form: Actualiza campo con proyecto
+Form -> Usuario: Muestra proyecto seleccionado
+
+== Búsqueda sin Resultados ==
+Usuario -> Modal: Escribe "ProyectoInexistente"
+Modal -> Provider: quickSearch("ProyectoInexistente")
+Provider -> UseCase: call("ProyectoInexistente")
+UseCase -> Repo: quickSearch("ProyectoInexistente")
+Repo -> DS: quickSearch("ProyectoInexistente")
+DS -> API: GET /projects/quick-search?query=ProyectoInexistente
+API -> API: No encuentra coincidencias
+API --> DS: QuickSearchResponse con data=[]
+DS --> Repo: QuickSearchResponse vacía
+Repo --> UseCase: QuickSearchResponse vacía
+UseCase --> Provider: QuickSearchResponse vacía
+Provider --> Modal: Lista vacía
+Modal -> Usuario: Muestra mensaje\n"No se encontraron proyectos"
+
+== Limpiar Búsqueda ==
+Usuario -> Modal: Borra texto del campo
+Modal -> Modal: Limpia resultados
+Modal -> Usuario: Muestra estado inicial\n(sin resultados)
+
+== Cancelar Selección ==
+Usuario -> Modal: Presiona "Cancelar" o cierra modal
+Modal -> Form: Cierra sin selección
+Form -> Usuario: Campo permanece sin cambios
+
+== Manejo de Errores ==
+note over DS, API: Si falla la conexión o el servidor
+API --> DS: DioException
+DS --> Repo: Exception
+Repo --> UseCase: Exception
+UseCase --> Provider: Exception
+Provider --> Modal: Error state
+Modal -> Usuario: Muestra mensaje:\n"Error al buscar proyectos.\nVerifica tu conexión."
+
+== Optimizaciones del Sistema ==
+note right of Modal
+  **Debouncing**: Evita búsquedas excesivas
+  **Resultados Limitados**: Solo primeros 10-20
+  **Caché**: Provider puede cachear últimas búsquedas
+  **Cancelación**: Búsquedas pendientes se cancelan si se inicia nueva
+end note
+
+@enduml

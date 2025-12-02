@@ -1,0 +1,120 @@
+@startuml Work Reports Cloud Process
+
+title Diagrama de Proceso - Reportes de Trabajo en la Nube
+
+actor Usuario
+participant "WorkReportsList\nScreen" as List
+participant "WorkReportsNotifier" as Notifier
+participant "GetWorkReports\nUseCase" as GetUC
+participant "CreateWorkReport\nUseCase" as CreateUC
+participant "UpdateWorkReport\nUseCase" as UpdateUC
+participant "DeleteWorkReport\nUseCase" as DeleteUC
+participant "WorkReportsRepository" as Repo
+participant "WorkReportsDataSource" as DS
+participant "Servidor API" as API
+
+== Cargar Lista de Reportes ==
+Usuario -> List: Abre pantalla de reportes
+List -> Notifier: loadWorkReports()
+Notifier -> GetUC: call(filters, pagination)
+GetUC -> Repo: getWorkReports()
+Repo -> DS: getWorkReports()
+DS -> API: GET /work-reports?params
+API --> DS: WorkReportsResponse (data + pagination)
+DS --> Repo: WorkReportsResponse
+Repo --> GetUC: WorkReportsResponse
+GetUC --> Notifier: WorkReportsResponse
+Notifier -> Notifier: Actualiza estado con lista
+Notifier --> List: Estado actualizado
+List -> Usuario: Muestra lista de reportes
+
+== Crear Nuevo Reporte ==
+Usuario -> List: Presiona botón "Crear"
+List -> Usuario: Muestra formulario vacío
+Usuario -> List: Completa formulario y firmas
+Usuario -> List: Presiona "Guardar"
+List -> Notifier: createWorkReport(datos, fotos, firmas)
+Notifier -> CreateUC: call(allParams)
+CreateUC -> Repo: createWorkReport()
+Repo -> DS: createWorkReport()
+DS -> DS: Construye FormData multipart
+DS -> DS: Convierte firmas base64 a bytes
+DS -> DS: Adjunta fotos como MultipartFile
+DS -> API: POST /work-reports (FormData)
+API -> API: Procesa datos y guarda imágenes
+API --> DS: WorkReport creado con URLs
+DS --> Repo: WorkReport
+Repo --> CreateUC: WorkReport
+CreateUC --> Notifier: WorkReport
+Notifier -> Notifier: Recarga lista de reportes
+Notifier --> List: Éxito
+List -> Usuario: Mensaje de éxito y navega a lista
+
+== Editar Reporte Existente ==
+Usuario -> List: Selecciona reporte
+List -> Usuario: Muestra detalles
+Usuario -> List: Presiona "Editar"
+List -> Usuario: Muestra formulario con datos
+Usuario -> List: Modifica campos y firmas
+Usuario -> List: Presiona "Actualizar"
+List -> Notifier: updateWorkReport(id, datos, firmas)
+Notifier -> UpdateUC: call(id, allParams)
+UpdateUC -> Repo: updateWorkReport()
+Repo -> DS: updateWorkReport()
+DS -> DS: Construye FormData con _method=PUT
+DS -> DS: Solo adjunta firmas nuevas (no URLs)
+DS -> API: POST /work-reports/{id} (FormData)
+API -> API: Actualiza datos y reemplaza imágenes si hay nuevas
+API --> DS: WorkReport actualizado
+DS --> Repo: WorkReport
+Repo --> UpdateUC: WorkReport
+UpdateUC --> Notifier: WorkReport
+Notifier -> Notifier: Recarga lista de reportes
+Notifier --> List: Éxito
+List -> Usuario: Mensaje de éxito y vuelve a lista
+
+== Eliminar Reporte ==
+Usuario -> List: Presiona "Eliminar"
+List -> Usuario: Muestra confirmación
+Usuario -> List: Confirma eliminación
+List -> Notifier: deleteWorkReport(id)
+Notifier -> DeleteUC: call(id)
+DeleteUC -> Repo: deleteWorkReport()
+Repo -> DS: deleteWorkReport()
+DS -> API: DELETE /work-reports/{id}
+API -> API: Elimina reporte y sus archivos
+API --> DS: Respuesta exitosa
+DS --> Repo: void
+Repo --> DeleteUC: void
+DeleteUC --> Notifier: void
+Notifier -> Notifier: Recarga lista de reportes
+Notifier --> List: Éxito
+List -> Usuario: Mensaje de confirmación
+
+== Paginación (Cargar Más) ==
+Usuario -> List: Hace scroll al final
+List -> Notifier: loadMoreWorkReports()
+Notifier -> GetUC: call(filters, nextPage)
+GetUC -> Repo: getWorkReports()
+Repo -> DS: getWorkReports()
+DS -> API: GET /work-reports?page=N
+API --> DS: WorkReportsResponse
+DS --> Repo: WorkReportsResponse
+Repo --> GetUC: WorkReportsResponse
+GetUC --> Notifier: WorkReportsResponse
+Notifier -> Notifier: Agrega nuevos reportes a lista existente
+Notifier --> List: Estado actualizado
+List -> Usuario: Muestra más reportes
+
+== Manejo de Errores ==
+note over DS, API: Si ocurre error en cualquier operación
+API --> DS: DioException
+DS --> Repo: DioException
+Repo --> GetUC: DioException
+GetUC --> Notifier: DioException
+Notifier -> Notifier: Determina tipo de error\n(red, servidor, validación)
+Notifier -> Notifier: Actualiza estado con mensaje de error
+Notifier --> List: Estado con error
+List -> Usuario: Muestra mensaje de error apropiado
+
+@enduml
