@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:fleather/fleather.dart';
 import 'industrial_signature_dialog.dart';
 import '../../data/models/work_report.dart';
@@ -42,18 +43,22 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   // ... (Toda tu lógica de estado se mantiene INTACTA) ...
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _descriptionController;
+  FleatherController? _descriptionController;
   late TextEditingController _reportDateController;
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
   FleatherController? _toolsController;
-  late TextEditingController _personnelController;
-  late TextEditingController _materialsController;
-  late TextEditingController _suggestionsController;
+  FleatherController? _personnelController;
+  FleatherController? _materialsController;
+  FleatherController? _suggestionsController;
   late TextEditingController _employeeIdController;
   late TextEditingController _projectIdController;
 
   final GlobalKey<EditorState> _editorKey = GlobalKey();
+  final GlobalKey<EditorState> _descriptionEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _personnelEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _materialsEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _suggestionsEditorKey = GlobalKey();
 
   EmployeeQuick? _selectedEmployee;
   ProjectQuick? _selectedProject;
@@ -71,9 +76,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.report?.name ?? '');
-    _descriptionController = TextEditingController(
-      text: widget.report?.description ?? '',
-    );
+    _initDescriptionController();
     _reportDateController = TextEditingController(
       text: widget.report?.reportDate ?? '',
     );
@@ -84,15 +87,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       text: widget.report?.endTime ?? '',
     );
     _initToolsController();
-    _personnelController = TextEditingController(
-      text: widget.report?.resources?.personnel ?? '',
-    );
-    _materialsController = TextEditingController(
-      text: widget.report?.resources?.materials ?? '',
-    );
-    _suggestionsController = TextEditingController(
-      text: widget.report?.suggestions ?? '',
-    );
+    _initPersonnelController();
+    _initMaterialsController();
+    _initSuggestionsController();
     _employeeIdController = TextEditingController(
       text: widget.report?.employee?.id.toString() ?? '',
     );
@@ -161,6 +158,22 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     }
   }
 
+  Future<void> _initDescriptionController() async {
+    try {
+      _descriptionController = FleatherController(
+        document: ParchmentDocument.fromDelta(
+          Delta()..insert(widget.report?.description ?? ''),
+        ),
+      );
+    } catch (err, st) {
+      print('Error initializing description controller: $err\n$st');
+      _descriptionController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   Future<void> _initToolsController() async {
     try {
       _toolsController = FleatherController(
@@ -177,17 +190,65 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     }
   }
 
+  Future<void> _initPersonnelController() async {
+    try {
+      _personnelController = FleatherController(
+        document: ParchmentDocument.fromDelta(
+          Delta()..insert(widget.report?.resources?.personnel ?? ''),
+        ),
+      );
+    } catch (err, st) {
+      print('Error initializing personnel controller: $err\n$st');
+      _personnelController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _initMaterialsController() async {
+    try {
+      _materialsController = FleatherController(
+        document: ParchmentDocument.fromDelta(
+          Delta()..insert(widget.report?.resources?.materials ?? ''),
+        ),
+      );
+    } catch (err, st) {
+      print('Error initializing materials controller: $err\n$st');
+      _materialsController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _initSuggestionsController() async {
+    try {
+      _suggestionsController = FleatherController(
+        document: ParchmentDocument.fromDelta(
+          Delta()..insert(widget.report?.suggestions ?? ''),
+        ),
+      );
+    } catch (err, st) {
+      print('Error initializing suggestions controller: $err\n$st');
+      _suggestionsController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
+    _descriptionController?.dispose();
     _reportDateController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
     _toolsController?.dispose();
-    _personnelController.dispose();
-    _materialsController.dispose();
-    _suggestionsController.dispose();
+    _personnelController?.dispose();
+    _materialsController?.dispose();
+    _suggestionsController?.dispose();
     _employeeIdController.dispose();
     _projectIdController.dispose();
     super.dispose();
@@ -452,13 +513,63 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 ],
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'DESCRIPCIÓN GENERAL',
-                  alignLabelWithHint: true,
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
                 ),
-                maxLines: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.description, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'DESCRIPCIÓN GENERAL',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_descriptionController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(
+                        controller: _descriptionController!,
+                        editorKey: _descriptionEditorKey,
+                      ),
+                      Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _descriptionController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _descriptionEditorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -507,9 +618,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                         child: Center(child: CircularProgressIndicator()),
                       )
                     else ...[
-                      FleatherToolbar.basic(controller: _toolsController!, editorKey: _editorKey),
+                      FleatherToolbar.basic(
+                        controller: _toolsController!,
+                        editorKey: _editorKey,
+                      ),
                       Container(
-                        height: 120,
+                        height: 200,
                         decoration: BoxDecoration(
                           border: Border.all(color: kIndBorder),
                           borderRadius: BorderRadius.only(
@@ -529,31 +643,181 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _personnelController,
-                decoration: const InputDecoration(
-                  labelText: 'PERSONAL ADICIONAL',
-                  prefixIcon: Icon(Icons.group, color: Colors.grey),
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
                 ),
-                maxLines: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.group, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'PERSONAL ADICIONAL',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_personnelController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(
+                        controller: _personnelController!,
+                        editorKey: _personnelEditorKey,
+                      ),
+                      Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _personnelController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _personnelEditorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _materialsController,
-                decoration: const InputDecoration(
-                  labelText: 'MATERIALES / INSUMOS',
-                  prefixIcon: Icon(Icons.inventory_2, color: Colors.grey),
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
                 ),
-                maxLines: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.inventory_2, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'MATERIALES / INSUMOS',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_materialsController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(
+                        controller: _materialsController!,
+                        editorKey: _materialsEditorKey,
+                      ),
+                      Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _materialsController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _materialsEditorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _suggestionsController,
-                decoration: const InputDecoration(
-                  labelText: 'OBSERVACIONES / SUGERENCIAS',
-                  prefixIcon: Icon(Icons.lightbulb, color: Colors.grey),
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
                 ),
-                maxLines: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.lightbulb, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'OBSERVACIONES / SUGERENCIAS',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_suggestionsController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(
+                        controller: _suggestionsController!,
+                        editorKey: _suggestionsEditorKey,
+                      ),
+                      Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _suggestionsController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _suggestionsEditorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -601,6 +865,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
               ..._photos.asMap().entries.map((entry) {
                 return _IndustrialPhotoEntry(
+                  key: ObjectKey(entry.value),
                   index: entry.key,
                   data: entry.value,
                   report: widget.report,
@@ -792,8 +1057,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       if (widget.report == null) {
         try {
           print('📝 [FORM] Starting create work report with signatures:');
-          print('📝 [FORM] _supervisorSignature: ${_supervisorSignature != null ? 'present (${_supervisorSignature!.length} chars)' : 'null'}');
-          print('📝 [FORM] _managerSignature: ${_managerSignature != null ? 'present (${_managerSignature!.length} chars)' : 'null'}');
+          print(
+            '📝 [FORM] _supervisorSignature: ${_supervisorSignature != null ? 'present (${_supervisorSignature!.length} chars)' : 'null'}',
+          );
+          print(
+            '📝 [FORM] _managerSignature: ${_managerSignature != null ? 'present (${_managerSignature!.length} chars)' : 'null'}',
+          );
 
           final newReport = await ref
               .read(workReportsProvider.notifier)
@@ -808,19 +1077,33 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 _endTimeController.text.isEmpty
                     ? null
                     : _endTimeController.text,
-                _descriptionController.text.isEmpty
+                _descriptionController?.document.toPlainText().trim().isEmpty ??
+                        true
                     ? null
-                    : _descriptionController.text,
-                _toolsController?.document.toPlainText().trim().isEmpty ?? true ? null : _toolsController!.document.toPlainText().trim(),
-                _personnelController.text.isEmpty
+                    : jsonEncode(
+                        _descriptionController!.document.toDelta().toJson(),
+                      ),
+                _toolsController?.document.toPlainText().trim().isEmpty ?? true
                     ? null
-                    : _personnelController.text,
-                _materialsController.text.isEmpty
+                    : jsonEncode(_toolsController!.document.toDelta().toJson()),
+                _personnelController?.document.toPlainText().trim().isEmpty ??
+                        true
                     ? null
-                    : _materialsController.text,
-                _suggestionsController.text.isEmpty
+                    : jsonEncode(
+                        _personnelController!.document.toDelta().toJson(),
+                      ),
+                _materialsController?.document.toPlainText().trim().isEmpty ??
+                        true
                     ? null
-                    : _suggestionsController.text,
+                    : jsonEncode(
+                        _materialsController!.document.toDelta().toJson(),
+                      ),
+                _suggestionsController?.document.toPlainText().trim().isEmpty ??
+                        true
+                    ? null
+                    : jsonEncode(
+                        _suggestionsController!.document.toDelta().toJson(),
+                      ),
                 validPhotos,
                 _supervisorSignature,
                 _managerSignature,
@@ -889,19 +1172,33 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 _endTimeController.text.isEmpty
                     ? null
                     : _endTimeController.text,
-                _descriptionController.text.isEmpty
+                _descriptionController?.document.toPlainText().trim().isEmpty ??
+                        true
                     ? null
-                    : _descriptionController.text,
-                _toolsController?.document.toPlainText().trim().isEmpty ?? true ? null : _toolsController!.document.toPlainText().trim(),
-                _personnelController.text.isEmpty
+                    : jsonEncode(
+                        _descriptionController!.document.toDelta().toJson(),
+                      ),
+                _toolsController?.document.toPlainText().trim().isEmpty ?? true
                     ? null
-                    : _personnelController.text,
-                _materialsController.text.isEmpty
+                    : jsonEncode(_toolsController!.document.toDelta().toJson()),
+                _personnelController?.document.toPlainText().trim().isEmpty ??
+                        true
                     ? null
-                    : _materialsController.text,
-                _suggestionsController.text.isEmpty
+                    : jsonEncode(
+                        _personnelController!.document.toDelta().toJson(),
+                      ),
+                _materialsController?.document.toPlainText().trim().isEmpty ??
+                        true
                     ? null
-                    : _suggestionsController.text,
+                    : jsonEncode(
+                        _materialsController!.document.toDelta().toJson(),
+                      ),
+                _suggestionsController?.document.toPlainText().trim().isEmpty ??
+                        true
+                    ? null
+                    : jsonEncode(
+                        _suggestionsController!.document.toDelta().toJson(),
+                      ),
                 _supervisorSignature,
                 _managerSignature,
               );
@@ -942,7 +1239,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 // COMPONENTES VISUALES INDUSTRIALES AUXILIARES
 // ============================================
 
-class _IndustrialPhotoEntry extends StatelessWidget {
+class _IndustrialPhotoEntry extends StatefulWidget {
   final int index;
   final Map<String, dynamic> data;
   final WorkReport? report;
@@ -953,6 +1250,7 @@ class _IndustrialPhotoEntry extends StatelessWidget {
   final ValueChanged<String> onBeforeDescChanged;
 
   const _IndustrialPhotoEntry({
+    super.key,
     required this.index,
     required this.data,
     this.report,
@@ -962,6 +1260,83 @@ class _IndustrialPhotoEntry extends StatelessWidget {
     required this.onAfterDescChanged,
     required this.onBeforeDescChanged,
   });
+
+  @override
+  State<_IndustrialPhotoEntry> createState() => _IndustrialPhotoEntryState();
+}
+
+class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
+  late FleatherController _afterController;
+  late FleatherController _beforeController;
+  final GlobalKey<EditorState> _afterKey = GlobalKey();
+  final GlobalKey<EditorState> _beforeKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _initControllers();
+  }
+
+  void _initControllers() {
+    try {
+      final text = widget.data['descripcion'] ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _afterController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _afterController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
+    } catch (e) {
+      _afterController = FleatherController();
+    }
+
+    try {
+      final text = widget.data['before_work_descripcion'] ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _beforeController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _beforeController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
+    } catch (e) {
+      _beforeController = FleatherController();
+    }
+
+    _afterController.addListener(() {
+      widget.onAfterDescChanged(
+        jsonEncode(_afterController.document.toDelta().toJson()),
+      );
+    });
+
+    _beforeController.addListener(() {
+      widget.onBeforeDescChanged(
+        jsonEncode(_beforeController.document.toDelta().toJson()),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _afterController.dispose();
+    _beforeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -984,14 +1359,14 @@ class _IndustrialPhotoEntry extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'EVIDENCIA #${index + 1}',
+                  'EVIDENCIA #${widget.index + 1}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.white70,
                   ),
                 ),
                 InkWell(
-                  onTap: onRemove,
+                  onTap: widget.onRemove,
                   child: const Icon(
                     Icons.close,
                     color: Colors.redAccent,
@@ -1011,16 +1386,16 @@ class _IndustrialPhotoEntry extends StatelessWidget {
                   context,
                   'AFTER WORK',
                   'FOTO FINAL',
-                  data['photo_bytes'],
-                  data['id'] != null
-                      ? report?.photos
-                            ?.firstWhere((p) => p.id == data['id'])
+                  widget.data['photo_bytes'],
+                  widget.data['id'] != null
+                      ? widget.report?.photos
+                            ?.firstWhere((p) => p.id == widget.data['id'])
                             .afterWork
                             .photoPath
                       : null,
-                  data['descripcion'],
-                  onPickAfter,
-                  onAfterDescChanged,
+                  _afterController,
+                  _afterKey,
+                  widget.onPickAfter,
                 ),
 
                 const Divider(color: Colors.white10, height: 24),
@@ -1030,16 +1405,16 @@ class _IndustrialPhotoEntry extends StatelessWidget {
                   context,
                   'BEFORE WORK',
                   'FOTO INICIAL',
-                  data['before_work_photo_bytes'],
-                  data['id'] != null
-                      ? report?.photos
-                            ?.firstWhere((p) => p.id == data['id'])
+                  widget.data['before_work_photo_bytes'],
+                  widget.data['id'] != null
+                      ? widget.report?.photos
+                            ?.firstWhere((p) => p.id == widget.data['id'])
                             .beforeWork
                             .photoPath
                       : null,
-                  data['before_work_descripcion'],
-                  onPickBefore,
-                  onBeforeDescChanged,
+                  _beforeController,
+                  _beforeKey,
+                  widget.onPickBefore,
                 ),
               ],
             ),
@@ -1055,19 +1430,31 @@ class _IndustrialPhotoEntry extends StatelessWidget {
     String btnLabel,
     Uint8List? bytes,
     String? url,
-    String? desc,
+    FleatherController controller,
+    GlobalKey<EditorState> editorKey,
     VoidCallback onPick,
-    ValueChanged<String> onChanged,
   ) {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Thumbnail
+        // Título de la sección de foto
+        Text(
+          title,
+          style: const TextStyle(
+            color: kIndAccent,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Área de la foto (Grande)
         InkWell(
           onTap: onPick,
           child: Container(
-            width: 80,
-            height: 80,
+            width: double.infinity,
+            height: 200,
             decoration: BoxDecoration(
               color: Colors.black26,
               border: Border.all(color: kIndBorder),
@@ -1083,50 +1470,75 @@ class _IndustrialPhotoEntry extends StatelessWidget {
                           borderRadius: BorderRadius.circular(kIndRadius - 1),
                           child: ImageViewer(url: url),
                         )
-                      : const Center(
-                          child: Icon(Icons.camera_alt, color: Colors.grey),
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt,
+                              color: Colors.grey,
+                              size: 40,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              btnLabel,
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         )),
           ),
         ),
-        const SizedBox(width: 12),
-        // Input
-        Expanded(
+        const SizedBox(height: 12),
+
+        // Área de descripción con Fleather
+        Container(
+          decoration: BoxDecoration(
+            color: kIndSurface,
+            border: Border.all(color: kIndBorder),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(kIndRadius),
+              topRight: Radius.circular(kIndRadius),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: kIndAccent,
+              Padding(
+                padding: const EdgeInsets.only(left: 16, top: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.description, color: Colors.grey, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'DESCRIPCIÓN',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              TextFormField(
-                initialValue: desc,
-                style: const TextStyle(fontSize: 13),
-                decoration: const InputDecoration(
-                  hintText: 'Descripción...',
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 8,
+              FleatherToolbar.basic(
+                controller: controller,
+                editorKey: editorKey,
+              ),
+              Container(
+                height: 150,
+                decoration: BoxDecoration(
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(kIndRadius),
+                    bottomRight: Radius.circular(kIndRadius),
                   ),
                 ),
-                onChanged: onChanged,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 4),
-              InkWell(
-                onTap: onPick,
-                child: Text(
-                  btnLabel,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    decoration: TextDecoration.underline,
-                    color: Colors.grey,
-                  ),
+                child: FleatherEditor(
+                  controller: controller,
+                  padding: const EdgeInsets.all(16),
+                  focusNode: FocusNode(),
+                  editorKey: editorKey,
                 ),
               ),
             ],

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,18 +43,22 @@ class WorkReportEditForm extends ConsumerStatefulWidget {
 class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _descriptionController;
+  FleatherController? _descriptionController;
   late TextEditingController _reportDateController;
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
   FleatherController? _toolsController;
-  late TextEditingController _personnelController;
-  late TextEditingController _materialsController;
-  late TextEditingController _suggestionsController;
+  FleatherController? _personnelController;
+  FleatherController? _materialsController;
+  FleatherController? _suggestionsController;
   late TextEditingController _employeeIdController;
   late TextEditingController _projectIdController;
 
   final GlobalKey<EditorState> _editorKey = GlobalKey();
+  final GlobalKey<EditorState> _descriptionEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _personnelEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _materialsEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _suggestionsEditorKey = GlobalKey();
 
   EmployeeQuick? _selectedEmployee;
   ProjectQuick? _selectedProject;
@@ -71,16 +76,26 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.report.name ?? '');
-    _descriptionController = TextEditingController(text: widget.report.description ?? '');
-    _reportDateController = TextEditingController(text: widget.report.reportDate ?? '');
-    _startTimeController = TextEditingController(text: widget.report.startTime ?? '');
-    _endTimeController = TextEditingController(text: widget.report.endTime ?? '');
+    _initDescriptionController();
+    _reportDateController = TextEditingController(
+      text: widget.report.reportDate ?? '',
+    );
+    _startTimeController = TextEditingController(
+      text: widget.report.startTime ?? '',
+    );
+    _endTimeController = TextEditingController(
+      text: widget.report.endTime ?? '',
+    );
     _initToolsController();
-    _personnelController = TextEditingController(text: widget.report.resources?.personnel ?? '');
-    _materialsController = TextEditingController(text: widget.report.resources?.materials ?? '');
-    _suggestionsController = TextEditingController(text: widget.report.suggestions ?? '');
-    _employeeIdController = TextEditingController(text: widget.report.employee?.id.toString() ?? '');
-    _projectIdController = TextEditingController(text: widget.report.project?.id.toString() ?? '');
+    _initPersonnelController();
+    _initMaterialsController();
+    _initSuggestionsController();
+    _employeeIdController = TextEditingController(
+      text: widget.report.employee?.id.toString() ?? '',
+    );
+    _projectIdController = TextEditingController(
+      text: widget.report.project?.id.toString() ?? '',
+    );
 
     if (widget.report.employee != null) {
       _selectedEmployee = EmployeeQuick(
@@ -125,17 +140,57 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     _managerSignatureBytes = managerSig;
 
     print('🔍 [INIT] Initialized signatures from report:');
-    print('🔍 [INIT] supervisor: ${_supervisorSignature != null ? "${_supervisorSignature!.substring(0, 50)}..." : "null"}');
-    print('🔍 [INIT] manager: ${_managerSignature != null ? "${_managerSignature!.substring(0, 50)}..." : "null"}');
+    print(
+      '🔍 [INIT] supervisor: ${_supervisorSignature != null ? "${_supervisorSignature!.substring(0, 50)}..." : "null"}',
+    );
+    print(
+      '🔍 [INIT] manager: ${_managerSignature != null ? "${_managerSignature!.substring(0, 50)}..." : "null"}',
+    );
+  }
+
+  Future<void> _initDescriptionController() async {
+    try {
+      final text = widget.report.description ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _descriptionController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _descriptionController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
+    } catch (err, st) {
+      print('Error initializing description controller: $err\n$st');
+      _descriptionController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _initToolsController() async {
     try {
-      _toolsController = FleatherController(
-        document: ParchmentDocument.fromDelta(
-          Delta()..insert(widget.report.resources?.tools ?? ''),
-        ),
-      );
+      final text = widget.report.resources?.tools ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _toolsController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _toolsController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
     } catch (err, st) {
       print('Error initializing tools controller: $err\n$st');
       _toolsController = FleatherController();
@@ -145,31 +200,113 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     }
   }
 
+  Future<void> _initPersonnelController() async {
+    try {
+      final text = widget.report.resources?.personnel ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _personnelController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _personnelController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
+    } catch (err, st) {
+      print('Error initializing personnel controller: $err\n$st');
+      _personnelController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _initMaterialsController() async {
+    try {
+      final text = widget.report.resources?.materials ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _materialsController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _materialsController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
+    } catch (err, st) {
+      print('Error initializing materials controller: $err\n$st');
+      _materialsController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _initSuggestionsController() async {
+    try {
+      final text = widget.report.suggestions ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _suggestionsController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _suggestionsController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
+    } catch (err, st) {
+      print('Error initializing suggestions controller: $err\n$st');
+      _suggestionsController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
+    _descriptionController?.dispose();
     _reportDateController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
     _toolsController?.dispose();
-    _personnelController.dispose();
-    _materialsController.dispose();
-    _suggestionsController.dispose();
+    _personnelController?.dispose();
+    _materialsController?.dispose();
+    _suggestionsController?.dispose();
     _employeeIdController.dispose();
     _projectIdController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage(bool isSupervisor) async {
-    print('🔍 [FORM] Starting _pickImage for ${isSupervisor ? "supervisor" : "manager"}');
+    print(
+      '🔍 [FORM] Starting _pickImage for ${isSupervisor ? "supervisor" : "manager"}',
+    );
     // Llamada limpia usando el método estático del Sheet
     final String? signatureBase64 = await IndustrialSignatureSheet.show(
       context,
       title: isSupervisor ? 'FIRMA DEL SUPERVISOR' : 'FIRMA GERENCIA / CLIENTE',
     );
 
-    print('🔍 [FORM] Await completed, signatureBase64: ${signatureBase64 != null ? "present (${signatureBase64.length} chars)" : "null"}');
+    print(
+      '🔍 [FORM] Await completed, signatureBase64: ${signatureBase64 != null ? "present (${signatureBase64.length} chars)" : "null"}',
+    );
 
     // Lógica de negocio (Guardado)
     if (signatureBase64 != null) {
@@ -204,7 +341,10 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      final multipartFile = MultipartFile.fromBytes(bytes, filename: pickedFile.name);
+      final multipartFile = MultipartFile.fromBytes(
+        bytes,
+        filename: pickedFile.name,
+      );
 
       setState(() {
         if (isAfterWork) {
@@ -224,31 +364,59 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
       // Create new photo
       if (photo['photo'] != null && photo['descripcion'].isNotEmpty) {
         try {
-          final createUseCase = CreatePhotoUseCase(ref.read(workReportsPhotosRepositoryProvider));
-          await createUseCase(widget.report.id!, photo['photo'], photo['descripcion'], photo['before_work_photo'], photo['before_work_descripcion']);
+          final createUseCase = CreatePhotoUseCase(
+            ref.read(workReportsPhotosRepositoryProvider),
+          );
+          await createUseCase(
+            widget.report.id!,
+            photo['photo'],
+            photo['descripcion'],
+            photo['before_work_photo'],
+            photo['before_work_descripcion'],
+          );
           // Invalidate to reload
           ref.invalidate(workReportProvider(widget.report.id!));
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto creada exitosamente')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto creada exitosamente')),
+          );
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error creando foto: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error creando foto: $e')));
         }
       }
     } else {
       // Update existing photo
       try {
-        final updateUseCase = UpdatePhotoUseCase(ref.read(workReportsPhotosRepositoryProvider));
+        final updateUseCase = UpdatePhotoUseCase(
+          ref.read(workReportsPhotosRepositoryProvider),
+        );
         await updateUseCase(
           photo['id'],
-          photo['photo_bytes'] != null ? MultipartFile.fromBytes(photo['photo_bytes'], filename: 'photo.jpg') : null,
+          photo['photo_bytes'] != null
+              ? MultipartFile.fromBytes(
+                  photo['photo_bytes'],
+                  filename: 'photo.jpg',
+                )
+              : null,
           photo['descripcion'],
-          photo['before_work_photo_bytes'] != null ? MultipartFile.fromBytes(photo['before_work_photo_bytes'], filename: 'before.jpg') : null,
+          photo['before_work_photo_bytes'] != null
+              ? MultipartFile.fromBytes(
+                  photo['before_work_photo_bytes'],
+                  filename: 'before.jpg',
+                )
+              : null,
           photo['before_work_descripcion'],
         );
         // Invalidate to reload
         ref.invalidate(workReportProvider(widget.report.id!));
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto actualizada exitosamente')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto actualizada exitosamente')),
+        );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error actualizando foto: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error actualizando foto: $e')));
       }
     }
   }
@@ -257,16 +425,22 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     final photo = _photos[index];
     if (photo['id'] != null) {
       try {
-        final deleteUseCase = DeletePhotoUseCase(ref.read(workReportsPhotosRepositoryProvider));
+        final deleteUseCase = DeletePhotoUseCase(
+          ref.read(workReportsPhotosRepositoryProvider),
+        );
         await deleteUseCase(photo['id']);
         setState(() {
           _photos.removeAt(index);
         });
         // Invalidate to reload
         ref.invalidate(workReportProvider(widget.report.id!));
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto eliminada exitosamente')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto eliminada exitosamente')),
+        );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error eliminando foto: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error eliminando foto: $e')));
       }
     } else {
       // Remove unsaved photo
@@ -285,7 +459,10 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           filled: true,
           fillColor: kIndSurface,
           labelStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(kIndRadius),
             borderSide: const BorderSide(color: kIndBorder),
@@ -316,7 +493,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
               IndustrialSelector(
                 label: 'PROYECTO ASIGNADO',
-                value: _selectedProject != null ? '${_selectedProject!.name} (ID: ${_selectedProject!.id})' : null,
+                value: _selectedProject != null
+                    ? '${_selectedProject!.name} (ID: ${_selectedProject!.id})'
+                    : null,
                 icon: Icons.business,
                 onTap: () async {
                   final result = await ModernBottomModal.show<ProjectQuick>(
@@ -336,8 +515,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
               IndustrialSelector(
                 label: 'RESPONSABLE TÉCNICO',
-                value: _selectedEmployee != null ? '${_selectedEmployee!.fullName}' : null,
-                subValue: _selectedEmployee != null ? 'DOC: ${_selectedEmployee!.documentNumber}' : null,
+                value: _selectedEmployee != null
+                    ? '${_selectedEmployee!.fullName}'
+                    : null,
+                subValue: _selectedEmployee != null
+                    ? 'DOC: ${_selectedEmployee!.documentNumber}'
+                    : null,
                 icon: Icons.badge,
                 onTap: () async {
                   final result = await ModernBottomModal.show<EmployeeQuick>(
@@ -367,8 +550,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'NOMBRE DEL REPORTE', prefixIcon: Icon(Icons.title, color: AppTheme.textSecondary)),
-                validator: (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                decoration: const InputDecoration(
+                  labelText: 'NOMBRE DEL REPORTE',
+                  prefixIcon: Icon(Icons.title, color: AppTheme.textSecondary),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Requerido' : null,
               ),
               const SizedBox(height: 12),
 
@@ -389,10 +576,13 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                           lastDate: DateTime(2101),
                         );
                         if (picked != null) {
-                          _reportDateController.text = picked.toIso8601String().split('T')[0];
+                          _reportDateController.text = picked
+                              .toIso8601String()
+                              .split('T')[0];
                         }
                       },
-                      validator: (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Requerido' : null,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -400,11 +590,17 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                     child: TextFormField(
                       controller: _startTimeController,
                       readOnly: true,
-                      decoration: const InputDecoration(labelText: 'INICIO (HH:mm)'),
+                      decoration: const InputDecoration(
+                        labelText: 'INICIO (HH:mm)',
+                      ),
                       onTap: () async {
-                        final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
                         if (picked != null) {
-                          _startTimeController.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          _startTimeController.text =
+                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
                         }
                       },
                     ),
@@ -414,11 +610,17 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                     child: TextFormField(
                       controller: _endTimeController,
                       readOnly: true,
-                      decoration: const InputDecoration(labelText: 'FIN (HH:mm)'),
+                      decoration: const InputDecoration(
+                        labelText: 'FIN (HH:mm)',
+                      ),
                       onTap: () async {
-                        final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
                         if (picked != null) {
-                          _endTimeController.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          _endTimeController.text =
+                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
                         }
                       },
                     ),
@@ -426,10 +628,63 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 ],
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'DESCRIPCIÓN GENERAL', alignLabelWithHint: true),
-                maxLines: 3,
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.description, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'DESCRIPCIÓN GENERAL',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_descriptionController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(
+                        controller: _descriptionController!,
+                        editorKey: _descriptionEditorKey,
+                      ),
+                      Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _descriptionController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _descriptionEditorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -477,9 +732,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                         child: Center(child: CircularProgressIndicator()),
                       )
                     else ...[
-                      FleatherToolbar.basic(controller: _toolsController!, editorKey: _editorKey),
+                      FleatherToolbar.basic(
+                        controller: _toolsController!,
+                        editorKey: _editorKey,
+                      ),
                       Container(
-                        height: 120,
+                        height: 200,
                         decoration: BoxDecoration(
                           border: Border.all(color: kIndBorder),
                           borderRadius: BorderRadius.only(
@@ -499,22 +757,181 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _personnelController,
-                decoration: const InputDecoration(labelText: 'PERSONAL ADICIONAL', prefixIcon: Icon(Icons.group, color: Colors.grey)),
-                maxLines: 2,
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.group, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'PERSONAL ADICIONAL',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_personnelController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(
+                        controller: _personnelController!,
+                        editorKey: _personnelEditorKey,
+                      ),
+                      Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _personnelController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _personnelEditorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _materialsController,
-                decoration: const InputDecoration(labelText: 'MATERIALES / INSUMOS', prefixIcon: Icon(Icons.inventory_2, color: Colors.grey)),
-                maxLines: 2,
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.inventory_2, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'MATERIALES / INSUMOS',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_materialsController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(
+                        controller: _materialsController!,
+                        editorKey: _materialsEditorKey,
+                      ),
+                      Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _materialsController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _materialsEditorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _suggestionsController,
-                decoration: const InputDecoration(labelText: 'OBSERVACIONES / SUGERENCIAS', prefixIcon: Icon(Icons.lightbulb, color: Colors.grey)),
-                maxLines: 2,
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.lightbulb, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'OBSERVACIONES / SUGERENCIAS',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_suggestionsController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(
+                        controller: _suggestionsController!,
+                        editorKey: _suggestionsEditorKey,
+                      ),
+                      Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _suggestionsController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _suggestionsEditorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -529,18 +946,41 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                     backgroundColor: kIndAccent,
                     foregroundColor: Colors.black,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kIndRadius)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kIndRadius),
+                    ),
                   ),
                   child: _isLoading
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.black))),
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.black,
+                                ),
+                              ),
+                            ),
                             SizedBox(width: 8),
-                            Text('CARGANDO...', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                            Text(
+                              'CARGANDO...',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                           ],
                         )
-                      : const Text('ACTUALIZAR REPORTE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                      : const Text(
+                          'ACTUALIZAR REPORTE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -556,7 +996,10 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   TextButton.icon(
                     onPressed: _addPhoto,
                     icon: const Icon(Icons.add, size: 16, color: kIndAccent),
-                    label: const Text('AGREGAR', style: TextStyle(color: kIndAccent)),
+                    label: const Text(
+                      'AGREGAR',
+                      style: TextStyle(color: kIndAccent),
+                    ),
                   ),
                 ],
               ),
@@ -566,10 +1009,18 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white10, style: BorderStyle.solid),
+                    border: Border.all(
+                      color: Colors.white10,
+                      style: BorderStyle.solid,
+                    ),
                     borderRadius: BorderRadius.circular(kIndRadius),
                   ),
-                  child: const Center(child: Text('No hay evidencia adjunta', style: TextStyle(color: Colors.grey))),
+                  child: const Center(
+                    child: Text(
+                      'No hay evidencia adjunta',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
                 ),
 
               ..._photos.asMap().entries.map((entry) {
@@ -582,7 +1033,8 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   onRemove: () => _deletePhoto(entry.key),
                   onSave: () => _savePhoto(entry.key),
                   onAfterDescChanged: (v) => entry.value['descripcion'] = v,
-                  onBeforeDescChanged: (v) => entry.value['before_work_descripcion'] = v,
+                  onBeforeDescChanged: (v) =>
+                      entry.value['before_work_descripcion'] = v,
                   isEditMode: true,
                 );
               }),
@@ -627,7 +1079,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     );
   }
 
-  Widget _buildSectionHeader(ThemeData theme, {required String title, IconData? icon}) {
+  Widget _buildSectionHeader(
+    ThemeData theme, {
+    required String title,
+    IconData? icon,
+  }) {
     return Row(
       children: [
         if (icon != null) Icon(icon, color: kIndAccent, size: 16),
@@ -648,37 +1104,71 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       if (_selectedEmployee == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debe seleccionar un empleado')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Debe seleccionar un empleado')),
+        );
         return;
       }
       if (_selectedProject == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debe seleccionar un proyecto')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Debe seleccionar un proyecto')),
+        );
         return;
       }
 
       print('🔍 [SUBMIT] Starting submit with signatures:');
-      print('🔍 [SUBMIT] _supervisorSignature: ${_supervisorSignature != null ? "present (${_supervisorSignature!.length} chars)" : "null"}');
-      print('🔍 [SUBMIT] _managerSignature: ${_managerSignature != null ? "present (${_managerSignature!.length} chars)" : "null"}');
+      print(
+        '🔍 [SUBMIT] _supervisorSignature: ${_supervisorSignature != null ? "present (${_supervisorSignature!.length} chars)" : "null"}',
+      );
+      print(
+        '🔍 [SUBMIT] _managerSignature: ${_managerSignature != null ? "present (${_managerSignature!.length} chars)" : "null"}',
+      );
 
       setState(() => _isLoading = true);
       try {
         print('🔍 [SUBMIT] Calling updateWorkReport...');
-        await ref.read(workReportsProvider.notifier).updateWorkReport(
-          widget.report.id!,
-          _selectedProject!.id!,
-          int.parse(_employeeIdController.text),
-          _nameController.text,
-          _reportDateController.text,
-          _startTimeController.text.isEmpty ? null : _startTimeController.text,
-          _endTimeController.text.isEmpty ? null : _endTimeController.text,
-          _descriptionController.text.isEmpty ? null : _descriptionController.text,
-          _toolsController?.document.toPlainText().trim().isEmpty ?? true ? null : _toolsController!.document.toPlainText().trim(),
-          _personnelController.text.isEmpty ? null : _personnelController.text,
-          _materialsController.text.isEmpty ? null : _materialsController.text,
-          _suggestionsController.text.isEmpty ? null : _suggestionsController.text,
-          _supervisorSignature,
-          _managerSignature,
-        );
+        await ref
+            .read(workReportsProvider.notifier)
+            .updateWorkReport(
+              widget.report.id!,
+              _selectedProject!.id!,
+              int.parse(_employeeIdController.text),
+              _nameController.text,
+              _reportDateController.text,
+              _startTimeController.text.isEmpty
+                  ? null
+                  : _startTimeController.text,
+              _endTimeController.text.isEmpty ? null : _endTimeController.text,
+              _descriptionController?.document.toPlainText().trim().isEmpty ??
+                      true
+                  ? null
+                  : jsonEncode(
+                      _descriptionController!.document.toDelta().toJson(),
+                    ),
+              _toolsController?.document.toPlainText().trim().isEmpty ?? true
+                  ? null
+                  : jsonEncode(_toolsController!.document.toDelta().toJson()),
+              _personnelController?.document.toPlainText().trim().isEmpty ??
+                      true
+                  ? null
+                  : jsonEncode(
+                      _personnelController!.document.toDelta().toJson(),
+                    ),
+              _materialsController?.document.toPlainText().trim().isEmpty ??
+                      true
+                  ? null
+                  : jsonEncode(
+                      _materialsController!.document.toDelta().toJson(),
+                    ),
+              _suggestionsController?.document.toPlainText().trim().isEmpty ??
+                      true
+                  ? null
+                  : jsonEncode(
+                      _suggestionsController!.document.toDelta().toJson(),
+                    ),
+              _supervisorSignature,
+              _managerSignature,
+            );
 
         print('✅ [SUBMIT] Update successful');
         ref.invalidate(workReportProvider(widget.report.id!));
@@ -697,12 +1187,16 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           errorMessage += ': ${e.message}';
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(errorMessage)));
         }
       } catch (e) {
         print('❌ [SUBMIT] Exception: $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating work report: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating work report: $e')),
+          );
         }
       } finally {
         setState(() => _isLoading = false);
@@ -711,7 +1205,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   }
 }
 
-class _IndustrialPhotoEntry extends StatelessWidget {
+class _IndustrialPhotoEntry extends StatefulWidget {
   final int index;
   final Map<String, dynamic> data;
   final WorkReport? report;
@@ -737,6 +1231,79 @@ class _IndustrialPhotoEntry extends StatelessWidget {
   });
 
   @override
+  State<_IndustrialPhotoEntry> createState() => _IndustrialPhotoEntryState();
+}
+
+class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
+  late FleatherController _afterController;
+  late FleatherController _beforeController;
+  final GlobalKey<EditorState> _afterEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _beforeEditorKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    try {
+      final text = widget.data['descripcion'] ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _afterController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _afterController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
+    } catch (e) {
+      _afterController = FleatherController();
+    }
+
+    try {
+      final text = widget.data['before_work_descripcion'] ?? '';
+      try {
+        final delta = jsonDecode(text);
+        if (delta is List) {
+          _beforeController = FleatherController(
+            document: ParchmentDocument.fromJson(delta),
+          );
+        } else {
+          throw const FormatException('Not a list');
+        }
+      } catch (_) {
+        _beforeController = FleatherController(
+          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+        );
+      }
+    } catch (e) {
+      _beforeController = FleatherController();
+    }
+
+    _afterController.addListener(() {
+      widget.onAfterDescChanged(
+        jsonEncode(_afterController.document.toDelta().toJson()),
+      );
+    });
+
+    _beforeController.addListener(() {
+      widget.onBeforeDescChanged(
+        jsonEncode(_beforeController.document.toDelta().toJson()),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _afterController.dispose();
+    _beforeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -756,20 +1323,31 @@ class _IndustrialPhotoEntry extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'EVIDENCIA #${index + 1}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70),
+                  'EVIDENCIA #${widget.index + 1}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
+                  ),
                 ),
                 Row(
                   children: [
-                    if (isEditMode)
+                    if (widget.isEditMode)
                       IconButton(
-                        icon: const Icon(Icons.save, color: kIndAccent, size: 20),
-                        onPressed: onSave,
+                        icon: const Icon(
+                          Icons.save,
+                          color: kIndAccent,
+                          size: 20,
+                        ),
+                        onPressed: widget.onSave,
                         tooltip: 'Guardar',
                       ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.redAccent, size: 20),
-                      onPressed: onRemove,
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                      onPressed: widget.onRemove,
                       tooltip: 'Eliminar',
                     ),
                   ],
@@ -777,7 +1355,6 @@ class _IndustrialPhotoEntry extends StatelessWidget {
               ],
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -786,24 +1363,32 @@ class _IndustrialPhotoEntry extends StatelessWidget {
                   context,
                   'AFTER WORK',
                   'FOTO FINAL',
-                  data['photo_bytes'],
-                  data['id'] != null ? report?.photos?.firstWhere((p) => p.id == data['id']).afterWork.photoPath : null,
-                  data['descripcion'],
-                  onPickAfter,
-                  onAfterDescChanged,
+                  widget.data['photo_bytes'],
+                  widget.data['id'] != null
+                      ? widget.report?.photos
+                            ?.firstWhere((p) => p.id == widget.data['id'])
+                            .afterWork
+                            .photoPath
+                      : null,
+                  widget.onPickAfter,
+                  _afterController,
+                  _afterEditorKey,
                 ),
-
                 const Divider(color: Colors.white10, height: 24),
-
                 _buildPhotoBlock(
                   context,
                   'BEFORE WORK',
                   'FOTO INICIAL',
-                  data['before_work_photo_bytes'],
-                  data['id'] != null ? report?.photos?.firstWhere((p) => p.id == data['id']).beforeWork.photoPath : null,
-                  data['before_work_descripcion'],
-                  onPickBefore,
-                  onBeforeDescChanged,
+                  widget.data['before_work_photo_bytes'],
+                  widget.data['id'] != null
+                      ? widget.report?.photos
+                            ?.firstWhere((p) => p.id == widget.data['id'])
+                            .beforeWork
+                            .photoPath
+                      : null,
+                  widget.onPickBefore,
+                  _beforeController,
+                  _beforeEditorKey,
                 ),
               ],
             ),
@@ -819,18 +1404,46 @@ class _IndustrialPhotoEntry extends StatelessWidget {
     String btnLabel,
     Uint8List? bytes,
     String? url,
-    String? desc,
     VoidCallback onPick,
-    ValueChanged<String> onChanged,
+    FleatherController controller,
+    GlobalKey<EditorState> editorKey,
   ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: kIndAccent,
+              ),
+            ),
+            InkWell(
+              onTap: onPick,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Text(
+                  btnLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         InkWell(
           onTap: onPick,
           child: Container(
-            width: 80,
-            height: 80,
+            height: 200,
+            width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.black26,
               border: Border.all(color: kIndBorder),
@@ -846,36 +1459,48 @@ class _IndustrialPhotoEntry extends StatelessWidget {
                           borderRadius: BorderRadius.circular(kIndRadius - 1),
                           child: ImageViewer(url: url),
                         )
-                      : const Center(child: Icon(Icons.camera_alt, color: Colors.grey))),
+                      : const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.camera_alt,
+                                color: Colors.grey,
+                                size: 40,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Tocar para agregar foto',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        )),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: kIndSurface,
+            border: Border.all(color: kIndBorder),
+            borderRadius: BorderRadius.circular(kIndRadius),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: kIndAccent),
+              FleatherToolbar.basic(
+                controller: controller,
+                editorKey: editorKey,
               ),
-              const SizedBox(height: 4),
-              TextFormField(
-                initialValue: desc,
-                style: const TextStyle(fontSize: 13),
-                decoration: const InputDecoration(
-                  hintText: 'Descripción...',
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              Container(
+                height: 150,
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: kIndBorder)),
                 ),
-                onChanged: onChanged,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 4),
-              InkWell(
-                onTap: onPick,
-                child: Text(
-                  btnLabel,
-                  style: const TextStyle(fontSize: 11, decoration: TextDecoration.underline, color: Colors.grey),
+                child: FleatherEditor(
+                  controller: controller,
+                  padding: const EdgeInsets.all(12),
+                  focusNode: FocusNode(),
+                  editorKey: editorKey,
                 ),
               ),
             ],
