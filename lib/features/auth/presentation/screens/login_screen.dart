@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -45,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.response != null && previous?.response == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login exitoso: ${next.response!.token}')),
+          SnackBar(content: Text('Login exitoso: ${next.response!.token}')), // SnackBar(content: Text('Login exitoso: ${next.response!.token}')),
         );
         context.go('/home');
       }
@@ -154,25 +153,6 @@ class _SignInForm extends StatefulWidget {
 }
 
 class _SignInFormState extends State<_SignInForm> {
-  bool _showLogo = true;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      setState(() {
-        _showLogo = !_showLogo;
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -191,24 +171,9 @@ class _SignInFormState extends State<_SignInForm> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: _showLogo
-                      ? SvgPicture.asset(
-                          'assets/images/svg/logo.svg',
-                          height: 100,
-                          key: const ValueKey('logo'),
-                        )
-                      : widget.connectivityAsync.when(
-                          data: (isOnline) => ConnectivityIndicator(
-                            mode: ConnectivityDisplayMode.iconOnly,
-                            showWhenOnline: null,
-                            isOnline: isOnline,
-                            key: const ValueKey('indicator'),
-                          ),
-                          loading: () => const SizedBox.shrink(),
-                          error: (error, stack) => const SizedBox.shrink(),
-                        ),
+                SvgPicture.asset(
+                  'assets/images/svg/logo.svg',
+                  height: 100,
                 ),
                 const SizedBox(height: 6),
                 Text(

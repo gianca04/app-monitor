@@ -25,6 +25,8 @@ dependencies:
   dartz: ^0.10.1
   intl: ^0.19.0
   syncfusion_flutter_signaturepad: ^20.4.54
+  markdown_editor_plus: ^0.2.15
+  fleather: ^1.17.0
 
 dev_dependencies:
   flutter_test:

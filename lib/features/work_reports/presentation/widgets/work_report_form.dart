@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:typed_data';
+import 'package:fleather/fleather.dart';
 import 'industrial_signature_dialog.dart';
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
@@ -45,12 +46,14 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   late TextEditingController _reportDateController;
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
-  late TextEditingController _toolsController;
+  FleatherController? _toolsController;
   late TextEditingController _personnelController;
   late TextEditingController _materialsController;
   late TextEditingController _suggestionsController;
   late TextEditingController _employeeIdController;
   late TextEditingController _projectIdController;
+
+  final GlobalKey<EditorState> _editorKey = GlobalKey();
 
   EmployeeQuick? _selectedEmployee;
   ProjectQuick? _selectedProject;
@@ -80,9 +83,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     _endTimeController = TextEditingController(
       text: widget.report?.endTime ?? '',
     );
-    _toolsController = TextEditingController(
-      text: widget.report?.resources?.tools ?? '',
-    );
+    _initToolsController();
     _personnelController = TextEditingController(
       text: widget.report?.resources?.personnel ?? '',
     );
@@ -160,6 +161,22 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     }
   }
 
+  Future<void> _initToolsController() async {
+    try {
+      _toolsController = FleatherController(
+        document: ParchmentDocument.fromDelta(
+          Delta()..insert(widget.report?.resources?.tools ?? ''),
+        ),
+      );
+    } catch (err, st) {
+      print('Error initializing tools controller: $err\n$st');
+      _toolsController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -167,7 +184,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     _reportDateController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
-    _toolsController.dispose();
+    _toolsController?.dispose();
     _personnelController.dispose();
     _materialsController.dispose();
     _suggestionsController.dispose();
@@ -456,13 +473,60 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               ),
               const SizedBox(height: 12),
 
-              TextFormField(
-                controller: _toolsController,
-                decoration: const InputDecoration(
-                  labelText: 'HERRAMIENTAS / EQUIPOS',
-                  prefixIcon: Icon(Icons.build, color: Colors.grey),
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
                 ),
-                maxLines: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.build, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'HERRAMIENTAS / EQUIPOS',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_toolsController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(controller: _toolsController!, editorKey: _editorKey),
+                      Container(
+                        height: 120,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _toolsController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _editorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -747,7 +811,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 _descriptionController.text.isEmpty
                     ? null
                     : _descriptionController.text,
-                _toolsController.text.isEmpty ? null : _toolsController.text,
+                _toolsController?.document.toPlainText().trim().isEmpty ?? true ? null : _toolsController!.document.toPlainText().trim(),
                 _personnelController.text.isEmpty
                     ? null
                     : _personnelController.text,
@@ -828,7 +892,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 _descriptionController.text.isEmpty
                     ? null
                     : _descriptionController.text,
-                _toolsController.text.isEmpty ? null : _toolsController.text,
+                _toolsController?.document.toPlainText().trim().isEmpty ?? true ? null : _toolsController!.document.toPlainText().trim(),
                 _personnelController.text.isEmpty
                     ? null
                     : _personnelController.text,

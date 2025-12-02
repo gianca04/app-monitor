@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fleather/fleather.dart';
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
@@ -45,12 +46,14 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   late TextEditingController _reportDateController;
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
-  late TextEditingController _toolsController;
+  FleatherController? _toolsController;
   late TextEditingController _personnelController;
   late TextEditingController _materialsController;
   late TextEditingController _suggestionsController;
   late TextEditingController _employeeIdController;
   late TextEditingController _projectIdController;
+
+  final GlobalKey<EditorState> _editorKey = GlobalKey();
 
   EmployeeQuick? _selectedEmployee;
   ProjectQuick? _selectedProject;
@@ -72,7 +75,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     _reportDateController = TextEditingController(text: widget.report.reportDate ?? '');
     _startTimeController = TextEditingController(text: widget.report.startTime ?? '');
     _endTimeController = TextEditingController(text: widget.report.endTime ?? '');
-    _toolsController = TextEditingController(text: widget.report.resources?.tools ?? '');
+    _initToolsController();
     _personnelController = TextEditingController(text: widget.report.resources?.personnel ?? '');
     _materialsController = TextEditingController(text: widget.report.resources?.materials ?? '');
     _suggestionsController = TextEditingController(text: widget.report.suggestions ?? '');
@@ -126,6 +129,22 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     print('🔍 [INIT] manager: ${_managerSignature != null ? "${_managerSignature!.substring(0, 50)}..." : "null"}');
   }
 
+  Future<void> _initToolsController() async {
+    try {
+      _toolsController = FleatherController(
+        document: ParchmentDocument.fromDelta(
+          Delta()..insert(widget.report.resources?.tools ?? ''),
+        ),
+      );
+    } catch (err, st) {
+      print('Error initializing tools controller: $err\n$st');
+      _toolsController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -133,7 +152,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     _reportDateController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
-    _toolsController.dispose();
+    _toolsController?.dispose();
     _personnelController.dispose();
     _materialsController.dispose();
     _suggestionsController.dispose();
@@ -424,10 +443,60 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
               ),
               const SizedBox(height: 12),
 
-              TextFormField(
-                controller: _toolsController,
-                decoration: const InputDecoration(labelText: 'HERRAMIENTAS / EQUIPOS', prefixIcon: Icon(Icons.build, color: Colors.grey)),
-                maxLines: 2,
+              Container(
+                decoration: BoxDecoration(
+                  color: kIndSurface,
+                  border: Border.all(color: kIndBorder),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(kIndRadius),
+                    topRight: Radius.circular(kIndRadius),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.build, color: Colors.grey, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'HERRAMIENTAS / EQUIPOS',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_toolsController == null)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else ...[
+                      FleatherToolbar.basic(controller: _toolsController!, editorKey: _editorKey),
+                      Container(
+                        height: 120,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: kIndBorder),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(kIndRadius),
+                            bottomRight: Radius.circular(kIndRadius),
+                          ),
+                        ),
+                        child: FleatherEditor(
+                          controller: _toolsController!,
+                          padding: const EdgeInsets.all(16),
+                          focusNode: FocusNode(),
+                          editorKey: _editorKey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -603,7 +672,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           _startTimeController.text.isEmpty ? null : _startTimeController.text,
           _endTimeController.text.isEmpty ? null : _endTimeController.text,
           _descriptionController.text.isEmpty ? null : _descriptionController.text,
-          _toolsController.text.isEmpty ? null : _toolsController.text,
+          _toolsController?.document.toPlainText().trim().isEmpty ?? true ? null : _toolsController!.document.toPlainText().trim(),
           _personnelController.text.isEmpty ? null : _personnelController.text,
           _materialsController.text.isEmpty ? null : _materialsController.text,
           _suggestionsController.text.isEmpty ? null : _suggestionsController.text,
