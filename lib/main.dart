@@ -10,6 +10,11 @@ import 'features/photoslocal/data/models/photo_local_model.dart';
 import 'features/photoslocal/data/models/after_work_model.dart';
 import 'features/photoslocal/data/models/before_work_model.dart';
 import 'features/photoslocal/data/models/timestamps_model.dart';
+import 'features/work_reports_local/data/models/work_report_local_model.dart';
+import 'features/work_reports_local/data/models/resources_model.dart';
+import 'features/work_reports_local/data/models/signatures_model.dart';
+import 'features/work_reports_local/data/models/timestamps_local_model.dart';
+import 'features/work_report_photos_local/data/models/work_report_photo_local_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,14 +28,27 @@ void main() async {
   Hive.registerAdapter(BeforeWorkModelAdapter());
   Hive.registerAdapter(TimestampsModelAdapter());
 
-  await Hive.openBox<PhotoLocalModel>('photoLocalBox');
+  // Register Work Reports Local adapters
+  Hive.registerAdapter(WorkReportLocalModelAdapter());
+  Hive.registerAdapter(ResourcesModelAdapter());
+  Hive.registerAdapter(SignaturesModelAdapter());
+  Hive.registerAdapter(TimestampsLocalModelAdapter());
 
-  runApp(ProviderScope(
-    overrides: [
-      sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-    ],
-    child: const MainApp(),
-  ));
+  // Register Work Report Photos Local adapters
+  Hive.registerAdapter(WorkReportPhotoLocalModelAdapter());
+
+  await Hive.openBox<PhotoLocalModel>('photoLocalBox');
+  await Hive.openBox<WorkReportLocalModel>('work_reports_local');
+  await Hive.openBox<WorkReportPhotoLocalModel>('work_report_photos_local');
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+      ],
+      child: const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends ConsumerWidget {

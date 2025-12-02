@@ -6,6 +6,7 @@ import 'package:monitor/core/theme_config.dart';
 import '../../../settings/providers/connectivity_provider.dart';
 import '../../../settings/services/connectivity_service.dart';
 import '../../../projectslocal/presentation/providers/project_providers.dart';
+import '../../../work_reports_local/presentation/providers/work_reports_local_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -52,12 +53,24 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TechCard(
-                    title: "Guardados Local",
-                    value: "45", // Dato dinámico
-                    icon: Icons.save_alt,
-                    accentColor: Colors.blueAccent,
-                    borderColor: borderColor,
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final localCountAsync = ref.watch(
+                        workReportsLocalCountProvider,
+                      );
+                      final localCount = localCountAsync.maybeWhen(
+                        data: (count) => count,
+                        orElse: () => 0,
+                      );
+
+                      return TechCard(
+                        title: "Guardados Local",
+                        value: "$localCount",
+                        icon: Icons.save_alt,
+                        accentColor: Colors.blueAccent,
+                        borderColor: borderColor,
+                      );
+                    },
                   ),
                 ),
               ],
@@ -68,9 +81,7 @@ class HomeScreen extends ConsumerWidget {
             // SECCIÓN 2: DATOS MAESTROS (Proyectos y Colaboradores)
             const SectionTitle(title: "DATOS MAESTROS"),
             const SizedBox(height: 10),
-            
-            
-            
+
             // Tarjeta de Proyectos
             Consumer(
               builder: (context, ref, child) {
@@ -84,7 +95,8 @@ class HomeScreen extends ConsumerWidget {
                 );
 
                 final lastSync = lastSyncAsync.maybeWhen(
-                  data: (sync) => sync != null ? _formatLastSync(sync) : 'Nunca',
+                  data: (sync) =>
+                      sync != null ? _formatLastSync(sync) : 'Nunca',
                   orElse: () => 'Cargando...',
                 );
 
@@ -124,15 +136,17 @@ class HomeScreen extends ConsumerWidget {
                 }
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Botón 2: Reporte Offline
             ActionButton(
               label: "NUEVO REPORTE SIN CONEXIÓN",
               icon: Icons.wifi_off,
               isPrimary: false, // Estilo secundario pero con borde
-              onTap: () {},
+              onTap: () {
+                context.go('/work-reports-local');
+              },
             ),
           ],
         ),
@@ -183,9 +197,9 @@ class TechCard extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 28, 
-                  fontWeight: FontWeight.bold, 
-                  color: AppTheme.textPrimary
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -250,21 +264,27 @@ class SyncStatusCard extends StatelessWidget {
                           Text(
                             title,
                             style: TextStyle(
-                              fontSize: 16, 
-                              fontWeight: FontWeight.w600, 
-                              color: AppTheme.textPrimary
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                           Text(
                             subtitle,
-                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
                           ),
                           if (error != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
                                 error!,
-                                style: const TextStyle(fontSize: 10, color: Colors.redAccent),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.redAccent,
+                                ),
                               ),
                             ),
                           if (success)
@@ -272,7 +292,10 @@ class SyncStatusCard extends StatelessWidget {
                               padding: EdgeInsets.only(top: 4),
                               child: Text(
                                 'Sincronización exitosa',
-                                style: TextStyle(fontSize: 10, color: Colors.greenAccent),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.greenAccent,
+                                ),
                               ),
                             ),
                         ],
@@ -284,13 +307,17 @@ class SyncStatusCard extends StatelessWidget {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.blueAccent,
+                          ),
                         ),
                       )
                     else
                       Icon(
                         success ? Icons.check_circle : Icons.sync,
-                        color: success ? Colors.greenAccent : AppTheme.textSecondary
+                        color: success
+                            ? Colors.greenAccent
+                            : AppTheme.textSecondary,
                       ),
                   ],
                 ),
@@ -298,15 +325,25 @@ class SyncStatusCard extends StatelessWidget {
               // Regla: Separador Divider blanco suave
               const Divider(height: 1, color: Colors.white10),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
-                    const Icon(Icons.access_time, size: 14, color: AppTheme.textSecondary),
+                    const Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: AppTheme.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         "Última sinc.: $lastSync",
-                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
                     ),
                   ],
@@ -339,18 +376,25 @@ class ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Si es primario borde ámbar, si no gris
-    final color = (isPrimary && enabled) ? AppTheme.primaryAccent : AppTheme.textSecondary; 
-    
+    final color = (isPrimary && enabled)
+        ? AppTheme.primaryAccent
+        : AppTheme.textSecondary;
+
     final buttonWidget = Material(
       color: Colors.transparent, // Fondo transparente para ver el borde limpio
       child: InkWell(
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(4),
-        splashColor: enabled ? color.withOpacity(0.1) : null, // Feedback de color acorde al borde
+        splashColor: enabled
+            ? color.withOpacity(0.1)
+            : null, // Feedback de color acorde al borde
         child: Container(
           height: 56,
           decoration: BoxDecoration(
-            border: Border.all(color: color, width: isPrimary ? 2 : 1), // Más grueso si es primario
+            border: Border.all(
+              color: color,
+              width: isPrimary ? 2 : 1,
+            ), // Más grueso si es primario
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(

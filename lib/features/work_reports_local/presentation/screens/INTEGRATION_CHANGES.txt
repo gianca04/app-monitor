@@ -1,0 +1,48 @@
+// MODIFICATIONS NEEDED IN EXISTING METHODS
+
+// 1. IN _loadExistingReport METHOD
+// Add this line at the end, after line ~105:
+setState(() {
+  // ... existing code ...
+});
+// Add this after the setState:
+_loadPhotos(); // Load photos for this report
+
+
+// 2. IN _save METHOD  
+// After line ~190 where it says context.go('/work-reports-local');
+// Replace that entire success block with:
+
+result.fold(
+  (failure) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: ${failure.message}'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  },
+  (savedReport) async {
+    // Get the report ID from the saved entity
+    final reportId = widget.reportId ?? savedReport.id;
+    
+    if (reportId != null && _photos.isNotEmpty) {
+      // Save photos
+      await _savePhotos(reportId);
+    }
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.reportId == null
+                ? 'Reporte guardado exitosamente'
+                : 'Reporte actualizado exitosamente',
+          ),
+          backgroundColor: AppTheme.primaryAccent,
+        ),
+      );
+      context.go('/work-reports-local');
+    }
+  },
+);

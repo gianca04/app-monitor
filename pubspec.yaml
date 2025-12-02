@@ -27,6 +27,7 @@ dependencies:
   syncfusion_flutter_signaturepad: ^20.4.54
   markdown_editor_plus: ^0.2.15
   fleather: ^1.17.0
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:

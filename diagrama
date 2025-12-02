@@ -1,0 +1,126 @@
+@startuml
+' --- CONFIGURACIÓN DE ESTILOS ---
+skinparam backgroundColor #F9F9F9
+skinparam handwritten false
+skinparam conditionStyle diamond
+skinparam ActivityBackgroundColor #FEFECE
+skinparam ActivityBorderColor #B8860B
+skinparam ArrowColor #333333
+
+title Flujo Completo: Auth + Reporte Híbrido + Sincronización Background
+
+' --- INICIO DEL FLUJO ---
+partition "Inicio y Autenticación" {
+    start
+    :Abrir Aplicación;
+
+    ' BLOQUE DE AUTENTICACIÓN
+    if (¿Token Válido?) then (Sí)
+        :Acceso Directo (HU-03);
+    else (No)
+        partition "Login" {
+            :Solicitar Credenciales;
+            :Validar con API;
+            if (¿Credenciales Correctas?) then (No)
+                #Pink:Mostrar Error;
+                stop
+            else (Sí)
+                :Generar Token (HU-02);
+                :Guardar User en SharedPreferences;
+            endif
+        }
+    endif
+    :Ingresar al Home;
+}
+
+' --- BIFURCACIÓN PARALELA (FORK) ---
+' Aquí el flujo se divide: El usuario trabaja Y el sistema sincroniza a la vez
+fork
+
+    ' ================= RAMA IZQUIERDA: INTERACCIÓN DEL USUARIO =================
+    partition "Técnico: Creación de Reporte" {
+        
+        ' Lógica de UI en Home
+        if (¿Hay Internet?) then (Sí)
+            #LightGreen:Habilitar "Reporte WEB";
+        else (No)
+            #LightCoral:Deshabilitar "Reporte WEB";
+            :Forzar "Reporte LOCAL";
+        endif
+
+        group "Llenado de Formulario (HU-04 & HU-11)"
+            if (¿Hay conexión para datos?) then (Sí)
+                :GET a API (Personal/Proyectos);
+                :Mostrar dropdowns remotos;
+            else (No)
+                partition "Carga Offline" {
+                    :Leer User de SharedPreferences;
+                    :Leer Proyectos de DB Local;
+                }
+            endif
+            
+            :Seleccionar Datos y Llenar Campos;
+
+            fork
+                :Capturar Fotos;
+                :Clasificar (Antes/Después);
+            fork again
+                :Capturar Firmas;
+            end fork
+        end group
+
+        ' Lógica de Guardado
+        if (¿Es MODO_WEB?) then (Sí)
+            partition "Envío Directo" {
+                :POST a API;
+                if (¿Éxito 200 OK?) then (Sí)
+                    #LightGreen:Mostrar "Enviado";
+                else (No)
+                    #Orange:Fallo -> Guardar en Hive;
+                    :Guardar en Hive (Backup);
+                endif
+            }
+        else (No)
+            :Guardar en Hive (Local);
+            :Mostrar "Guardado Localmente";
+        endif
+    }
+
+fork again
+
+    ' ================= RAMA DERECHA: SINCRONIZADOR BACKGROUND =================
+    partition "Servicio de Sincronización (Daemon)" {
+        ' Bucle Infinito mientras la app esté abierta
+        while (¿App en ejecución?)
+            :Esperar (Timer 30s);
+            note right
+                Evita saturar
+                la batería/CPU
+            end note
+
+            if (¿Hay conexión a Internet?) then (Sí)
+                if (¿Hay registros pendientes en Hive?) then (Sí)
+                    :Leer Reporte + Fotos de Hive;
+                    :POST Multipart a API;
+                    
+                    if (¿Upload Exitoso?) then (Sí)
+                        :Eliminar registro de Hive;
+                        :Notificar (Toast/Snack):
+                        "Sincronización completada";
+                    else (No)
+                        :Mantener en Hive (Reintento);
+                        #Orange:Log de Error;
+                    endif
+                else (No)
+                    ' No hace nada, vuelve a dormir
+                endif
+            else (No)
+                 ' Sin internet, vuelve a dormir
+            endif
+        endwhile
+    }
+
+end fork
+
+stop
+@enduml
