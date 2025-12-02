@@ -239,8 +239,8 @@ class SettingsScreen extends ConsumerWidget {
 
         const Divider(height: 1, color: Colors.white10),
 
-        // Vibración
-        _buildIndustrialTile(
+        /*/ Vibración
+        /_buildIndustrialTile(
           icon: Icons.vibration,
           title: 'Feedback Háptico',
           subtitle: 'Vibrar al perder conexión',
@@ -292,7 +292,7 @@ class SettingsScreen extends ConsumerWidget {
                 : null,
           ),
         ),
-
+        */
         const Divider(height: 1, color: Colors.white10),
 
         // Botón de resetear

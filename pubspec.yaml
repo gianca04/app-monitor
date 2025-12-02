@@ -28,6 +28,7 @@ dependencies:
   markdown_editor_plus: ^0.2.15
   fleather: ^1.17.0
   path_provider: ^2.1.2
+  equatable: ^2.0.5
 
 dev_dependencies:
   flutter_test:

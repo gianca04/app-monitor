@@ -16,6 +16,8 @@ import '../../../projectslocal/presentation/providers/project_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../work_report_photos_local/domain/entities/work_report_photo_local_entity.dart';
 import '../../../work_report_photos_local/presentation/providers/work_report_photos_local_provider.dart';
+import '../../../employees/data/models/quick_search_response.dart';
+import '../../../employees/presentation/widgets/quick_search_modal.dart';
 
 class WorkReportLocalFormScreen extends ConsumerStatefulWidget {
   final int? reportId;
@@ -41,8 +43,7 @@ class _WorkReportLocalFormScreenState
   final _projectController = TextEditingController();
 
   int? _selectedProjectId;
-  int? _selectedEmployeeId;
-  String? _selectedEmployeeName;
+  EmployeeQuick? _selectedEmployee;
 
   bool _isLoading = false;
   WorkReportLocalEntity? _existingReport;
@@ -103,10 +104,16 @@ class _WorkReportLocalFormScreenState
       final firstName =
           sharedPreferences.getString('employee_first_name') ?? '';
       final lastName = sharedPreferences.getString('employee_last_name') ?? '';
+      final documentNumber = sharedPreferences.getString('employee_document_number');
+      final position = sharedPreferences.getString('employee_position');
       if (mounted) {
         setState(() {
-          _selectedEmployeeId = employeeId;
-          _selectedEmployeeName = '$firstName $lastName'.trim();
+          _selectedEmployee = EmployeeQuick(
+            id: employeeId,
+            fullName: '$firstName $lastName'.trim(),
+            documentNumber: documentNumber,
+            position: position,
+          );
         });
       }
     }
@@ -142,7 +149,11 @@ class _WorkReportLocalFormScreenState
             _materialsController.text = report.materials ?? '';
             _suggestionsController.text = report.suggestions ?? '';
             _selectedProjectId = report.projectId;
-            _selectedEmployeeId = report.employeeId;
+            // Create EmployeeQuick from report data - will be replaced if user selects different employee
+            _selectedEmployee = EmployeeQuick(
+              id: report.employeeId,
+              fullName: 'Empleado #${report.employeeId}', // Placeholder name
+            );
             // Cargar firmas existentes
             _supervisorSignature = report.supervisorSignature;
             _managerSignature = report.managerSignature;
@@ -199,7 +210,7 @@ class _WorkReportLocalFormScreenState
       return;
     }
 
-    if (_selectedEmployeeId == null) {
+    if (_selectedEmployee == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Debe seleccionar un empleado')),
       );
@@ -211,7 +222,7 @@ class _WorkReportLocalFormScreenState
     final now = DateTime.now().toIso8601String();
     final entity = WorkReportLocalEntity(
       id: _existingReport?.id,
-      employeeId: _selectedEmployeeId!,
+      employeeId: _selectedEmployee!.id!,
       projectId: _selectedProjectId!,
       name: _nameController.text,
       description: _descriptionController.text.isEmpty
@@ -269,6 +280,8 @@ class _WorkReportLocalFormScreenState
               backgroundColor: AppTheme.primaryAccent,
             ),
           );
+          // Refresh the list after successful save
+          ref.read(workReportsLocalListProvider.notifier).refresh();
           context.go('/work-reports-local');
         }
       },
@@ -405,6 +418,8 @@ class _WorkReportLocalFormScreenState
             backgroundColor: Colors.redAccent,
           ),
         );
+        // Refresh the list after successful deletion
+        ref.read(workReportsLocalListProvider.notifier).refresh();
         context.go('/work-reports-local');
       },
     );
@@ -526,6 +541,19 @@ class _WorkReportLocalFormScreenState
           ),
         );
       }
+    }
+  }
+
+  Future<void> _selectEmployee() async {
+    final result = await ModernBottomModal.show<EmployeeQuick>(
+      context,
+      title: 'Seleccionar Empleado',
+      content: const QuickSearchModal(),
+    );
+    if (result != null) {
+      setState(() {
+        _selectedEmployee = result;
+      });
     }
   }
 
@@ -656,16 +684,17 @@ class _WorkReportLocalFormScreenState
 
                 const SizedBox(height: 16),
 
-                // Employee (read-only)
+                // Employee Selection
                 _buildSectionHeader('EMPLEADO'),
                 const SizedBox(height: 8),
-                TextFormField(
-                  initialValue: _selectedEmployeeName ?? 'Cargando...',
-                  decoration: _inputDecoration(
-                    label: 'Responsable',
-                    icon: Icons.person,
-                  ),
-                  enabled: false,
+                IndustrialSelector(
+                  label: 'Seleccionar empleado',
+                  value: _selectedEmployee?.fullName,
+                  subValue: _selectedEmployee != null
+                      ? 'DOC: ${_selectedEmployee!.documentNumber ?? 'N/A'}'
+                      : null,
+                  icon: Icons.person,
+                  onTap: _selectEmployee,
                 ),
 
                 const SizedBox(height: 24),

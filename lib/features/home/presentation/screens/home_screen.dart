@@ -153,7 +153,7 @@ class HomeScreen extends ConsumerWidget {
 
             // Botón 2: Reporte Offline
             ActionButton(
-              label: "NUEVO REPORTE SIN CONEXIÓN",
+              label: "REPORTES SIN CONEXIÓN",
               icon: Icons.wifi_off,
               isPrimary: false, // Estilo secundario pero con borde
               onTap: () {
