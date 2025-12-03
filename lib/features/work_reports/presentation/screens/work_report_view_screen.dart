@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'dart:io';
+import 'package:open_file/open_file.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
 import '../../../../core/widgets/industrial_card.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
+import '../../../work_report_pdf/presentation/providers/work_report_pdf_provider.dart';
 
 class WorkReportViewScreen extends ConsumerWidget {
   final int id;
@@ -21,6 +24,97 @@ class WorkReportViewScreen extends ConsumerWidget {
       return url.substring(dataIndex);
     }
     return url; // Fallback to original if no data: found
+  }
+
+  Future<void> _downloadPdf(BuildContext context, WidgetRef ref) async {
+    final pdfNotifier = ref.read(workReportPdfProvider.notifier);
+    
+    // Mostrar diálogo de progreso
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardTheme.color,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Descargando PDF...',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final file = await pdfNotifier.downloadPdf(id);
+
+    if (context.mounted) {
+      Navigator.of(context).pop(); // Cerrar diálogo de progreso
+    }
+
+    if (file != null && context.mounted) {
+      // Éxito - mostrar opciones
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              const Text('PDF Descargado'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('El archivo se guardó en:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              const SizedBox(height: 8),
+              Text(
+                file.path,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('CERRAR', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await OpenFile.open(file.path);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('ABRIR PDF'),
+            ),
+          ],
+        ),
+      );
+    } else if (context.mounted) {
+      // Error
+      final pdfState = ref.read(workReportPdfProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(pdfState.error ?? 'Error al descargar el PDF'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 
   @override
@@ -43,6 +137,40 @@ class WorkReportViewScreen extends ConsumerWidget {
           child: Container(color: colorScheme.outline, height: 1),
         ),
         actions: [
+          // Botón de descarga PDF
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _downloadPdf(context, ref),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(0.5),
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.download_outlined,
+                          size: 16,
+                          color: colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           // REGLA: Botón con borde y feedback contenido
           Padding(
             padding: const EdgeInsets.only(right: 16.0),

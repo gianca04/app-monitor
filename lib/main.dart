@@ -43,6 +43,7 @@ void main() async {
 
   runApp(
     ProviderScope(
+      
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
       ],

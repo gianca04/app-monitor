@@ -178,6 +178,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   Future<void> _initToolsController() async {
     try {
       final text = widget.report.resources?.tools ?? '';
+      print('🔧 [EDIT] Tools text received: "${text.substring(0, text.length > 100 ? 100 : text.length)}"');
       if (text.isEmpty) {
         _toolsController = FleatherController();
       } else {
@@ -187,6 +188,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         
         result.fold(
           (failure) {
+            print('❌ [EDIT] HTML conversion failed for tools: ${failure.message}');
             // If conversion fails, try as JSON or plain text
             try {
               final delta = jsonDecode(text);
@@ -209,9 +211,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           },
           (conversionResult) {
             // Successfully converted HTML to Quill
+            print('✅ [EDIT] HTML converted for tools: ${conversionResult.content.substring(0, conversionResult.content.length > 100 ? 100 : conversionResult.content.length)}');
             try {
               final delta = jsonDecode(conversionResult.content);
               if (delta is Map && delta['ops'] != null) {
+                print('✅ [EDIT] Creating FleatherController with ops: ${delta['ops']}');
                 _toolsController = FleatherController(
                   document: ParchmentDocument.fromJson(delta['ops']),
                 );
@@ -219,7 +223,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('Error parsing converted Quill: $e');
+              print('❌ [EDIT] Error parsing converted Quill for tools: $e');
               _toolsController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -228,7 +232,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         );
       }
     } catch (err, st) {
-      print('Error initializing tools controller: $err\n$st');
+      print('❌ [EDIT] Error initializing tools controller: $err\n$st');
       _toolsController = FleatherController();
     }
     if (mounted) {

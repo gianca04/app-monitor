@@ -124,6 +124,40 @@ El módulo está diseñado para escalar eficientemente incluso con miles de empl
 
 ---
 
+## 7. Feature: Descarga de PDF de Reportes de Trabajo (Work Report PDF)
+
+### Propósito
+Este módulo proporciona funcionalidad para descargar reportes de trabajo en formato PDF desde el servidor. Permite a los usuarios generar, descargar y visualizar versiones en PDF de sus reportes, facilitando el compartir, imprimir o archivar documentación de trabajo de manera profesional.
+
+### Funcionamiento
+El sistema de descarga de PDFs está integrado directamente en la pantalla de visualización de reportes de trabajo. Cuando un usuario está viendo un reporte específico, tiene acceso a un botón de descarga ubicado en la barra de aplicación, junto al botón de edición.
+
+Al presionar el botón de descarga, el sistema muestra un diálogo de progreso informando al usuario que la descarga está en proceso. Simultáneamente, se envía una petición HTTP GET autenticada al endpoint del servidor específico para ese reporte. La petición incluye el token de autenticación del usuario para verificar que tiene permisos para acceder al reporte.
+
+El servidor backend recibe la solicitud, verifica la autenticación y autorización del usuario, genera dinámicamente el PDF del reporte utilizando toda la información disponible (datos generales, descripciones, recursos, firmas digitales y fotografías), y convierte el archivo PDF resultante a una cadena base64 para facilitar su transmisión.
+
+La respuesta del servidor es un objeto JSON que contiene dos campos principales: pdf_base64 (el contenido del PDF codificado en base64) y filename (el nombre sugerido para el archivo, típicamente algo como "reporte_123.pdf" donde 123 es el ID del reporte).
+
+El datasource en el cliente recibe esta respuesta y realiza varias operaciones. Primero, extrae la cadena base64 del JSON y la decodifica a bytes binarios utilizando la función base64Decode de Dart. Estos bytes representan el archivo PDF completo.
+
+A continuación, el sistema determina la ubicación apropiada para guardar el archivo. Utiliza la librería path_provider para obtener el directorio de documentos de la aplicación, que es un espacio privado donde la app puede almacenar archivos de forma persistente. En Android, típicamente es `/data/user/0/package_name/app_flutter/`, mientras que en iOS es el directorio Documents dentro del contenedor de la aplicación.
+
+Con la ruta del directorio y el nombre de archivo proporcionado por el servidor, el sistema crea un objeto File y escribe los bytes del PDF en el sistema de archivos del dispositivo utilizando el método writeAsBytes. El archivo queda guardado permanentemente en el dispositivo.
+
+Una vez guardado exitosamente, el sistema actualiza su estado interno marcando que la descarga ha finalizado y almacenando la referencia al archivo. El diálogo de progreso se cierra y se presenta un nuevo diálogo al usuario informando que la descarga fue exitosa. Este diálogo muestra la ruta completa donde se guardó el archivo y proporciona dos opciones: cerrar el diálogo o abrir el PDF inmediatamente.
+
+Si el usuario elige abrir el PDF, el sistema utiliza la librería open_file que invoca el visor de PDF nativo del sistema operativo (como Adobe Reader, Google PDF Viewer en Android, o el visor integrado de iOS). Esto permite al usuario visualizar el PDF con todas las capacidades nativas del dispositivo, incluyendo zoom, búsqueda, y opciones de compartir o imprimir proporcionadas por el visor.
+
+El manejo de errores es exhaustivo y diferenciado. Si ocurre un problema de conectividad (timeout, sin internet), el sistema captura la excepción de Dio y muestra un mensaje específico sugiriendo verificar la conexión. Si el servidor responde con un error (500, 503, etc.), se muestra un mensaje indicando problemas del servidor. Si hay problemas al escribir el archivo (permisos insuficientes, espacio en disco lleno), se captura la excepción del sistema de archivos y se informa apropiadamente.
+
+El estado de descarga se gestiona mediante Riverpod, permitiendo que múltiples partes de la interfaz puedan observar el progreso si fuera necesario. El notifier mantiene información sobre si hay una descarga en progreso, el archivo descargado más reciente, cualquier error ocurrido, y opcionalmente el progreso de descarga (aunque en este caso la descarga es lo suficientemente rápida como para no requerir una barra de progreso detallada).
+
+Los archivos descargados persisten en el dispositivo incluso después de cerrar la aplicación. Los usuarios pueden acceder nuevamente a estos archivos a través del administrador de archivos del sistema o descargándolos nuevamente desde la aplicación. Cada reporte tiene su propio nombre de archivo único proporcionado por el servidor, evitando conflictos de nombres.
+
+El módulo está diseñado siguiendo Clean Architecture, con separación clara entre datasource (comunicación HTTP y manejo de archivos), repository (contrato de interfaz), usecase (lógica de negocio) y provider (gestión de estado). Esto facilita el testing, mantenimiento y posibles extensiones futuras como descarga en segundo plano o notificaciones de descarga completada.
+
+---
+
 ## Arquitectura General
 
 Todos los módulos siguen los principios de Clean Architecture, separando claramente las responsabilidades en tres capas:

@@ -1,0 +1,137 @@
+@startuml Work Report PDF Download Process
+
+title Diagrama de Proceso - Descarga de PDF de Reportes de Trabajo
+
+actor Usuario
+participant "WorkReportView\nScreen" as Screen
+participant "WorkReportPdf\nNotifier" as Notifier
+participant "DownloadWorkReportPdf\nUseCase" as UseCase
+participant "WorkReportPdf\nRepository" as Repo
+participant "WorkReportPdf\nDataSource" as DS
+participant "Servidor API" as API
+participant "Sistema de\nArchivos Local" as FileSystem
+
+== Ver Reporte ==
+Usuario -> Screen: Visualiza reporte de trabajo
+Screen -> Usuario: Muestra detalles del reporte\ncon botón de descarga PDF
+
+== Iniciar Descarga ==
+Usuario -> Screen: Presiona botón "Descargar PDF"
+Screen -> Screen: Muestra diálogo de progreso\n"Descargando PDF..."
+Screen -> Notifier: downloadPdf(workReportId)
+Notifier -> Notifier: Actualiza estado\n(isDownloading = true)
+
+== Solicitar PDF al Servidor ==
+Notifier -> UseCase: call(workReportId)
+UseCase -> Repo: downloadWorkReportPdf(workReportId)
+Repo -> DS: downloadWorkReportPdf(workReportId)
+DS -> API: GET /work-reports/{id}/pdf\nAuthorization: Bearer token
+API -> API: Verifica autenticación
+API -> API: Genera PDF del reporte
+API -> API: Convierte PDF a base64
+API --> DS: JSON Response:\n{\n  data: {\n    pdf_base64: "JVBERi0x...",\n    filename: "reporte_123.pdf"\n  }\n}
+
+== Procesar y Guardar PDF ==
+DS -> DS: Extrae pdf_base64 y filename
+DS -> DS: Decodifica base64 a bytes
+DS -> FileSystem: getApplicationDocumentsDirectory()
+FileSystem --> DS: Directory path
+DS -> FileSystem: Crea File en path/filename
+DS -> FileSystem: writeAsBytes(pdfBytes)
+FileSystem --> DS: Archivo guardado exitosamente
+DS -> DS: Log: "📄 Archivo guardado: {path}"
+DS --> Repo: File object con ruta completa
+Repo --> UseCase: File object
+UseCase --> Notifier: File object
+
+== Notificar Éxito ==
+Notifier -> Notifier: Actualiza estado:\n- isDownloading = false\n- downloadedFile = file\n- error = null
+Notifier --> Screen: File guardado
+Screen -> Screen: Cierra diálogo de progreso
+Screen -> Screen: Muestra diálogo de éxito con opciones
+Screen -> Usuario: "PDF Descargado"\nRuta: {file.path}\n[CERRAR] [ABRIR PDF]
+
+== Abrir PDF ==
+Usuario -> Screen: Presiona "ABRIR PDF"
+Screen -> FileSystem: OpenFile.open(file.path)
+FileSystem -> FileSystem: Abre visor de PDF del sistema
+FileSystem --> Usuario: Muestra PDF en visor nativo
+
+== Cerrar Diálogo ==
+Usuario -> Screen: Presiona "CERRAR"
+Screen -> Usuario: Vuelve a vista del reporte
+
+== Manejo de Error de Conexión ==
+alt Error de conexión
+    DS -> API: GET /work-reports/{id}/pdf
+    API --> DS: DioException (timeout/connection error)
+    DS --> Repo: DioException
+    Repo --> UseCase: DioException
+    UseCase --> Notifier: DioException
+    Notifier -> Notifier: Actualiza estado:\n- isDownloading = false\n- error = "Error de conexión.\nVerifica tu conexión a internet."
+    Notifier --> Screen: Error
+    Screen -> Screen: Cierra diálogo de progreso
+    Screen -> Usuario: SnackBar con mensaje de error
+end
+
+== Manejo de Error del Servidor ==
+alt Error del servidor (500, 503, etc.)
+    DS -> API: GET /work-reports/{id}/pdf
+    API --> DS: DioException (badResponse)
+    DS --> Repo: DioException
+    Repo --> UseCase: DioException
+    UseCase --> Notifier: DioException
+    Notifier -> Notifier: Actualiza estado:\n- isDownloading = false\n- error = "Error del servidor.\nInténtalo más tarde."
+    Notifier --> Screen: Error
+    Screen -> Screen: Cierra diálogo de progreso
+    Screen -> Usuario: SnackBar con mensaje de error
+end
+
+== Manejo de Error de Permisos ==
+alt Sin permisos de escritura
+    DS -> FileSystem: writeAsBytes(pdfBytes)
+    FileSystem --> DS: FileSystemException
+    DS --> Repo: Exception
+    Repo --> UseCase: Exception
+    UseCase --> Notifier: Exception
+    Notifier -> Notifier: Actualiza estado:\n- isDownloading = false\n- error = "Error al guardar el archivo"
+    Notifier --> Screen: Error
+    Screen -> Usuario: SnackBar con mensaje de error
+end
+
+== Flujo de Descarga Múltiple ==
+note over Usuario, Screen
+  Si el usuario descarga múltiples PDFs,
+  cada uno se guarda con su filename único
+  proporcionado por el servidor (ej: reporte_123.pdf)
+end note
+
+== Ubicación de Archivos ==
+note over FileSystem
+  **Directorio de almacenamiento:**
+  Android: /data/user/0/package/app_flutter/
+  iOS: /var/mobile/Containers/Data/Application/UUID/Documents/
+  
+  Los archivos son persistentes y sobreviven
+  al cierre de la app, pero son privados
+  de la aplicación.
+end note
+
+== Características Técnicas ==
+note right of DS
+  **DataSource utiliza:**
+  - Dio para peticiones HTTP autenticadas
+  - base64Decode para convertir PDF
+  - path_provider para ruta de documentos
+  - File API de Dart para escritura
+  
+  **Formato de respuesta esperado:**
+  {
+    "data": {
+      "pdf_base64": "string (base64)",
+      "filename": "string (ej: reporte_123.pdf)"
+    }
+  }
+end note
+
+@enduml
