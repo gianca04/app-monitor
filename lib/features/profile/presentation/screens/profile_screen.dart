@@ -38,7 +38,7 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             // El TopPortion necesita una altura fija ahora, ya que el padre ya no es un Column con Expanded
             const SizedBox(
-              height: 250, // Altura fija para la porción superior (ajustable)
+              height: 135, // Altura fija para la porción superior (ajustable)
               child: _TopPortion(),
             ),
             Padding(

@@ -152,22 +152,60 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   Future<void> _initDescriptionController() async {
     try {
       final text = widget.report.description ?? '';
-      try {
-        final delta = jsonDecode(text);
-        if (delta is List) {
-          _descriptionController = FleatherController(
-            document: ParchmentDocument.fromJson(delta),
-          );
-        } else {
-          throw const FormatException('Not a list');
-        }
-      } catch (_) {
-        _descriptionController = FleatherController(
-          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+      if (text.isEmpty) {
+        _descriptionController = FleatherController();
+      } else {
+        // Try to convert HTML to Quill Delta
+        final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
+        final result = await convertHtmlToQuill(text);
+        
+        result.fold(
+          (failure) {
+            print('❌ [EDIT] HTML conversion failed for description: ${failure.message}');
+            // If conversion fails, try as JSON or plain text
+            try {
+              final delta = jsonDecode(text);
+              if (delta is Map && delta['ops'] != null) {
+                _descriptionController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else if (delta is List) {
+                _descriptionController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta),
+                );
+              } else {
+                throw const FormatException('Not a valid format');
+              }
+            } catch (_) {
+              _descriptionController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
+          (conversionResult) {
+            // Successfully converted HTML to Quill
+            print('✅ [EDIT] HTML converted for description: ${conversionResult.content.substring(0, conversionResult.content.length > 100 ? 100 : conversionResult.content.length)}');
+            try {
+              final delta = jsonDecode(conversionResult.content);
+              if (delta is Map && delta['ops'] != null) {
+                print('✅ [EDIT] Creating FleatherController with ops: ${delta['ops']}');
+                _descriptionController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else {
+                throw const FormatException('Invalid format');
+              }
+            } catch (e) {
+              print('❌ [EDIT] Error parsing converted Quill for description: $e');
+              _descriptionController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
         );
       }
     } catch (err, st) {
-      print('Error initializing description controller: $err\n$st');
+      print('❌ [EDIT] Error initializing description controller: $err\n$st');
       _descriptionController = FleatherController();
     }
     if (mounted) {
@@ -1238,8 +1276,27 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
       try {
         print('🔍 [SUBMIT] Calling updateWorkReport...');
         
-        // Convert Quill Delta to HTML for tools, personnel, and materials
+        // Convert Quill Delta to HTML for description
         final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
+        
+        String? descriptionHtml;
+        if (_descriptionController != null && 
+            _descriptionController!.document.toPlainText().trim().isNotEmpty) {
+          final descriptionDelta = jsonEncode({
+            'ops': _descriptionController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(descriptionDelta);
+          result.fold(
+            (failure) {
+              print('⚠️ [SUBMIT] Failed to convert description to HTML: ${failure.message}');
+              descriptionHtml = jsonEncode(_descriptionController!.document.toDelta().toJson());
+            },
+            (conversionResult) {
+              descriptionHtml = conversionResult.content;
+              print('✅ [SUBMIT] Description converted to HTML');
+            },
+          );
+        }
         
         String? toolsHtml;
         if (_toolsController != null && 
@@ -1310,12 +1367,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   ? null
                   : _startTimeController.text,
               _endTimeController.text.isEmpty ? null : _endTimeController.text,
-              _descriptionController?.document.toPlainText().trim().isEmpty ??
-                      true
-                  ? null
-                  : jsonEncode(
-                      _descriptionController!.document.toDelta().toJson(),
-                    ),
+              descriptionHtml,
               toolsHtml,
               personnelHtml,
               materialsHtml,
