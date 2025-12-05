@@ -20,8 +20,7 @@ import '../../../photos/domain/usecases/create_photo_usecase.dart';
 import '../../../photos/domain/usecases/update_photo_usecase.dart';
 import '../../../photos/domain/usecases/delete_photo_usecase.dart';
 import 'industrial_selector.dart';
-import 'signature_box.dart';
-import 'industrial_signature_dialog.dart';
+import '../../../../core/widgets/industrial_signature.dart';
 import '../../../../core/theme_config.dart';
 import '../../../../core/services/quill_converter_providers.dart';
 
@@ -158,10 +157,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
-            print('❌ [EDIT] HTML conversion failed for description: ${failure.message}');
+            print(
+              '❌ [EDIT] HTML conversion failed for description: ${failure.message}',
+            );
             // If conversion fails, try as JSON or plain text
             try {
               final delta = jsonDecode(text);
@@ -184,11 +185,15 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           },
           (conversionResult) {
             // Successfully converted HTML to Quill
-            print('✅ [EDIT] HTML converted for description: ${conversionResult.content.substring(0, conversionResult.content.length > 100 ? 100 : conversionResult.content.length)}');
+            print(
+              '✅ [EDIT] HTML converted for description: ${conversionResult.content.substring(0, conversionResult.content.length > 100 ? 100 : conversionResult.content.length)}',
+            );
             try {
               final delta = jsonDecode(conversionResult.content);
               if (delta is Map && delta['ops'] != null) {
-                print('✅ [EDIT] Creating FleatherController with ops: ${delta['ops']}');
+                print(
+                  '✅ [EDIT] Creating FleatherController with ops: ${delta['ops']}',
+                );
                 _descriptionController = FleatherController(
                   document: ParchmentDocument.fromJson(delta['ops']),
                 );
@@ -196,7 +201,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('❌ [EDIT] Error parsing converted Quill for description: $e');
+              print(
+                '❌ [EDIT] Error parsing converted Quill for description: $e',
+              );
               _descriptionController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -216,17 +223,21 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   Future<void> _initToolsController() async {
     try {
       final text = widget.report.resources?.tools ?? '';
-      print('🔧 [EDIT] Tools text received: "${text.substring(0, text.length > 100 ? 100 : text.length)}"');
+      print(
+        '🔧 [EDIT] Tools text received: "${text.substring(0, text.length > 100 ? 100 : text.length)}"',
+      );
       if (text.isEmpty) {
         _toolsController = FleatherController();
       } else {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
-            print('❌ [EDIT] HTML conversion failed for tools: ${failure.message}');
+            print(
+              '❌ [EDIT] HTML conversion failed for tools: ${failure.message}',
+            );
             // If conversion fails, try as JSON or plain text
             try {
               final delta = jsonDecode(text);
@@ -249,11 +260,15 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           },
           (conversionResult) {
             // Successfully converted HTML to Quill
-            print('✅ [EDIT] HTML converted for tools: ${conversionResult.content.substring(0, conversionResult.content.length > 100 ? 100 : conversionResult.content.length)}');
+            print(
+              '✅ [EDIT] HTML converted for tools: ${conversionResult.content.substring(0, conversionResult.content.length > 100 ? 100 : conversionResult.content.length)}',
+            );
             try {
               final delta = jsonDecode(conversionResult.content);
               if (delta is Map && delta['ops'] != null) {
-                print('✅ [EDIT] Creating FleatherController with ops: ${delta['ops']}');
+                print(
+                  '✅ [EDIT] Creating FleatherController with ops: ${delta['ops']}',
+                );
                 _toolsController = FleatherController(
                   document: ParchmentDocument.fromJson(delta['ops']),
                 );
@@ -287,7 +302,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
             // If conversion fails, try as JSON or plain text
@@ -348,7 +363,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
             // If conversion fails, try as JSON or plain text
@@ -508,9 +523,16 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
   Future<void> _savePhoto(int index) async {
     final photo = _photos[index];
+
+    // Convert descriptions from Delta to HTML before saving
+    final descripcionHtml = await _convertDeltaToHtml(photo['descripcion']);
+    final beforeWorkDescripcionHtml = await _convertDeltaToHtml(
+      photo['before_work_descripcion'],
+    );
+
     if (photo['id'] == null) {
       // Create new photo
-      if (photo['photo'] != null && photo['descripcion'].isNotEmpty) {
+      if (photo['photo'] != null && (descripcionHtml?.isNotEmpty ?? false)) {
         try {
           final createUseCase = CreatePhotoUseCase(
             ref.read(workReportsPhotosRepositoryProvider),
@@ -518,19 +540,23 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           await createUseCase(
             widget.report.id!,
             photo['photo'],
-            photo['descripcion'],
+            descripcionHtml!,
             photo['before_work_photo'],
-            photo['before_work_descripcion'],
+            beforeWorkDescripcionHtml,
           );
           // Invalidate to reload
           ref.invalidate(workReportProvider(widget.report.id!));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Foto creada exitosamente')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Foto creada exitosamente')),
+            );
+          }
         } catch (e) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error creando foto: $e')));
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error creando foto: $e')));
+          }
         }
       }
     } else {
@@ -547,24 +573,28 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   filename: 'photo.jpg',
                 )
               : null,
-          photo['descripcion'],
+          descripcionHtml ?? '',
           photo['before_work_photo_bytes'] != null
               ? MultipartFile.fromBytes(
                   photo['before_work_photo_bytes'],
                   filename: 'before.jpg',
                 )
               : null,
-          photo['before_work_descripcion'],
+          beforeWorkDescripcionHtml,
         );
         // Invalidate to reload
         ref.invalidate(workReportProvider(widget.report.id!));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Foto actualizada exitosamente')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto actualizada exitosamente')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error actualizando foto: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error actualizando foto: $e')),
+          );
+        }
       }
     }
   }
@@ -577,24 +607,32 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           ref.read(workReportsPhotosRepositoryProvider),
         );
         await deleteUseCase(photo['id']);
-        setState(() {
-          _photos.removeAt(index);
-        });
+        if (mounted) {
+          setState(() {
+            _photos.removeAt(index);
+          });
+        }
         // Invalidate to reload
         ref.invalidate(workReportProvider(widget.report.id!));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Foto eliminada exitosamente')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto eliminada exitosamente')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error eliminando foto: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error eliminando foto: $e')));
+        }
       }
     } else {
       // Remove unsaved photo
-      setState(() {
-        _photos.removeAt(index);
-      });
+      if (mounted) {
+        setState(() {
+          _photos.removeAt(index);
+        });
+      }
     }
   }
 
@@ -1202,7 +1240,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: SignatureBox(
+                    child: IndustrialSignatureBox(
                       title: 'SUPERVISOR',
                       base64: _supervisorSignatureBytes,
                       onTap: () => _pickImage(true),
@@ -1210,7 +1248,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: SignatureBox(
+                    child: IndustrialSignatureBox(
                       title: 'GERENCIA / CLIENTE',
                       base64: _managerSignatureBytes,
                       onTap: () => _pickImage(false),
@@ -1275,12 +1313,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
       setState(() => _isLoading = true);
       try {
         print('🔍 [SUBMIT] Calling updateWorkReport...');
-        
+
         // Convert Quill Delta to HTML for description
         final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
-        
+
         String? descriptionHtml;
-        if (_descriptionController != null && 
+        if (_descriptionController != null &&
             _descriptionController!.document.toPlainText().trim().isNotEmpty) {
           final descriptionDelta = jsonEncode({
             'ops': _descriptionController!.document.toDelta().toJson(),
@@ -1288,8 +1326,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           final result = await convertQuillToHtml(descriptionDelta);
           result.fold(
             (failure) {
-              print('⚠️ [SUBMIT] Failed to convert description to HTML: ${failure.message}');
-              descriptionHtml = jsonEncode(_descriptionController!.document.toDelta().toJson());
+              print(
+                '⚠️ [SUBMIT] Failed to convert description to HTML: ${failure.message}',
+              );
+              descriptionHtml = jsonEncode(
+                _descriptionController!.document.toDelta().toJson(),
+              );
             },
             (conversionResult) {
               descriptionHtml = conversionResult.content;
@@ -1297,9 +1339,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
             },
           );
         }
-        
+
         String? toolsHtml;
-        if (_toolsController != null && 
+        if (_toolsController != null &&
             _toolsController!.document.toPlainText().trim().isNotEmpty) {
           final toolsDelta = jsonEncode({
             'ops': _toolsController!.document.toDelta().toJson(),
@@ -1307,8 +1349,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           final result = await convertQuillToHtml(toolsDelta);
           result.fold(
             (failure) {
-              print('⚠️ [SUBMIT] Failed to convert tools to HTML: ${failure.message}');
-              toolsHtml = jsonEncode(_toolsController!.document.toDelta().toJson());
+              print(
+                '⚠️ [SUBMIT] Failed to convert tools to HTML: ${failure.message}',
+              );
+              toolsHtml = jsonEncode(
+                _toolsController!.document.toDelta().toJson(),
+              );
             },
             (conversionResult) {
               toolsHtml = conversionResult.content;
@@ -1316,9 +1362,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
             },
           );
         }
-        
+
         String? personnelHtml;
-        if (_personnelController != null && 
+        if (_personnelController != null &&
             _personnelController!.document.toPlainText().trim().isNotEmpty) {
           final personnelDelta = jsonEncode({
             'ops': _personnelController!.document.toDelta().toJson(),
@@ -1326,8 +1372,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           final result = await convertQuillToHtml(personnelDelta);
           result.fold(
             (failure) {
-              print('⚠️ [SUBMIT] Failed to convert personnel to HTML: ${failure.message}');
-              personnelHtml = jsonEncode(_personnelController!.document.toDelta().toJson());
+              print(
+                '⚠️ [SUBMIT] Failed to convert personnel to HTML: ${failure.message}',
+              );
+              personnelHtml = jsonEncode(
+                _personnelController!.document.toDelta().toJson(),
+              );
             },
             (conversionResult) {
               personnelHtml = conversionResult.content;
@@ -1335,9 +1385,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
             },
           );
         }
-        
+
         String? materialsHtml;
-        if (_materialsController != null && 
+        if (_materialsController != null &&
             _materialsController!.document.toPlainText().trim().isNotEmpty) {
           final materialsDelta = jsonEncode({
             'ops': _materialsController!.document.toDelta().toJson(),
@@ -1345,8 +1395,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           final result = await convertQuillToHtml(materialsDelta);
           result.fold(
             (failure) {
-              print('⚠️ [SUBMIT] Failed to convert materials to HTML: ${failure.message}');
-              materialsHtml = jsonEncode(_materialsController!.document.toDelta().toJson());
+              print(
+                '⚠️ [SUBMIT] Failed to convert materials to HTML: ${failure.message}',
+              );
+              materialsHtml = jsonEncode(
+                _materialsController!.document.toDelta().toJson(),
+              );
             },
             (conversionResult) {
               materialsHtml = conversionResult.content;
@@ -1354,7 +1408,30 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
             },
           );
         }
-        
+
+        String? suggestionsHtml;
+        if (_suggestionsController != null &&
+            _suggestionsController!.document.toPlainText().trim().isNotEmpty) {
+          final suggestionsDelta = jsonEncode({
+            'ops': _suggestionsController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(suggestionsDelta);
+          result.fold(
+            (failure) {
+              print(
+                '⚠️ [SUBMIT] Failed to convert suggestions to HTML: ${failure.message}',
+              );
+              suggestionsHtml = jsonEncode(
+                _suggestionsController!.document.toDelta().toJson(),
+              );
+            },
+            (conversionResult) {
+              suggestionsHtml = conversionResult.content;
+              print('✅ [SUBMIT] Suggestions converted to HTML');
+            },
+          );
+        }
+
         await ref
             .read(workReportsProvider.notifier)
             .updateWorkReport(
@@ -1371,12 +1448,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
               toolsHtml,
               personnelHtml,
               materialsHtml,
-              _suggestionsController?.document.toPlainText().trim().isEmpty ??
-                      true
-                  ? null
-                  : jsonEncode(
-                      _suggestionsController!.document.toDelta().toJson(),
-                    ),
+              suggestionsHtml,
               _supervisorSignature,
               _managerSignature,
             );
@@ -1410,8 +1482,44 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           );
         }
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
+    }
+  }
+
+  /// Converts a Delta JSON string to HTML using the quill converter.
+  /// Returns the original string if conversion fails or if it's empty.
+  Future<String?> _convertDeltaToHtml(String? deltaJson) async {
+    if (deltaJson == null || deltaJson.isEmpty) return null;
+
+    try {
+      // Try to parse as Delta JSON
+      final decoded = jsonDecode(deltaJson);
+      if (decoded is! List) return deltaJson;
+
+      // Format for the converter: { "ops": [...] }
+      final formattedDelta = jsonEncode({'ops': decoded});
+
+      final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
+      final result = await convertQuillToHtml(formattedDelta);
+
+      return result.fold(
+        (failure) {
+          print(
+            '⚠️ [CONVERT] Failed to convert Delta to HTML: ${failure.message}',
+          );
+          return deltaJson; // Return original on failure
+        },
+        (conversionResult) {
+          print('✅ [CONVERT] Delta converted to HTML');
+          return conversionResult.content;
+        },
+      );
+    } catch (e) {
+      print('⚠️ [CONVERT] Error parsing Delta JSON: $e');
+      return deltaJson; // Return original on error
     }
   }
 }

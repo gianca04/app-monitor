@@ -5,9 +5,7 @@ class AppTheme {
   static const Color background = Color(0xFF121619); // Fondo ultra oscuro
   static const Color surface = Color(0xFF1E2329); // Superficies de tarjetas
 
-  static const Color primaryAccent = Color(
-    0xFFFFAB00,
-  ); // Industrial Amber (Acción principal)
+  static const Color primaryAccent = Color.fromARGB(255, 21, 99, 99); // Industrial Amber (Acción principal)
   static const Color secondaryAccent = Color(
     0xFF03DAC6,
   ); // Electric Teal (Indicadores de estado)
@@ -135,7 +133,8 @@ class AppTheme {
       // --- BOTONES (Unificación de formas) ---
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryAccent,
+          //backgroundColor: primaryAccent,
+          backgroundColor: Color(0xFF2B9393),
           foregroundColor: Colors.black,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -150,7 +149,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryAccent,
+          //foregroundColor: primaryAccent,
+          foregroundColor: Color(0xFF2B9393),
           side: const BorderSide(color: borderHighContrast),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(kRadius),

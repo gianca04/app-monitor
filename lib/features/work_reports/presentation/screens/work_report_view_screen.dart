@@ -117,6 +117,10 @@ class WorkReportViewScreen extends ConsumerWidget {
     }
   }
 
+  void _goBack(BuildContext context) {
+    context.go('/work-reports');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(workReportProvider(id));
@@ -130,7 +134,7 @@ class WorkReportViewScreen extends ConsumerWidget {
         elevation: 0, // REGLA: Sombras eliminadas
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/work-reports'),
+          onPressed: () => _goBack(context),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),

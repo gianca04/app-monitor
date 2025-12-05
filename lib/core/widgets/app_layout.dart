@@ -303,7 +303,7 @@ class _ProfileIcon extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Colores del sistema
     final borderColor = Colors.grey.shade700;
-    final menuBgColor = const Color(0xFF1E1E1E);
+    final menuBgColor = const Color.fromARGB(255, 0, 0, 0);
     final textColor = Colors.white;
 
     return Theme(

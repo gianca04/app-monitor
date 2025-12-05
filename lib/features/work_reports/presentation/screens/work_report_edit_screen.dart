@@ -9,6 +9,10 @@ class WorkReportEditScreen extends ConsumerWidget {
 
   const WorkReportEditScreen({super.key, required this.id});
 
+  void _goBack(BuildContext context) {
+    context.go('/work-reports');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(workReportProvider(id));
@@ -17,7 +21,7 @@ class WorkReportEditScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/work-reports/$id'),
+          onPressed: () => _goBack(context),
         ),
         title: const Text('Edit Work Report'),
       ),

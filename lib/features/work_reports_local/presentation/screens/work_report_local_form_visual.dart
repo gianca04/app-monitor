@@ -4,8 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:typed_data';
 import '../../../../core/theme_config.dart';
+import '../../../../core/widgets/industrial_signature.dart';
 import '../widgets/industrial_selector.dart';
-import '../widgets/signature_box.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../projectslocal/presentation/providers/project_providers.dart';
 
@@ -72,6 +72,10 @@ class _WorkReportLocalFormVisualState
     super.dispose();
   }
 
+  void _goBack() {
+    context.go('/work-reports-local');
+  }
+
   Future<void> _loadCurrentUser() async {
     final authNotifier = ref.read(authProvider.notifier);
     final sharedPreferences = authNotifier.sharedPreferences;
@@ -110,14 +114,20 @@ class _WorkReportLocalFormVisualState
   }
 
   Future<void> _pickSignature(bool isSupervisor) async {
-    // TODO: Implement signature picking
-    setState(() {
-      if (isSupervisor) {
-        _supervisorSignature = 'signature_placeholder';
-      } else {
-        _managerSignature = 'signature_placeholder';
-      }
-    });
+    final String? signatureBase64 = await IndustrialSignatureSheet.show(
+      context,
+      title: isSupervisor ? 'FIRMA DEL SUPERVISOR' : 'FIRMA GERENCIA / CLIENTE',
+    );
+
+    if (signatureBase64 != null) {
+      setState(() {
+        if (isSupervisor) {
+          _supervisorSignature = signatureBase64;
+        } else {
+          _managerSignature = signatureBase64;
+        }
+      });
+    }
   }
 
   Future<void> _pickPhotoImage(int index, bool isAfterWork) async {
@@ -159,7 +169,7 @@ class _WorkReportLocalFormVisualState
         backgroundColor: AppTheme.surface,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/work-reports-local'),
+          onPressed: _goBack,
         ),
         title: Text(
           widget.reportId == null
@@ -630,7 +640,7 @@ class _WorkReportLocalFormVisualState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: SignatureBox(
+                      child: IndustrialSignatureBox(
                         title: 'SUPERVISOR',
                         base64: _supervisorSignature,
                         onTap: () => _pickSignature(true),
@@ -638,7 +648,7 @@ class _WorkReportLocalFormVisualState
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: SignatureBox(
+                      child: IndustrialSignatureBox(
                         title: 'GERENCIA / CLIENTE',
                         base64: _managerSignature,
                         onTap: () => _pickSignature(false),

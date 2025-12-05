@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:fleather/fleather.dart';
-import 'industrial_signature_dialog.dart';
+import '../../../../core/widgets/industrial_signature.dart';
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
@@ -19,7 +19,6 @@ import '../../../projects/data/models/quick_search_response.dart';
 import '../../../settings/providers/connectivity_preferences_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'industrial_selector.dart';
-import 'signature_box.dart';
 import '../../../../core/theme_config.dart';
 import '../../../../core/services/quill_converter_providers.dart';
 
@@ -168,7 +167,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
             // If conversion fails, try as JSON or plain text
@@ -229,7 +228,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
             // If conversion fails, try as JSON or plain text
@@ -290,7 +289,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
             // If conversion fails, try as JSON or plain text
@@ -351,7 +350,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
             // If conversion fails, try as JSON or plain text
@@ -412,7 +411,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         // Try to convert HTML to Quill Delta
         final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
         final result = await convertHtmlToQuill(text);
-        
+
         result.fold(
           (failure) {
             // If conversion fails, try as JSON or plain text
@@ -518,6 +517,71 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     setState(() {
       _photos.removeAt(index);
     });
+  }
+
+  /// Converts a Delta JSON string to HTML using the quill converter.
+  /// Returns the original string if conversion fails or if it's empty.
+  Future<String?> _convertDeltaToHtml(String? deltaJson) async {
+    if (deltaJson == null || deltaJson.isEmpty) return null;
+
+    try {
+      // Try to parse as Delta JSON
+      final decoded = jsonDecode(deltaJson);
+      if (decoded is! List) return deltaJson;
+
+      // Format for the converter: { "ops": [...] }
+      final formattedDelta = jsonEncode({'ops': decoded});
+
+      final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
+      final result = await convertQuillToHtml(formattedDelta);
+
+      return result.fold(
+        (failure) {
+          print(
+            '⚠️ [CONVERT] Failed to convert Delta to HTML: ${failure.message}',
+          );
+          return deltaJson; // Return original on failure
+        },
+        (conversionResult) {
+          print('✅ [CONVERT] Delta converted to HTML');
+          return conversionResult.content;
+        },
+      );
+    } catch (e) {
+      print('⚠️ [CONVERT] Error parsing Delta JSON: $e');
+      return deltaJson; // Return original on error
+    }
+  }
+
+  /// Converts photo descriptions from Delta to HTML format.
+  Future<List<Map<String, dynamic>>> _convertPhotoDescriptionsToHtml(
+    List<Map<String, dynamic>> photos,
+  ) async {
+    final convertedPhotos = <Map<String, dynamic>>[];
+
+    for (final photo in photos) {
+      final convertedPhoto = Map<String, dynamic>.from(photo);
+
+      // Convert after work description
+      if (photo['descripcion'] != null &&
+          photo['descripcion'].toString().isNotEmpty) {
+        convertedPhoto['descripcion'] = await _convertDeltaToHtml(
+          photo['descripcion'],
+        );
+      }
+
+      // Convert before work description
+      if (photo['before_work_descripcion'] != null &&
+          photo['before_work_descripcion'].toString().isNotEmpty) {
+        convertedPhoto['before_work_descripcion'] = await _convertDeltaToHtml(
+          photo['before_work_descripcion'],
+        );
+      }
+
+      convertedPhotos.add(convertedPhoto);
+    }
+
+    return convertedPhotos;
   }
 
   Future<void> _pickPhotoImage(int index, bool isAfterWork) async {
@@ -1120,7 +1184,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: SignatureBox(
+                    child: IndustrialSignatureBox(
                       title: 'SUPERVISOR',
                       base64:
                           _supervisorSignatureBytes, // Variable de estado String?
@@ -1131,7 +1195,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                   const SizedBox(width: 12), // Separación industrial
                   // Slot Gerencia
                   Expanded(
-                    child: SignatureBox(
+                    child: IndustrialSignatureBox(
                       title: 'GERENCIA / CLIENTE',
                       base64:
                           _managerSignatureBytes, // Variable de estado String?
@@ -1276,10 +1340,14 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 photo['before_work_photo'] != null,
           )
           .toList();
-      // print(
-      //   'Sending data: projectId: ${_selectedProject!.id!}, employeeId: ${int.parse(_employeeIdController.text)}, name: ${_nameController.text}, reportDate: ${_reportDateController.text}, startTime: ${_startTimeController.text.isEmpty ? null : _startTimeController.text}, endTime: ${_endTimeController.text.isEmpty ? null : _endTimeController.text}, description: ${_descriptionController.text.isEmpty ? null : _descriptionController.text}, tools: ${_toolsController.text.isEmpty ? null : _toolsController.text}, personnel: ${_personnelController.text.isEmpty ? null : _personnelController.text}, materials: ${_materialsController.text.isEmpty ? null : _materialsController.text}, suggestions: ${_suggestionsController.text.isEmpty ? null : _suggestionsController.text}, photos: $validPhotos',
-      // );
+
       setState(() => _isLoading = true);
+
+      // Convert photo descriptions from Delta to HTML before sending
+      final photosWithHtmlDescriptions = await _convertPhotoDescriptionsToHtml(
+        validPhotos,
+      );
+
       if (widget.report == null) {
         try {
           print('📝 [FORM] Starting create work report with signatures:');
@@ -1292,9 +1360,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
           // Convert Delta to HTML for tools, personnel, materials, suggestions
           final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
-          
+
           String? toolsHtml;
-          if (_toolsController != null && 
+          if (_toolsController != null &&
               _toolsController!.document.toPlainText().trim().isNotEmpty) {
             final toolsDelta = jsonEncode({
               'ops': _toolsController!.document.toDelta().toJson(),
@@ -1302,8 +1370,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             final result = await convertQuillToHtml(toolsDelta);
             result.fold(
               (failure) {
-                print('⚠️ [SUBMIT] Failed to convert tools to HTML: ${failure.message}');
-                toolsHtml = jsonEncode(_toolsController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [SUBMIT] Failed to convert tools to HTML: ${failure.message}',
+                );
+                toolsHtml = jsonEncode(
+                  _toolsController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 toolsHtml = conversionResult.content;
@@ -1311,9 +1383,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               },
             );
           }
-          
+
           String? personnelHtml;
-          if (_personnelController != null && 
+          if (_personnelController != null &&
               _personnelController!.document.toPlainText().trim().isNotEmpty) {
             final personnelDelta = jsonEncode({
               'ops': _personnelController!.document.toDelta().toJson(),
@@ -1321,8 +1393,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             final result = await convertQuillToHtml(personnelDelta);
             result.fold(
               (failure) {
-                print('⚠️ [SUBMIT] Failed to convert personnel to HTML: ${failure.message}');
-                personnelHtml = jsonEncode(_personnelController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [SUBMIT] Failed to convert personnel to HTML: ${failure.message}',
+                );
+                personnelHtml = jsonEncode(
+                  _personnelController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 personnelHtml = conversionResult.content;
@@ -1330,9 +1406,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               },
             );
           }
-          
+
           String? materialsHtml;
-          if (_materialsController != null && 
+          if (_materialsController != null &&
               _materialsController!.document.toPlainText().trim().isNotEmpty) {
             final materialsDelta = jsonEncode({
               'ops': _materialsController!.document.toDelta().toJson(),
@@ -1340,8 +1416,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             final result = await convertQuillToHtml(materialsDelta);
             result.fold(
               (failure) {
-                print('⚠️ [SUBMIT] Failed to convert materials to HTML: ${failure.message}');
-                materialsHtml = jsonEncode(_materialsController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [SUBMIT] Failed to convert materials to HTML: ${failure.message}',
+                );
+                materialsHtml = jsonEncode(
+                  _materialsController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 materialsHtml = conversionResult.content;
@@ -1349,18 +1429,25 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               },
             );
           }
-          
+
           String? suggestionsHtml;
-          if (_suggestionsController != null && 
-              _suggestionsController!.document.toPlainText().trim().isNotEmpty) {
+          if (_suggestionsController != null &&
+              _suggestionsController!.document
+                  .toPlainText()
+                  .trim()
+                  .isNotEmpty) {
             final suggestionsDelta = jsonEncode({
               'ops': _suggestionsController!.document.toDelta().toJson(),
             });
             final result = await convertQuillToHtml(suggestionsDelta);
             result.fold(
               (failure) {
-                print('⚠️ [SUBMIT] Failed to convert suggestions to HTML: ${failure.message}');
-                suggestionsHtml = jsonEncode(_suggestionsController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [SUBMIT] Failed to convert suggestions to HTML: ${failure.message}',
+                );
+                suggestionsHtml = jsonEncode(
+                  _suggestionsController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 suggestionsHtml = conversionResult.content;
@@ -1368,18 +1455,25 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               },
             );
           }
-          
+
           String? descriptionHtml;
-          if (_descriptionController != null && 
-              _descriptionController!.document.toPlainText().trim().isNotEmpty) {
+          if (_descriptionController != null &&
+              _descriptionController!.document
+                  .toPlainText()
+                  .trim()
+                  .isNotEmpty) {
             final descriptionDelta = jsonEncode({
               'ops': _descriptionController!.document.toDelta().toJson(),
             });
             final result = await convertQuillToHtml(descriptionDelta);
             result.fold(
               (failure) {
-                print('⚠️ [SUBMIT] Failed to convert description to HTML: ${failure.message}');
-                descriptionHtml = jsonEncode(_descriptionController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [SUBMIT] Failed to convert description to HTML: ${failure.message}',
+                );
+                descriptionHtml = jsonEncode(
+                  _descriptionController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 descriptionHtml = conversionResult.content;
@@ -1406,7 +1500,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 personnelHtml,
                 materialsHtml,
                 suggestionsHtml,
-                validPhotos,
+                photosWithHtmlDescriptions,
                 _supervisorSignature,
                 _managerSignature,
               );
@@ -1456,15 +1550,17 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             );
           }
         } finally {
-          setState(() => _isLoading = false);
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
         }
       } else {
         try {
           // Convert Delta to HTML for tools, personnel, materials, suggestions
           final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
-          
+
           String? toolsHtml;
-          if (_toolsController != null && 
+          if (_toolsController != null &&
               _toolsController!.document.toPlainText().trim().isNotEmpty) {
             final toolsDelta = jsonEncode({
               'ops': _toolsController!.document.toDelta().toJson(),
@@ -1472,8 +1568,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             final result = await convertQuillToHtml(toolsDelta);
             result.fold(
               (failure) {
-                print('⚠️ [UPDATE] Failed to convert tools to HTML: ${failure.message}');
-                toolsHtml = jsonEncode(_toolsController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [UPDATE] Failed to convert tools to HTML: ${failure.message}',
+                );
+                toolsHtml = jsonEncode(
+                  _toolsController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 toolsHtml = conversionResult.content;
@@ -1481,9 +1581,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               },
             );
           }
-          
+
           String? personnelHtml;
-          if (_personnelController != null && 
+          if (_personnelController != null &&
               _personnelController!.document.toPlainText().trim().isNotEmpty) {
             final personnelDelta = jsonEncode({
               'ops': _personnelController!.document.toDelta().toJson(),
@@ -1491,8 +1591,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             final result = await convertQuillToHtml(personnelDelta);
             result.fold(
               (failure) {
-                print('⚠️ [UPDATE] Failed to convert personnel to HTML: ${failure.message}');
-                personnelHtml = jsonEncode(_personnelController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [UPDATE] Failed to convert personnel to HTML: ${failure.message}',
+                );
+                personnelHtml = jsonEncode(
+                  _personnelController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 personnelHtml = conversionResult.content;
@@ -1500,9 +1604,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               },
             );
           }
-          
+
           String? materialsHtml;
-          if (_materialsController != null && 
+          if (_materialsController != null &&
               _materialsController!.document.toPlainText().trim().isNotEmpty) {
             final materialsDelta = jsonEncode({
               'ops': _materialsController!.document.toDelta().toJson(),
@@ -1510,8 +1614,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             final result = await convertQuillToHtml(materialsDelta);
             result.fold(
               (failure) {
-                print('⚠️ [UPDATE] Failed to convert materials to HTML: ${failure.message}');
-                materialsHtml = jsonEncode(_materialsController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [UPDATE] Failed to convert materials to HTML: ${failure.message}',
+                );
+                materialsHtml = jsonEncode(
+                  _materialsController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 materialsHtml = conversionResult.content;
@@ -1519,18 +1627,25 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               },
             );
           }
-          
+
           String? suggestionsHtml;
-          if (_suggestionsController != null && 
-              _suggestionsController!.document.toPlainText().trim().isNotEmpty) {
+          if (_suggestionsController != null &&
+              _suggestionsController!.document
+                  .toPlainText()
+                  .trim()
+                  .isNotEmpty) {
             final suggestionsDelta = jsonEncode({
               'ops': _suggestionsController!.document.toDelta().toJson(),
             });
             final result = await convertQuillToHtml(suggestionsDelta);
             result.fold(
               (failure) {
-                print('⚠️ [UPDATE] Failed to convert suggestions to HTML: ${failure.message}');
-                suggestionsHtml = jsonEncode(_suggestionsController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [UPDATE] Failed to convert suggestions to HTML: ${failure.message}',
+                );
+                suggestionsHtml = jsonEncode(
+                  _suggestionsController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 suggestionsHtml = conversionResult.content;
@@ -1538,18 +1653,25 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               },
             );
           }
-          
+
           String? descriptionHtml;
-          if (_descriptionController != null && 
-              _descriptionController!.document.toPlainText().trim().isNotEmpty) {
+          if (_descriptionController != null &&
+              _descriptionController!.document
+                  .toPlainText()
+                  .trim()
+                  .isNotEmpty) {
             final descriptionDelta = jsonEncode({
               'ops': _descriptionController!.document.toDelta().toJson(),
             });
             final result = await convertQuillToHtml(descriptionDelta);
             result.fold(
               (failure) {
-                print('⚠️ [UPDATE] Failed to convert description to HTML: ${failure.message}');
-                descriptionHtml = jsonEncode(_descriptionController!.document.toDelta().toJson());
+                print(
+                  '⚠️ [UPDATE] Failed to convert description to HTML: ${failure.message}',
+                );
+                descriptionHtml = jsonEncode(
+                  _descriptionController!.document.toDelta().toJson(),
+                );
               },
               (conversionResult) {
                 descriptionHtml = conversionResult.content;
@@ -1606,7 +1728,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             );
           }
         } finally {
-          setState(() => _isLoading = false);
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
         }
       }
     }
