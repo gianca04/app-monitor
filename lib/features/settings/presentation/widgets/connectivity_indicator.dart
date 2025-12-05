@@ -236,11 +236,13 @@ class ConnectivityDetailCard extends ConsumerWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: connectionStatusAsync.when(
-          data: (status) => _buildDetailContent(context, status),
-          loading: () => _buildDetailContent(context, ConnectionStatus.offline),
-          error: (_, __) =>
-              _buildDetailContent(context, ConnectionStatus.offline),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: connectionStatusAsync.when(
+            data: (status) => _buildDetailContent(context, status),
+            loading: () => _buildLoadingContent(context),
+            error: (_, __) => _buildDetailContent(context, ConnectionStatus.offline),
+          ),
         ),
       ),
     );
@@ -261,6 +263,7 @@ class ConnectivityDetailCard extends ConsumerWidget {
     );
 
     return Column(
+      key: ValueKey(status), // For AnimatedSwitcher
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min, // Ajuste al contenido
       children: [
@@ -355,6 +358,86 @@ class ConnectivityDetailCard extends ConsumerWidget {
             ),
           ),
         ]
+      ],
+    );
+  }
+
+  Widget _buildLoadingContent(BuildContext context) {
+    return Column(
+      key: const ValueKey('loading'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              ),
+              child: const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 16,
+                    width: 150,
+                    color: Colors.grey.withOpacity(0.3),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    height: 12,
+                    width: 200,
+                    color: Colors.grey.withOpacity(0.2),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const Divider(height: 32, color: Colors.white10),
+        _buildLoadingRow(context),
+        const SizedBox(height: 16),
+        _buildLoadingRow(context),
+      ],
+    );
+  }
+
+  Widget _buildLoadingRow(BuildContext context) {
+    return Row(
+      children: [
+        const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            height: 14,
+            color: Colors.grey.withOpacity(0.2),
+          ),
+        ),
+        Container(
+          height: 14,
+          width: 80,
+          color: Colors.grey.withOpacity(0.3),
+        ),
       ],
     );
   }

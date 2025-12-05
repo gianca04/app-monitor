@@ -74,69 +74,76 @@ class _AppLayoutState extends State<AppLayout> {
           preferredSize: const Size.fromHeight(1),
           child: Container(color: Colors.white10, height: 1),
         ),
-        title: Consumer(
-          builder: (context, ref, child) {
-            final preferences = ref.watch(
-              connectivityPreferencesNotifierProvider,
-            );
-            final connectivityAsync = ref.watch(connectionStatusProvider);
-
-            // Lógica de visualización mantenida
-            final bool isEnabled = preferences.isEnabled;
-            final int displayModeIndex = preferences.displayMode;
-
-            ConnectivityDisplayMode mode;
-            switch (displayModeIndex) {
-              case 0:
-                mode = ConnectivityDisplayMode.iconOnly;
-                break;
-              case 1:
-                mode = ConnectivityDisplayMode.iconWithText;
-                break;
-              case 2:
-                mode = ConnectivityDisplayMode.dotOnly;
-                break;
-              case 3:
-                mode = ConnectivityDisplayMode.badge;
-                break;
-              default:
-                mode = ConnectivityDisplayMode.iconOnly;
-            }
-
-            Widget logoWidget = Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SvgPicture.asset(
-                'assets/images/svg/logo.svg',
-                height: 24,
-                width: 24,
-              ),
-            );
-
-            if (!isEnabled) return logoWidget;
-
-            return connectivityAsync.when(
-              data: (status) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    logoWidget,
-                    ConnectivityIndicator(
-                      mode: mode,
-                      showWhenOnline: preferences.showWhenOnline,
-                    ),
-                  ],
-                ),
-              ),
-              loading: () => logoWidget,
-              error: (_, __) => logoWidget,
-            );
-          },
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: SvgPicture.asset(
+            'assets/images/svg/logo.svg',
+            height: 24,
+            width: 24,
+          ),
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            // Eliminado CircleAvatar para respetar el diseño cuadrado del ProfileIcon
-            child: _ProfileIcon(iconSize: 20),
+        actions: [
+          Consumer(
+            builder: (context, ref, child) {
+              final preferences = ref.watch(
+                connectivityPreferencesNotifierProvider,
+              );
+              final connectivityAsync = ref.watch(connectionStatusProvider);
+
+              // Lógica de visualización mantenida
+              final bool isEnabled = preferences.isEnabled;
+              final int displayModeIndex = preferences.displayMode;
+
+              ConnectivityDisplayMode mode;
+              switch (displayModeIndex) {
+                case 0:
+                  mode = ConnectivityDisplayMode.iconOnly;
+                  break;
+                case 1:
+                  mode = ConnectivityDisplayMode.iconWithText;
+                  break;
+                case 2:
+                  mode = ConnectivityDisplayMode.dotOnly;
+                  break;
+                case 3:
+                  mode = ConnectivityDisplayMode.badge;
+                  break;
+                default:
+                  mode = ConnectivityDisplayMode.iconOnly;
+              }
+
+              if (!isEnabled) {
+                return const Padding(
+                  padding: EdgeInsets.only(right: 16.0),
+                  child: _ProfileIcon(iconSize: 20),
+                );
+              }
+
+              return connectivityAsync.when(
+                data: (status) => Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ConnectivityIndicator(
+                        mode: mode,
+                        showWhenOnline: preferences.showWhenOnline,
+                      ),
+                      const SizedBox(width: 16),
+                      const _ProfileIcon(iconSize: 20),
+                    ],
+                  ),
+                ),
+                loading: () => const Padding(
+                  padding: EdgeInsets.only(right: 16.0),
+                  child: _ProfileIcon(iconSize: 20),
+                ),
+                error: (_, __) => const Padding(
+                  padding: EdgeInsets.only(right: 16.0),
+                  child: _ProfileIcon(iconSize: 20),
+                ),
+              );
+            },
           ),
         ],
       ),

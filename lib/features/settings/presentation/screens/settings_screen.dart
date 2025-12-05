@@ -3,9 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vibration/vibration.dart';
-// Asegúrate de que estas importaciones apunten a tus archivos correctos
 import '../widgets/connectivity_indicator.dart';
 import 'package:monitor/features/settings/providers/connectivity_preferences_provider.dart';
+import 'package:monitor/features/settings/domain/entities/connectivity_preferences.dart';
 import 'package:monitor/core/theme_config.dart';
 import 'package:monitor/core/widgets/industrial_tile.dart';
 
