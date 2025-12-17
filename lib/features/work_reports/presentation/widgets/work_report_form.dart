@@ -21,6 +21,13 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import 'industrial_selector.dart';
 import '../../../../core/theme_config.dart';
 import '../../../../core/services/quill_converter_providers.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import '../../../work_reports_local/domain/entities/work_report_local_entity.dart';
+import '../../../work_reports_local/presentation/providers/work_reports_local_provider.dart';
+import '../../../work_report_photos_local/domain/entities/work_report_photo_local_entity.dart';
+import '../../../work_report_photos_local/presentation/providers/work_report_photos_local_provider.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
 const Color kIndBg = AppTheme.background;
@@ -722,83 +729,81 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               const SizedBox(height: 12),
 
               // Date & Time Row
-              Row(
+              Column(
+                // <--- 1. CONTENEDOR PRINCIPAL: Vertical
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      controller: _reportDateController,
-                      readOnly: true,
-                      decoration: const InputDecoration(labelText: 'FECHA'),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2101),
-                        );
-                        if (picked != null) {
-                          _reportDateController.text = picked
-                              .toIso8601String()
-                              .split('T')[0];
-                        }
-                      },
-                      validator: (value) {
-                        if (value?.isEmpty ?? true) return 'Requerido';
-                        return null;
-                      },
-                    ),
+                  // --- 1. CAMPO FECHA (Full Width) ---
+                  TextFormField(
+                    controller: _reportDateController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'FECHA'),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2101),
+                      );
+                      if (picked != null) {
+                        _reportDateController.text = picked
+                            .toIso8601String()
+                            .split('T')[0];
+                      }
+                    },
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'Requerido' : null,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _startTimeController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'INICIO (HH:mm)',
+
+                  const SizedBox(height: 16), // Espacio entre Fecha y Horas
+                  // --- 2. HORA INICIO Y HORA FIN (Row Anidada) ---
+                  Row(
+                    // <--- 2. Fila para las Horas
+                    children: [
+                      Expanded(
+                        // 50%
+                        child: TextFormField(
+                          controller: _startTimeController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'INICIO (HH:mm)',
+                          ),
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (picked != null) {
+                              _startTimeController.text =
+                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                            }
+                          },
+                        ),
                       ),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.now(),
-                        );
-                        if (picked != null) {
-                          _startTimeController.text =
-                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                        }
-                      },
-                      validator: (value) {
-                        if (value?.isEmpty ?? true) return null;
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _endTimeController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'FIN (HH:mm)',
+                      const SizedBox(
+                        width: 8,
+                      ), // Espacio entre los campos de hora
+                      Expanded(
+                        // 50%
+                        child: TextFormField(
+                          controller: _endTimeController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'FIN (HH:mm)',
+                          ),
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (picked != null) {
+                              _endTimeController.text =
+                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                            }
+                          },
+                        ),
                       ),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.now(),
-                        );
-                        if (picked != null) {
-                          _endTimeController.text =
-                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                        }
-                      },
-                      validator: (value) {
-                        if (value?.isEmpty ?? true) return null;
-                        final regex = RegExp(r'^\d{2}:\d{2}$');
-                        if (!regex.hasMatch(value!)) return 'Formato inválido';
-                        return null;
-                      },
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -1289,8 +1294,189 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   }
 
   // ... (Tu método _submit se mantiene INTACTO) ...
+  Future<void> _saveLocally({
+    required int projectId,
+    required int employeeId,
+    required String name,
+    required String reportDate,
+    String? startTime,
+    String? endTime,
+    String? description,
+    String? tools,
+    String? personnel,
+    String? materials,
+    String? suggestions,
+    String? supervisorSignature,
+    String? managerSignature,
+    required List<Map<String, dynamic>> photos,
+  }) async {
+    setState(() => _isLoading = true);
+    try {
+      // 1. Save photos to local storage
+      final appDir = await getApplicationDocumentsDirectory();
+      final photosDir = Directory('${appDir.path}/work_report_photos');
+      if (!await photosDir.exists()) {
+        await photosDir.create(recursive: true);
+      }
+
+      // 2. Prepare Local Entity
+      final localReport = WorkReportLocalEntity(
+        projectId: projectId,
+        employeeId: employeeId,
+        name: name,
+        description: description,
+        tools: tools,
+        personnel: personnel,
+        materials: materials,
+        suggestions: suggestions,
+        supervisorSignature: supervisorSignature,
+        managerSignature: managerSignature,
+        startTime: startTime,
+        endTime: endTime,
+        isSynced: false,
+        createdAt: DateTime.now().toIso8601String(),
+        updatedAt: DateTime.now().toIso8601String(),
+      );
+
+      // 3. Save Report Header
+      final createReportUseCase = ref.read(
+        createWorkReportLocalUseCaseProvider,
+      );
+      final result = await createReportUseCase(localReport);
+
+      await result.fold(
+        (failure) async {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error al guardar localmente: ${failure.message}',
+                ),
+              ),
+            );
+          }
+        },
+        (localId) async {
+          // 4. Save Photos linked to localId
+          final createPhotoUseCase = ref.read(
+            createWorkReportPhotoLocalUseCaseProvider,
+          );
+
+          for (var i = 0; i < photos.length; i++) {
+            final photoData = photos[i];
+            String? photoPath;
+            String? beforePhotoPath;
+
+            // Save 'After' Photo
+            if (photoData['photo_bytes'] != null) {
+              final fileName =
+                  'report_${localId}_photo_${i}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+              final file = File(path.join(photosDir.path, fileName));
+              await file.writeAsBytes(photoData['photo_bytes']);
+              photoPath = file.path;
+            }
+
+            // Save 'Before' Photo
+            if (photoData['before_work_photo_bytes'] != null) {
+              final fileName =
+                  'report_${localId}_before_${i}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+              final file = File(path.join(photosDir.path, fileName));
+              await file.writeAsBytes(photoData['before_work_photo_bytes']);
+              beforePhotoPath = file.path;
+            }
+
+            if (photoPath != null ||
+                beforePhotoPath != null ||
+                (photoData['descripcion']?.isNotEmpty ?? false) ||
+                (photoData['before_work_descripcion']?.isNotEmpty ?? false)) {
+              final photoEntity = WorkReportPhotoLocalEntity(
+                workReportId: localId,
+                photoPath: photoPath,
+                beforeWorkPhotoPath: beforePhotoPath,
+                descripcion: photoData['descripcion'],
+                beforeWorkDescripcion: photoData['before_work_descripcion'],
+                createdAt: DateTime.now().toIso8601String(),
+                updatedAt: DateTime.now().toIso8601String(),
+              );
+
+              await createPhotoUseCase(photoEntity);
+            }
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Reporte guardado localmente. Se sincronizará cuando haya conexión.',
+                ),
+              ),
+            );
+            context.go('/work-reports');
+          }
+        },
+      );
+    } catch (e) {
+      print('Error saving locally: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error crítico al guardar localmente: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showErrorOptionsDialog(
+    String errorMessage, {
+    required VoidCallback onRetry,
+    required VoidCallback onSaveLocally,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: kIndSurface,
+        title: const Text(
+          'Error al crear reporte',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          '$errorMessage\n\n¿Qué desea hacer?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onSaveLocally();
+            },
+            child: const Text(
+              'Guardar Localmente',
+              style: TextStyle(color: kIndAccent),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: kIndAccent),
+            onPressed: () {
+              Navigator.pop(context);
+              onRetry();
+            },
+            child: const Text(
+              'Reintentar',
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submit() async {
-    // ... el código de _submit original ...
     if (_formKey.currentState?.validate() ?? false) {
       if (_selectedEmployee == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1329,9 +1515,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         isOnline = actualOnline;
       }
 
-      // Validate photos - descriptions are not required
-      // Removed validation for photo descriptions
-
+      // Validate photos
       List<Map<String, dynamic>> validPhotos = _photos
           .where(
             (photo) =>
@@ -1343,343 +1527,263 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
       setState(() => _isLoading = true);
 
-      // Convert photo descriptions from Delta to HTML before sending
-      final photosWithHtmlDescriptions = await _convertPhotoDescriptionsToHtml(
-        validPhotos,
-      );
+      try {
+        // Convert photo descriptions from Delta to HTML before sending/saving
+        final photosWithHtmlDescriptions =
+            await _convertPhotoDescriptionsToHtml(validPhotos);
 
-      if (widget.report == null) {
-        try {
-          print('📝 [FORM] Starting create work report with signatures:');
-          print(
-            '📝 [FORM] _supervisorSignature: ${_supervisorSignature != null ? 'present (${_supervisorSignature!.length} chars)' : 'null'}',
-          );
-          print(
-            '📝 [FORM] _managerSignature: ${_managerSignature != null ? 'present (${_managerSignature!.length} chars)' : 'null'}',
-          );
+        // Convert Delta to HTML for tools, personnel, materials, suggestions
+        final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
 
-          // Convert Delta to HTML for tools, personnel, materials, suggestions
-          final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
-
-          String? toolsHtml;
-          if (_toolsController != null &&
-              _toolsController!.document.toPlainText().trim().isNotEmpty) {
-            final toolsDelta = jsonEncode({
-              'ops': _toolsController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(toolsDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [SUBMIT] Failed to convert tools to HTML: ${failure.message}',
-                );
-                toolsHtml = jsonEncode(
-                  _toolsController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                toolsHtml = conversionResult.content;
-                print('✅ [SUBMIT] Tools converted to HTML');
-              },
-            );
-          }
-
-          String? personnelHtml;
-          if (_personnelController != null &&
-              _personnelController!.document.toPlainText().trim().isNotEmpty) {
-            final personnelDelta = jsonEncode({
-              'ops': _personnelController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(personnelDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [SUBMIT] Failed to convert personnel to HTML: ${failure.message}',
-                );
-                personnelHtml = jsonEncode(
-                  _personnelController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                personnelHtml = conversionResult.content;
-                print('✅ [SUBMIT] Personnel converted to HTML');
-              },
-            );
-          }
-
-          String? materialsHtml;
-          if (_materialsController != null &&
-              _materialsController!.document.toPlainText().trim().isNotEmpty) {
-            final materialsDelta = jsonEncode({
-              'ops': _materialsController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(materialsDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [SUBMIT] Failed to convert materials to HTML: ${failure.message}',
-                );
-                materialsHtml = jsonEncode(
-                  _materialsController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                materialsHtml = conversionResult.content;
-                print('✅ [SUBMIT] Materials converted to HTML');
-              },
-            );
-          }
-
-          String? suggestionsHtml;
-          if (_suggestionsController != null &&
-              _suggestionsController!.document
-                  .toPlainText()
-                  .trim()
-                  .isNotEmpty) {
-            final suggestionsDelta = jsonEncode({
-              'ops': _suggestionsController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(suggestionsDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [SUBMIT] Failed to convert suggestions to HTML: ${failure.message}',
-                );
-                suggestionsHtml = jsonEncode(
-                  _suggestionsController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                suggestionsHtml = conversionResult.content;
-                print('✅ [SUBMIT] Suggestions converted to HTML');
-              },
-            );
-          }
-
-          String? descriptionHtml;
-          if (_descriptionController != null &&
-              _descriptionController!.document
-                  .toPlainText()
-                  .trim()
-                  .isNotEmpty) {
-            final descriptionDelta = jsonEncode({
-              'ops': _descriptionController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(descriptionDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [SUBMIT] Failed to convert description to HTML: ${failure.message}',
-                );
-                descriptionHtml = jsonEncode(
-                  _descriptionController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                descriptionHtml = conversionResult.content;
-                print('✅ [SUBMIT] Description converted to HTML');
-              },
-            );
-          }
-
-          final newReport = await ref
-              .read(workReportsProvider.notifier)
-              .createWorkReport(
-                _selectedProject!.id!,
-                int.parse(_employeeIdController.text),
-                _nameController.text,
-                _reportDateController.text,
-                _startTimeController.text.isEmpty
-                    ? null
-                    : _startTimeController.text,
-                _endTimeController.text.isEmpty
-                    ? null
-                    : _endTimeController.text,
-                descriptionHtml,
-                toolsHtml,
-                personnelHtml,
-                materialsHtml,
-                suggestionsHtml,
-                photosWithHtmlDescriptions,
-                _supervisorSignature,
-                _managerSignature,
+        String? toolsHtml;
+        if (_toolsController != null &&
+            _toolsController!.document.toPlainText().trim().isNotEmpty) {
+          final toolsDelta = jsonEncode({
+            'ops': _toolsController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(toolsDelta);
+          result.fold(
+            (failure) {
+              print(
+                '⚠️ [SUBMIT] Failed to convert tools to HTML: ${failure.message}',
               );
+              toolsHtml = jsonEncode(
+                _toolsController!.document.toDelta().toJson(),
+              );
+            },
+            (conversionResult) {
+              toolsHtml = conversionResult.content;
+              print('✅ [SUBMIT] Tools converted to HTML');
+            },
+          );
+        }
 
-          // Invalidate the individual report provider to force reload
-          ref.invalidate(workReportProvider(newReport.id!));
+        String? personnelHtml;
+        if (_personnelController != null &&
+            _personnelController!.document.toPlainText().trim().isNotEmpty) {
+          final personnelDelta = jsonEncode({
+            'ops': _personnelController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(personnelDelta);
+          result.fold(
+            (failure) {
+              print(
+                '⚠️ [SUBMIT] Failed to convert personnel to HTML: ${failure.message}',
+              );
+              personnelHtml = jsonEncode(
+                _personnelController!.document.toDelta().toJson(),
+              );
+            },
+            (conversionResult) {
+              personnelHtml = conversionResult.content;
+              print('✅ [SUBMIT] Personnel converted to HTML');
+            },
+          );
+        }
 
-          if (isOnline) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Reporte creado exitosamente')),
+        String? materialsHtml;
+        if (_materialsController != null &&
+            _materialsController!.document.toPlainText().trim().isNotEmpty) {
+          final materialsDelta = jsonEncode({
+            'ops': _materialsController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(materialsDelta);
+          result.fold(
+            (failure) {
+              print(
+                '⚠️ [SUBMIT] Failed to convert materials to HTML: ${failure.message}',
+              );
+              materialsHtml = jsonEncode(
+                _materialsController!.document.toDelta().toJson(),
+              );
+            },
+            (conversionResult) {
+              materialsHtml = conversionResult.content;
+              print('✅ [SUBMIT] Materials converted to HTML');
+            },
+          );
+        }
+
+        String? suggestionsHtml;
+        if (_suggestionsController != null &&
+            _suggestionsController!.document.toPlainText().trim().isNotEmpty) {
+          final suggestionsDelta = jsonEncode({
+            'ops': _suggestionsController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(suggestionsDelta);
+          result.fold(
+            (failure) {
+              print(
+                '⚠️ [SUBMIT] Failed to convert suggestions to HTML: ${failure.message}',
+              );
+              suggestionsHtml = jsonEncode(
+                _suggestionsController!.document.toDelta().toJson(),
+              );
+            },
+            (conversionResult) {
+              suggestionsHtml = conversionResult.content;
+              print('✅ [SUBMIT] Suggestions converted to HTML');
+            },
+          );
+        }
+
+        String? descriptionHtml;
+        if (_descriptionController != null &&
+            _descriptionController!.document.toPlainText().trim().isNotEmpty) {
+          final descriptionDelta = jsonEncode({
+            'ops': _descriptionController!.document.toDelta().toJson(),
+          });
+          final result = await convertQuillToHtml(descriptionDelta);
+          result.fold(
+            (failure) {
+              print(
+                '⚠️ [SUBMIT] Failed to convert description to HTML: ${failure.message}',
+              );
+              descriptionHtml = jsonEncode(
+                _descriptionController!.document.toDelta().toJson(),
+              );
+            },
+            (conversionResult) {
+              descriptionHtml = conversionResult.content;
+              print('✅ [SUBMIT] Description converted to HTML');
+            },
+          );
+        }
+
+        // If explicitly saving locally or offline
+        if (!isOnline) {
+          await _saveLocally(
+            projectId: _selectedProject!.id!,
+            employeeId: int.parse(_employeeIdController.text),
+            name: _nameController.text,
+            reportDate: _reportDateController.text,
+            startTime: _startTimeController.text.isEmpty
+                ? null
+                : _startTimeController.text,
+            endTime: _endTimeController.text.isEmpty
+                ? null
+                : _endTimeController.text,
+            description: descriptionHtml,
+            tools: toolsHtml,
+            personnel: personnelHtml,
+            materials: materialsHtml,
+            suggestions: suggestionsHtml,
+            supervisorSignature: _supervisorSignature,
+            managerSignature: _managerSignature,
+            photos: photosWithHtmlDescriptions,
+          );
+          return;
+        }
+
+        if (widget.report == null) {
+          try {
+            print('📝 [FORM] Starting create work report with signatures:');
+            print(
+              '📝 [FORM] _supervisorSignature: ${_supervisorSignature != null ? 'present (${_supervisorSignature!.length} chars)' : 'null'}',
             );
-            // Navigate to the detail screen of the newly created report
+            print(
+              '📝 [FORM] _managerSignature: ${_managerSignature != null ? 'present (${_managerSignature!.length} chars)' : 'null'}',
+            );
+
+            final newReport = await ref
+                .read(workReportsProvider.notifier)
+                .createWorkReport(
+                  _selectedProject!.id!,
+                  int.parse(_employeeIdController.text),
+                  _nameController.text,
+                  _reportDateController.text,
+                  _startTimeController.text.isEmpty
+                      ? null
+                      : _startTimeController.text,
+                  _endTimeController.text.isEmpty
+                      ? null
+                      : _endTimeController.text,
+                  descriptionHtml,
+                  toolsHtml,
+                  personnelHtml,
+                  materialsHtml,
+                  suggestionsHtml,
+                  photosWithHtmlDescriptions,
+                  _supervisorSignature,
+                  _managerSignature,
+                );
+
+            // Invalidate the individual report provider to force reload
+            ref.invalidate(workReportProvider(newReport.id!));
+
             if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Reporte creado exitosamente')),
+              );
+              // Navigate to the detail screen of the newly created report
               context.go('/work-reports/${newReport.id}');
             }
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Reporte guardado localmente. Se sincronizará cuando haya conexión.',
-                ),
-              ),
-            );
-            // Navigate to the list since the ID is temporary
+          } on DioException catch (e) {
+            String errorMessage = 'Error creating work report';
+            if (e.response?.data != null &&
+                e.response!.data['errors'] != null) {
+              final errors = e.response!.data['errors'] as Map<String, dynamic>;
+              errorMessage += ': ${errors.values.join(', ')}';
+            } else {
+              errorMessage += ': ${e.message}';
+            }
+
             if (mounted) {
-              context.go('/work-reports');
+              _showErrorOptionsDialog(
+                errorMessage,
+                onRetry: _submit,
+                onSaveLocally: () => _saveLocally(
+                  projectId: _selectedProject!.id!,
+                  employeeId: int.parse(_employeeIdController.text),
+                  name: _nameController.text,
+                  reportDate: _reportDateController.text,
+                  startTime: _startTimeController.text.isEmpty
+                      ? null
+                      : _startTimeController.text,
+                  endTime: _endTimeController.text.isEmpty
+                      ? null
+                      : _endTimeController.text,
+                  description: descriptionHtml,
+                  tools: toolsHtml,
+                  personnel: personnelHtml,
+                  materials: materialsHtml,
+                  suggestions: suggestionsHtml,
+                  supervisorSignature: _supervisorSignature,
+                  managerSignature: _managerSignature,
+                  photos: photosWithHtmlDescriptions,
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              _showErrorOptionsDialog(
+                'Error inesperado: $e',
+                onRetry: _submit,
+                onSaveLocally: () => _saveLocally(
+                  projectId: _selectedProject!.id!,
+                  employeeId: int.parse(_employeeIdController.text),
+                  name: _nameController.text,
+                  reportDate: _reportDateController.text,
+                  startTime: _startTimeController.text.isEmpty
+                      ? null
+                      : _startTimeController.text,
+                  endTime: _endTimeController.text.isEmpty
+                      ? null
+                      : _endTimeController.text,
+                  description: descriptionHtml,
+                  tools: toolsHtml,
+                  personnel: personnelHtml,
+                  materials: materialsHtml,
+                  suggestions: suggestionsHtml,
+                  supervisorSignature: _supervisorSignature,
+                  managerSignature: _managerSignature,
+                  photos: photosWithHtmlDescriptions,
+                ),
+              );
             }
           }
-        } on DioException catch (e) {
-          String errorMessage = 'Error creating work report';
-          if (e.response?.data != null && e.response!.data['errors'] != null) {
-            final errors = e.response!.data['errors'] as Map<String, dynamic>;
-            errorMessage += ': ${errors.values.join(', ')}';
-          } else {
-            errorMessage += ': ${e.message}';
-          }
-          if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(errorMessage)));
-          }
-        } catch (e) {
-          // Handle error, maybe show a snackbar
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error creating work report: $e')),
-            );
-          }
-        } finally {
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
-        }
-      } else {
-        try {
-          // Convert Delta to HTML for tools, personnel, materials, suggestions
-          final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
-
-          String? toolsHtml;
-          if (_toolsController != null &&
-              _toolsController!.document.toPlainText().trim().isNotEmpty) {
-            final toolsDelta = jsonEncode({
-              'ops': _toolsController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(toolsDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [UPDATE] Failed to convert tools to HTML: ${failure.message}',
-                );
-                toolsHtml = jsonEncode(
-                  _toolsController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                toolsHtml = conversionResult.content;
-                print('✅ [UPDATE] Tools converted to HTML');
-              },
-            );
-          }
-
-          String? personnelHtml;
-          if (_personnelController != null &&
-              _personnelController!.document.toPlainText().trim().isNotEmpty) {
-            final personnelDelta = jsonEncode({
-              'ops': _personnelController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(personnelDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [UPDATE] Failed to convert personnel to HTML: ${failure.message}',
-                );
-                personnelHtml = jsonEncode(
-                  _personnelController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                personnelHtml = conversionResult.content;
-                print('✅ [UPDATE] Personnel converted to HTML');
-              },
-            );
-          }
-
-          String? materialsHtml;
-          if (_materialsController != null &&
-              _materialsController!.document.toPlainText().trim().isNotEmpty) {
-            final materialsDelta = jsonEncode({
-              'ops': _materialsController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(materialsDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [UPDATE] Failed to convert materials to HTML: ${failure.message}',
-                );
-                materialsHtml = jsonEncode(
-                  _materialsController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                materialsHtml = conversionResult.content;
-                print('✅ [UPDATE] Materials converted to HTML');
-              },
-            );
-          }
-
-          String? suggestionsHtml;
-          if (_suggestionsController != null &&
-              _suggestionsController!.document
-                  .toPlainText()
-                  .trim()
-                  .isNotEmpty) {
-            final suggestionsDelta = jsonEncode({
-              'ops': _suggestionsController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(suggestionsDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [UPDATE] Failed to convert suggestions to HTML: ${failure.message}',
-                );
-                suggestionsHtml = jsonEncode(
-                  _suggestionsController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                suggestionsHtml = conversionResult.content;
-                print('✅ [UPDATE] Suggestions converted to HTML');
-              },
-            );
-          }
-
-          String? descriptionHtml;
-          if (_descriptionController != null &&
-              _descriptionController!.document
-                  .toPlainText()
-                  .trim()
-                  .isNotEmpty) {
-            final descriptionDelta = jsonEncode({
-              'ops': _descriptionController!.document.toDelta().toJson(),
-            });
-            final result = await convertQuillToHtml(descriptionDelta);
-            result.fold(
-              (failure) {
-                print(
-                  '⚠️ [UPDATE] Failed to convert description to HTML: ${failure.message}',
-                );
-                descriptionHtml = jsonEncode(
-                  _descriptionController!.document.toDelta().toJson(),
-                );
-              },
-              (conversionResult) {
-                descriptionHtml = conversionResult.content;
-                print('✅ [UPDATE] Description converted to HTML');
-              },
-            );
-          }
-
+        } else {
+          // Update logic - Only calling update logic if report is not null
           await ref
               .read(workReportsProvider.notifier)
               .updateWorkReport(
@@ -1707,30 +1811,24 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           if (mounted) {
             context.go('/work-reports/${widget.report!.id}');
           }
-        } on DioException catch (e) {
-          String errorMessage = 'Error updating work report';
-          if (e.response?.data != null && e.response!.data['errors'] != null) {
-            final errors = e.response!.data['errors'] as Map<String, dynamic>;
-            errorMessage += ': ${errors.values.join(', ')}';
-          } else {
-            errorMessage += ': ${e.message}';
-          }
-          if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(errorMessage)));
-          }
-        } catch (e) {
-          // Handle error, maybe show a snackbar
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error updating work report: $e')),
-            );
-          }
-        } finally {
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
+        }
+      } catch (e) {
+        // Handle global errors in the process (e.g. initial HTML conversion failed brutally)
+        if (mounted && widget.report != null) {
+          // If it's an update, simple error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating work report: $e')),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error preparing work report: $e')),
+          );
+        }
+      } finally {
+        if (mounted && _isLoading) {
+          // Only stop loading if we are NOT showing the dialog (which keeps us 'pending' user action? No, dialog is shown, loading should stop)
+          // If we called _showErrorOptionsDialog, we want to stop the loading spinner on the button.
+          setState(() => _isLoading = false);
         }
       }
     }

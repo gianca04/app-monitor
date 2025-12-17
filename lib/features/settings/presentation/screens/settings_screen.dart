@@ -75,7 +75,6 @@ class SettingsScreen extends ConsumerWidget {
           _buildSectionHeader(context, 'SISTEMA'),
           const SizedBox(height: 12),
 
-          
           // Sección de Información
           _buildSectionHeader(context, 'ACERCA DE'),
           const SizedBox(height: 12),
@@ -84,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
               _buildIndustrialTile(
                 icon: Icons.info_outline,
                 title: 'Versión del Cliente',
-                subtitle: 'v0.1.1 (Build 2024)',
+                subtitle: 'v1.0.0 (Build 2025)',
               ),
               const Divider(height: 1, color: Colors.white10),
               _buildIndustrialTile(

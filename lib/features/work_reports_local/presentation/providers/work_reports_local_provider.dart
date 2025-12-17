@@ -114,9 +114,15 @@ final unsyncedWorkReportsLocalCountProvider = FutureProvider<int>((ref) async {
 class WorkReportsLocalListNotifier extends StateNotifier<AsyncValue<List<WorkReportLocalEntity>>> {
   final GetAllWorkReportsLocalUseCase _getAllUseCase;
   final SyncAllWorkReportsLocalUseCase _syncAllUseCase;
+  final SyncWorkReportLocalUseCase _syncSingleUseCase;
+  final DeleteWorkReportLocalUseCase _deleteUseCase;
 
-  WorkReportsLocalListNotifier(this._getAllUseCase, this._syncAllUseCase)
-      : super(const AsyncValue.loading()) {
+  WorkReportsLocalListNotifier(
+    this._getAllUseCase, 
+    this._syncAllUseCase,
+    this._syncSingleUseCase,
+    this._deleteUseCase,
+  ) : super(const AsyncValue.loading()) {
     _loadReports();
   }
 
@@ -152,11 +158,43 @@ class WorkReportsLocalListNotifier extends StateNotifier<AsyncValue<List<WorkRep
       rethrow;
     }
   }
+
+  Future<void> syncSingle(int reportId) async {
+    try {
+      final result = await _syncSingleUseCase(reportId);
+      result.fold(
+        (failure) => throw failure,
+        (_) {
+          // Refresh the list after sync
+          _loadReports();
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> delete(int reportId) async {
+    try {
+      final result = await _deleteUseCase(reportId);
+      result.fold(
+        (failure) => throw failure,
+        (_) {
+          // Refresh the list after delete
+          _loadReports();
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 // Work Reports List Provider
 final workReportsLocalListProvider = StateNotifierProvider<WorkReportsLocalListNotifier, AsyncValue<List<WorkReportLocalEntity>>>((ref) {
   final getAllUseCase = ref.watch(getAllWorkReportsLocalUseCaseProvider);
   final syncAllUseCase = ref.watch(syncAllWorkReportsLocalUseCaseProvider);
-  return WorkReportsLocalListNotifier(getAllUseCase, syncAllUseCase);
+  final syncSingleUseCase = ref.watch(syncWorkReportLocalUseCaseProvider);
+  final deleteUseCase = ref.watch(deleteWorkReportLocalUseCaseProvider);
+  return WorkReportsLocalListNotifier(getAllUseCase, syncAllUseCase, syncSingleUseCase, deleteUseCase);
 });

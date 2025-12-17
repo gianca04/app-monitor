@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // --- 1. PALETA DE COLORES INDUSTRIAL ---
-  static const Color background = Color(0xFF121619); // Fondo ultra oscuro
-  static const Color surface = Color(0xFF1E2329); // Superficies de tarjetas
+  static const Color background = Color.fromARGB(255, 0, 0, 0); // Fondo ultra oscuro
+  static const Color surface = Color.fromARGB(255, 0, 0, 0); // Superficies de tarjetas
 
-  static const Color primaryAccent = Color.fromARGB(255, 21, 99, 99); // Industrial Amber (Acción principal)
+  static const Color primaryAccent = Color.fromARGB(255, 35, 165, 165); // Industrial Amber (Acción principal)
   static const Color secondaryAccent = Color(
     0xFF03DAC6,
   ); // Electric Teal (Indicadores de estado)

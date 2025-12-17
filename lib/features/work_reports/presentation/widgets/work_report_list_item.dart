@@ -11,19 +11,14 @@ const double _kGridSpacing = 2.0;
 
 class WorkReportListItem extends StatelessWidget {
   final WorkReport report;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
+  // Botones de acción eliminados por solicitud del usuario
+  // Se han movido a la vista de detalle
 
-  const WorkReportListItem({
-    super.key,
-    required this.report,
-    this.onEdit,
-    this.onDelete,
-  });
+  const WorkReportListItem({super.key, required this.report});
 
   // Helper para manejar URLs o Base64 si es necesario
   String _getImageUrl(dynamic photo) {
-    // Ajusta esta lógica según tu modelo de Photo. 
+    // Ajusta esta lógica según tu modelo de Photo.
     // Asumo que photo tiene una propiedad 'url' o 'path' o 'beforeWork.photoPath'
     // Ejemplo basado en tu código anterior:
     return photo.afterWork?.photoPath ?? photo.beforeWork?.photoPath ?? '';
@@ -33,9 +28,9 @@ class WorkReportListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     // Filtramos fotos válidas para el grid
-    final photos = report.photos ?? []; 
+    final photos = report.photos ?? [];
     // NOTA: Ajusta la lógica de arriba según cómo venga tu lista de fotos en el modelo WorkReport
 
     return IndustrialCard(
@@ -69,10 +64,12 @@ class WorkReportListItem extends StatelessWidget {
               ),
 
               // --- 2. DESCRIPTION (HTML PREVIEW) ---
-              if (report.description != null && report.description!.isNotEmpty) ...[
+              if (report.description != null &&
+                  report.description!.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 SizedBox(
-                  height: 42, // Altura fija para mantener uniformidad (aprox 2 líneas)
+                  height:
+                      42, // Altura fija para mantener uniformidad (aprox 2 líneas)
                   child: Html(
                     data: report.description!,
                     style: {
@@ -85,7 +82,10 @@ class WorkReportListItem extends StatelessWidget {
                         textOverflow: TextOverflow.ellipsis,
                         fontFamily: theme.textTheme.bodyMedium?.fontFamily,
                       ),
-                      "p": Style(margin: Margins.zero, padding: HtmlPaddings.zero),
+                      "p": Style(
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                      ),
                     },
                   ),
                 ),
@@ -110,7 +110,7 @@ class WorkReportListItem extends StatelessWidget {
               const Divider(height: 1, color: Colors.white10),
               const SizedBox(height: 10),
 
-              // --- 4. FOOTER: METADATA & ACTIONS ---
+              // --- 4. FOOTER: METADATA ---
               Row(
                 children: [
                   // Info Contextual
@@ -119,41 +119,26 @@ class WorkReportListItem extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _FooterInfo(
-                          icon: Icons.calendar_today_outlined, 
-                          text: report.reportDate ?? 'NO DATE'
+                          icon: Icons.calendar_today_outlined,
+                          text: report.reportDate ?? 'NO DATE',
                         ),
                         if (report.project?.name != null) ...[
                           const SizedBox(height: 4),
                           _FooterInfo(
-                            icon: Icons.work_outline, 
+                            icon: Icons.work_outline,
                             text: report.project!.name!,
                             isBold: true,
                           ),
-                        ]
+                        ],
                       ],
                     ),
                   ),
-                  
-                  // Botones de Acción
-                  Row(
-                    children: [
-                      _IndustrialActionButton(
-                         // 'EDITAR'
-                        icon: Icons.edit_outlined,
-                        onTap: onEdit ?? () => context.go('/work-reports/${report.id}/edit'),
-                        theme: theme,
-                      ),
-                      if (onDelete != null) ...[
-                        const SizedBox(width: 8),
-                        _IndustrialActionButton(
-                          //label: 'DEL', // Abreviado para ahorrar espacio
-                          icon: Icons.delete_outline,
-                          onTap: onDelete,
-                          color: theme.colorScheme.error,
-                          theme: theme,
-                        ),
-                      ],
-                    ],
+
+                  // Indicador visual simple para "ver detalles"
+                  Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.onSurface.withOpacity(0.3),
+                    size: 20,
                   ),
                 ],
               ),
@@ -198,7 +183,11 @@ class _FooterInfo extends StatelessWidget {
   final String text;
   final bool isBold;
 
-  const _FooterInfo({required this.icon, required this.text, this.isBold = false});
+  const _FooterInfo({
+    required this.icon,
+    required this.text,
+    this.isBold = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -224,56 +213,7 @@ class _FooterInfo extends StatelessWidget {
   }
 }
 
-class _IndustrialActionButton extends StatelessWidget {
-  final String? label;
-  final IconData icon;
-  final VoidCallback? onTap;
-  final Color? color;
-  final ThemeData theme;
-
-  const _IndustrialActionButton({
-    this.label,
-    required this.icon,
-    required this.theme,
-    this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final finalColor = color ?? theme.colorScheme.primary;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(_kRadius),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border.all(color: finalColor.withOpacity(0.3)),
-            borderRadius: BorderRadius.circular(_kRadius),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 14, color: finalColor),
-              if (label != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  label!,
-                  style: TextStyle(
-                    color: finalColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+// _IndustrialActionButton eliminado ya que no se usa
 
 // --- GRID LÓGICO DE IMÁGENES (Twitter Style) ---
 
@@ -286,7 +226,7 @@ class _PhotoGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     int count = photos.length;
-    
+
     if (count == 0) return const SizedBox();
     if (count == 1) return _buildImage(photos[0]);
     if (count == 2) {
@@ -334,9 +274,9 @@ class _PhotoGrid extends StatelessWidget {
               Expanded(child: _buildImage(photos[2])),
               const SizedBox(width: _kGridSpacing),
               Expanded(
-                child: count > 4 
-                  ? _buildOverlayImage(photos[3], count - 4) 
-                  : _buildImage(photos[3]),
+                child: count > 4
+                    ? _buildOverlayImage(photos[3], count - 4)
+                    : _buildImage(photos[3]),
               ),
             ],
           ),
@@ -354,11 +294,18 @@ class _PhotoGrid extends StatelessWidget {
       child: Image.network(
         url,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => 
-          const Center(child: Icon(Icons.broken_image, size: 20, color: Colors.white24)),
+        errorBuilder: (context, error, stackTrace) => const Center(
+          child: Icon(Icons.broken_image, size: 20, color: Colors.white24),
+        ),
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
-          return const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)));
+          return const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
         },
       ),
     );

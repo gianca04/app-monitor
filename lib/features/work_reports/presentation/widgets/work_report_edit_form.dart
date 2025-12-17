@@ -745,74 +745,85 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
               ),
               const SizedBox(height: 12),
 
-              Row(
+              Column(
+                // <--- 1. CONTENEDOR PRINCIPAL: Vertical
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      controller: _reportDateController,
-                      readOnly: true,
-                      decoration: const InputDecoration(labelText: 'FECHA'),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2101),
-                        );
-                        if (picked != null) {
-                          _reportDateController.text = picked
-                              .toIso8601String()
-                              .split('T')[0];
-                        }
-                      },
-                      validator: (value) =>
-                          value?.isEmpty ?? true ? 'Requerido' : null,
-                    ),
+                  // --- 1. CAMPO FECHA (Full Width) ---
+                  TextFormField(
+                    controller: _reportDateController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'FECHA'),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2101),
+                      );
+                      if (picked != null) {
+                        _reportDateController.text = picked
+                            .toIso8601String()
+                            .split('T')[0];
+                      }
+                    },
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'Requerido' : null,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _startTimeController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'INICIO (HH:mm)',
+
+                  const SizedBox(height: 16), // Espacio entre Fecha y Horas
+                  // --- 2. HORA INICIO Y HORA FIN (Row Anidada) ---
+                  Row(
+                    // <--- 2. Fila para las Horas
+                    children: [
+                      Expanded(
+                        // 50%
+                        child: TextFormField(
+                          controller: _startTimeController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'INICIO (HH:mm)',
+                          ),
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (picked != null) {
+                              _startTimeController.text =
+                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                            }
+                          },
+                        ),
                       ),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.now(),
-                        );
-                        if (picked != null) {
-                          _startTimeController.text =
-                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _endTimeController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'FIN (HH:mm)',
+                      const SizedBox(
+                        width: 8,
+                      ), // Espacio entre los campos de hora
+                      Expanded(
+                        // 50%
+                        child: TextFormField(
+                          controller: _endTimeController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'FIN (HH:mm)',
+                          ),
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (picked != null) {
+                              _endTimeController.text =
+                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                            }
+                          },
+                        ),
                       ),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.now(),
-                        );
-                        if (picked != null) {
-                          _endTimeController.text =
-                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                        }
-                      },
-                    ),
+                    ],
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(

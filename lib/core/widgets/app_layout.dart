@@ -7,6 +7,7 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/settings/providers/connectivity_preferences_provider.dart';
 import '../../features/settings/providers/connectivity_provider.dart';
 import '../../features/settings/presentation/widgets/connectivity_indicator.dart';
+import '../theme_config.dart';
 
 class AppLayout extends StatefulWidget {
   final Widget child;
@@ -22,10 +23,10 @@ class _AppLayoutState extends State<AppLayout> {
   late final List<String> _paths;
   late final RouterDelegate _routerDelegate;
 
-  // Constantes de diseño industrial para este layout
-  final Color _kBorderColor = Colors.grey.shade700;
-  final Color _kBgColor = const Color(0xFF121212); // Fondo muy oscuro
-  final Color _kBarColor = const Color(0xFF1E1E1E); // Fondo de barras
+  // Usar colores del tema industrial unificado
+  Color get _kBorderColor => AppTheme.border;
+  Color get _kBgColor => AppTheme.background;
+  Color get _kBarColor => AppTheme.surface;
 
   @override
   void initState() {
@@ -72,7 +73,7 @@ class _AppLayoutState extends State<AppLayout> {
         // Borde inferior en el AppBar para separar del contenido
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.white10, height: 1),
+          child: Container(color: AppTheme.border.withOpacity(0.3), height: 1),
         ),
         title: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -209,7 +210,7 @@ class _IndustrialBottomBar extends StatelessWidget {
             final int index = entry.key;
             final _IndustrialBarItem item = entry.value;
             final bool isSelected = index == currentIndex;
-            final Color activeColor = const Color(0xFFFFAB00);
+            final Color activeColor = AppTheme.primaryAccent;
 
             return Expanded(
               flex: isSelected ? 2 : 1,
@@ -239,7 +240,7 @@ class _IndustrialBottomBar extends StatelessWidget {
                       Icon(
                         item.icon,
                         size: 20,
-                        color: isSelected ? activeColor : Colors.grey.shade500,
+                        color: isSelected ? activeColor : AppTheme.textSecondary,
                       ),
                       Flexible(
                         child: ClipRect(
@@ -301,10 +302,10 @@ class _ProfileIcon extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Colores del sistema
-    final borderColor = Colors.grey.shade700;
-    final menuBgColor = const Color.fromARGB(255, 0, 0, 0);
-    final textColor = Colors.white;
+    // Colores del sistema usando AppTheme
+    final borderColor = AppTheme.border;
+    final menuBgColor = AppTheme.surface;
+    final textColor = AppTheme.textPrimary;
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -327,7 +328,7 @@ class _ProfileIcon extends ConsumerWidget {
           child: Icon(
             Icons.person_outline,
             size: iconSize,
-            color: Colors.grey.shade300,
+            color: AppTheme.textSecondary,
           ),
         ),
 
@@ -385,7 +386,7 @@ class _ProfileIcon extends ConsumerWidget {
     required IconData icon,
     bool isDestructive = false,
   }) {
-    final color = isDestructive ? Colors.redAccent : Colors.white;
+    final color = isDestructive ? AppTheme.error : AppTheme.textPrimary;
 
     return PopupMenuItem<Menu>(
       value: value,

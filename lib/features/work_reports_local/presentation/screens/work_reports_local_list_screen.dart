@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/theme_config.dart';
-import '../../domain/entities/work_report_local_entity.dart';
 import '../providers/work_reports_local_provider.dart';
 import '../../../settings/providers/connectivity_preferences_provider.dart';
+import '../../../work_report_photos_local/presentation/providers/work_report_photos_local_provider.dart';
+import '../../domain/entities/work_report_local_entity.dart';
+import '../widgets/work_report_local_list_item.dart';
 
 class WorkReportsLocalListScreen extends ConsumerStatefulWidget {
   const WorkReportsLocalListScreen({super.key});
@@ -16,16 +17,6 @@ class WorkReportsLocalListScreen extends ConsumerStatefulWidget {
 
 class _WorkReportsLocalListScreenState extends ConsumerState<WorkReportsLocalListScreen> {
   bool _isSyncing = false;
-
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd/MM/yyyy HH:mm').format(date);
-    } catch (e) {
-      return dateStr;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,9 +168,14 @@ class _WorkReportsLocalListScreenState extends ConsumerState<WorkReportsLocalLis
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final report = reports[index];
-                  return _WorkReportCard(
+                  return _WorkReportLocalListItemWithPhotos(
                     report: report,
-                    formatDate: _formatDate,
+                    isOnline: isOnline,
+                    onEdit: () => context.go('/work-reports-local/${report.id}/edit'),
+                    onDelete: () => _confirmDelete(report.id!),
+                    onSync: !report.isSynced && isOnline 
+                        ? () => _syncSingle(report.id!) 
+                        : null,
                   );
                 },
               );
@@ -311,246 +307,144 @@ class _WorkReportsLocalListScreenState extends ConsumerState<WorkReportsLocalLis
       }
     }
   }
-}
 
+  Future<void> _syncSingle(int reportId) async {
+    final listNotifier = ref.read(workReportsLocalListProvider.notifier);
+    
+    setState(() => _isSyncing = true);
 
-class _WorkReportCard extends StatelessWidget {
-  final WorkReportLocalEntity report;
-  final String Function(String?) formatDate;
-
-  const _WorkReportCard({required this.report, required this.formatDate});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          context.go('/work-reports-local/${report.id}/edit');
-        },
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: AppTheme.border),
-            borderRadius: BorderRadius.circular(4),
+    try {
+      await listNotifier.syncSingle(reportId);
+      
+      setState(() => _isSyncing = false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reporte sincronizado exitosamente'),
+            backgroundColor: Colors.greenAccent,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppTheme.primaryAccent),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(
-                        Icons.description_outlined,
-                        color: AppTheme.primaryAccent,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            report.name,
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (report.description != null)
-                            Text(
-                              report.description!,
-                              style: const TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontSize: 12,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(height: 1, color: Colors.white10),
-
-              // Details
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _InfoRow(
-                      icon: Icons.business,
-                      label: 'Proyecto ID',
-                      value: '${report.projectId}',
-                    ),
-                    const SizedBox(height: 8),
-                    _InfoRow(
-                      icon: Icons.person,
-                      label: 'Empleado ID',
-                      value: '${report.employeeId}',
-                    ),
-                    if (report.startTime != null || report.endTime != null) ...[
-                      const SizedBox(height: 8),
-                      _InfoRow(
-                        icon: Icons.access_time,
-                        label: 'Horario',
-                        value:
-                            '${report.startTime ?? 'N/A'} - ${report.endTime ?? 'N/A'}',
-                      ),
-                    ],
-                    if (report.createdAt != null) ...[
-                      const SizedBox(height: 8),
-                      _InfoRow(
-                        icon: Icons.calendar_today,
-                        label: 'Creado',
-                        value: formatDate(report.createdAt),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              // Footer - Status indicators
-              if (report.supervisorSignature != null ||
-                  report.managerSignature != null ||
-                  report.isSynced ||
-                  report.syncError != null)
-                Column(
-                  children: [
-                    const Divider(height: 1, color: Colors.white10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (report.isSynced)
-                            const _StatusChip(
-                              icon: Icons.cloud_done,
-                              label: 'Sincronizado',
-                              color: Colors.greenAccent,
-                            ),
-                          if (!report.isSynced && report.syncError != null)
-                            const _StatusChip(
-                              icon: Icons.error_outline,
-                              label: 'Error Sync',
-                              color: Colors.redAccent,
-                            ),
-                          if (report.supervisorSignature != null)
-                            const _StatusChip(
-                              icon: Icons.check_circle_outline,
-                              label: 'Firma Supervisor',
-                              color: Colors.blueAccent,
-                            ),
-                          if (report.managerSignature != null)
-                            const _StatusChip(
-                              icon: Icons.check_circle_outline,
-                              label: 'Firma Gerente',
-                              color: Colors.blueAccent,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+        );
+      }
+    } catch (e) {
+      setState(() => _isSyncing = false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
           ),
-        ),
-      ),
-    );
+        );
+      }
+    }
   }
-}
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: AppTheme.textSecondary),
-        const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+  Future<void> _confirmDelete(int reportId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text(
+          'Eliminar Reporte',
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(color: AppTheme.textPrimary, fontSize: 12),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        content: const Text(
+          '¿Estás seguro de que deseas eliminar este reporte local? Esta acción no se puede deshacer.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _StatusChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        border: Border.all(color: color.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('Eliminar'),
           ),
         ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(workReportsLocalListProvider.notifier).delete(reportId);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reporte eliminado'),
+              backgroundColor: Colors.greenAccent,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    }
+  }
+}
+
+// Widget que carga las fotos para cada item de la lista
+class _WorkReportLocalListItemWithPhotos extends ConsumerWidget {
+  final WorkReportLocalEntity report;
+  final bool isOnline;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onSync;
+
+  const _WorkReportLocalListItemWithPhotos({
+    required this.report,
+    required this.isOnline,
+    this.onEdit,
+    this.onDelete,
+    this.onSync,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Si el reporte no tiene ID, no cargar fotos
+    if (report.id == null) {
+      return WorkReportLocalListItem(
+        report: report,
+        photos: const [],
+        onEdit: onEdit,
+        onDelete: onDelete,
+        onSync: onSync,
+      );
+    }
+
+    final photosAsync = ref.watch(photosByWorkReportLocalProvider(report.id!));
+
+    return photosAsync.when(
+      data: (photos) => WorkReportLocalListItem(
+        report: report,
+        photos: photos,
+        onEdit: onEdit,
+        onDelete: onDelete,
+        onSync: onSync,
+      ),
+      loading: () => WorkReportLocalListItem(
+        report: report,
+        photos: const [],
+        onEdit: onEdit,
+        onDelete: onDelete,
+        onSync: onSync,
+      ),
+      error: (_, __) => WorkReportLocalListItem(
+        report: report,
+        photos: const [],
+        onEdit: onEdit,
+        onDelete: onDelete,
+        onSync: onSync,
       ),
     );
   }

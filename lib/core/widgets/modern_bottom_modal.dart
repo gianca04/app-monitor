@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 // Constantes de diseño Industrial
-const Color _kBackgroundColor = Color(0xFF1F1F1F);
+const Color _kBackgroundColor = Color.fromARGB(255, 0, 0, 0);
 const Color _kBorderColor = Colors.white12;
 const double _kRadius = 4.0;
 
@@ -45,32 +45,33 @@ class ModernBottomModal extends StatelessWidget {
           children: [
             // --- HEADER FIJO ---
             const SizedBox(height: 12),
+            // Handle bar sutil
             Center(
               child: Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: Colors.white10,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+
             if (title != null) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  title!,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  title!.toUpperCase(),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
                       ),
                 ),
               ),
               const SizedBox(height: 8),
-              const Divider(color: Colors.white10, height: 24),
-            ] else
-              const SizedBox(height: 24),
+            ],
 
             // --- CONTENIDO SCROLLABLE ---
             // Flexible permite que esta parte se encoja si sale el teclado
@@ -90,15 +91,17 @@ class ModernBottomModal extends StatelessWidget {
 
             // --- ACCIONES FIJAS AL PIE ---
             if (actions != null && actions!.isNotEmpty) ...[
-              const Divider(color: Colors.white10, height: 1),
+              const SizedBox(height: 16),
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 // SafeArea inferior para proteger en iPhones sin botón home
                 child: SafeArea(
                   top: false,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: actions!,
+                  child: Column(
+                    children: [
+                      ...actions!,
+                      SizedBox(height: MediaQuery.of(context).padding.bottom),
+                    ],
                   ),
                 ),
               ),
@@ -121,12 +124,18 @@ class ModernBottomModal extends StatelessWidget {
   }) {
     return showModalBottomSheet<T>(
       context: context,
+      backgroundColor: _kBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        side: BorderSide(color: _kBorderColor),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(_kRadius),
+        ),
+      ),
       isDismissible: isDismissible,
       enableDrag: enableDrag,
       // CLAVE: isScrollControlled permite que el modal crezca según su contenido
       // y no se limite al 50% de la pantalla por defecto.
-      isScrollControlled: true, 
-      backgroundColor: Colors.transparent, // Lo hacemos transparente porque el Container maneja el fondo
+      isScrollControlled: true,
       elevation: 0,
       builder: (context) => ModernBottomModal(
         title: title,

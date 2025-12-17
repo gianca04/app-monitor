@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
 import 'dart:async';
 import '../providers/work_reports_provider.dart';
 import '../widgets/work_report_list_item.dart';
 import '../widgets/reports_empty_state.dart' as empty_state;
 import '../widgets/reports_fab_menu.dart' as fab_menu;
 import 'package:monitor/core/widgets/modern_bottom_modal.dart';
-// import 'package:monitor/core/theme_config.dart'; 
+// import 'package:monitor/core/theme_config.dart';
 
 class WorkReportsListScreen extends ConsumerStatefulWidget {
   const WorkReportsListScreen({super.key});
@@ -54,12 +54,15 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
   void _onSearchChanged() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      ref.read(workReportsProvider.notifier).setFilters(search: _searchController.text);
+      ref
+          .read(workReportsProvider.notifier)
+          .setFilters(search: _searchController.text);
     });
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       ref.read(workReportsProvider.notifier).loadMoreWorkReports();
     }
   }
@@ -93,18 +96,21 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
               borderSide: const BorderSide(color: Color(0xFF6E7681)),
             ),
             prefixIcon: const Icon(Icons.search, color: Color(0xFFFFAB00)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
           ),
           style: const TextStyle(color: Color(0xFFE1E4E8)),
         ),
         actions: [
           // Selector de elementos por página
-          
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: state.isLoading
                 ? null
-                : () => ref.read(workReportsProvider.notifier).loadWorkReports(),
+                : () =>
+                      ref.read(workReportsProvider.notifier).loadWorkReports(),
             tooltip: 'RECARGAR',
           ),
           IconButton(
@@ -117,45 +123,34 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
       body: Stack(
         children: [
           if (state.isLoading)
-            Center(child: CircularProgressIndicator(color: colorScheme.primary)),
+            Center(
+              child: CircularProgressIndicator(color: colorScheme.primary),
+            ),
 
           if (!state.isLoading)
             state.reports.isEmpty
-                ? empty_state.ReportsEmptyState(
-                    error: state.error,
-                  )
+                ? empty_state.ReportsEmptyState(error: state.error)
                 : ListView.separated(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(15.0),
-                    itemCount: state.reports.length + (state.isLoadingMore ? 1 : 0),
+                    itemCount:
+                        state.reports.length + (state.isLoadingMore ? 1 : 0),
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       if (index == state.reports.length) {
                         // Loading indicator at the end
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16.0),
-                          child: Center(
-                            child: CircularProgressIndicator(),
-                          ),
+                          child: Center(child: CircularProgressIndicator()),
                         );
                       }
                       final report = state.reports[index];
-                      return WorkReportListItem(
-                        report: report,
-                        onEdit: () => context.go(
-                          '/work-reports/${report.id}/edit',
-                        ),
-                        onDelete: () => _confirmDelete(context, ref, report.id!),
-                      );
+                      return WorkReportListItem(report: report);
                     },
                   ),
 
           // El FAB ahora es un widget autónomo
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: fab_menu.ReportsFabMenu(),
-          ),
+          Positioned(bottom: 16, right: 16, child: fab_menu.ReportsFabMenu()),
         ],
       ),
     );
@@ -180,7 +175,9 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
             onPressed: () async {
               Navigator.of(context).pop();
               try {
-                await ref.read(workReportsProvider.notifier).deleteWorkReport(id);
+                await ref
+                    .read(workReportsProvider.notifier)
+                    .deleteWorkReport(id);
                 // Success, list is reloaded automatically
               } catch (e) {
                 // Error occurred, show SnackBar
@@ -236,10 +233,7 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
                 labelText: 'Elementos por página',
               ),
               items: [5, 10, 20, 50].map((value) {
-                return DropdownMenuItem(
-                  value: value,
-                  child: Text('$value'),
-                );
+                return DropdownMenuItem(value: value, child: Text('$value'));
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
@@ -271,7 +265,9 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
         ),
         TextButton(
           onPressed: () {
-            ref.read(workReportsProvider.notifier).setFilters(
+            ref
+                .read(workReportsProvider.notifier)
+                .setFilters(
                   dateFrom: selectedFrom?.toIso8601String().split('T')[0],
                   dateTo: selectedTo?.toIso8601String().split('T')[0],
                   perPage: selectedPerPage,

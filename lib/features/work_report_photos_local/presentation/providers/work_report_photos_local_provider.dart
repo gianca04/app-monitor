@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import '../../data/datasources/work_report_photos_local_datasource.dart';
 import '../../data/models/work_report_photo_local_model.dart';
 import '../../data/repositories/work_report_photos_local_repository_impl.dart';
+import '../../domain/entities/work_report_photo_local_entity.dart';
 import '../../domain/repositories/work_report_photos_local_repository.dart';
 import '../../domain/usecases/create_work_report_photo_local_usecase.dart';
 import '../../domain/usecases/delete_work_report_photo_local_usecase.dart';
@@ -53,3 +54,14 @@ final deleteWorkReportPhotoLocalUseCaseProvider =
       final repository = ref.watch(workReportPhotosLocalRepositoryProvider);
       return DeleteWorkReportPhotoLocalUseCase(repository);
     });
+
+// Provider para obtener fotos por workReportId
+final photosByWorkReportLocalProvider = FutureProvider.family
+    .autoDispose<List<WorkReportPhotoLocalEntity>, int>((ref, workReportId) async {
+  final useCase = ref.watch(getPhotosByWorkReportLocalUseCaseProvider);
+  final result = await useCase(workReportId);
+  return result.fold(
+    (failure) => <WorkReportPhotoLocalEntity>[],
+    (photos) => photos,
+  );
+});

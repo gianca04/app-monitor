@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:monitor/core/widgets/industrial_feedback.dart';
 import '../../../../core/widgets/connectivity_indicator.dart';
 import '../../../../features/settings/providers/connectivity_preferences_provider.dart';
 import '../../../../core/theme_config.dart';
@@ -34,18 +35,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final connectivityAsync = ref.watch(connectivityStatusProvider);
 
     if (authState.isChecking) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.response != null && previous?.response == null) {
+        // 1. Limpiamos cualquier snackbar anterior para que no se acumulen
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        // 2. Mostramos el SnackBar Industrial
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login exitoso: ${next.response!.token}')), // SnackBar(content: Text('Login exitoso: ${next.response!.token}')),
+          IndustrialFeedback.buildSuccess(
+            // Usamos solo parte del token o un mensaje limpio para que se vea estético
+            message: 'LOGIN EXITOSO: CREDENCIALES VERIFICADAS',
+            onDismiss: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         );
+
+        // 3. Navegación
         context.go('/home');
       }
     });
@@ -107,10 +116,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _login() {
     if (_formKey.currentState!.validate()) {
-      ref.read(authProvider.notifier).login(
-        _emailController.text,
-        _passwordController.text,
-      );
+      ref
+          .read(authProvider.notifier)
+          .login(_emailController.text, _passwordController.text);
     }
   }
 
@@ -159,9 +167,7 @@ class _SignInFormState extends State<_SignInForm> {
       elevation: 8,
       color: AppTheme.surface,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(30),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       child: Container(
         padding: const EdgeInsets.all(32.0),
         constraints: const BoxConstraints(maxWidth: 420),
@@ -171,31 +177,29 @@ class _SignInFormState extends State<_SignInForm> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SvgPicture.asset(
-                  'assets/images/svg/logo.svg',
-                  height: 100,
-                ),
+                SvgPicture.asset('assets/images/svg/logo.svg', height: 100),
                 const SizedBox(height: 6),
                 Text(
                   'Ingrese sus credenciales',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: Colors.white),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 24),
 
                 // Campo correo
                 TextFormField(
                   controller: widget.emailController,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: Colors.white),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Correo Electrónico',
                     labelStyle: const TextStyle(color: Colors.white),
-                    prefixIcon: const Icon(Icons.email_outlined, color: Colors.white),
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                      color: Colors.white,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -205,7 +209,10 @@ class _SignInFormState extends State<_SignInForm> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.white, width: 2),
+                      borderSide: const BorderSide(
+                        color: Colors.white,
+                        width: 2,
+                      ),
                     ),
                   ),
                   validator: (value) {
@@ -222,14 +229,16 @@ class _SignInFormState extends State<_SignInForm> {
                 TextFormField(
                   controller: widget.passwordController,
                   obscureText: !widget.isPasswordVisible,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: Colors.white),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
                     labelStyle: const TextStyle(color: Colors.white),
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.white),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: Colors.white,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -239,11 +248,16 @@ class _SignInFormState extends State<_SignInForm> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.white, width: 2),
+                      borderSide: const BorderSide(
+                        color: Colors.white,
+                        width: 2,
+                      ),
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        widget.isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        widget.isPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: Colors.white,
                       ),
                       onPressed: widget.onTogglePasswordVisibility,
@@ -272,54 +286,117 @@ class _SignInFormState extends State<_SignInForm> {
                     controlAffinity: ListTileControlAffinity.leading,
                     value: widget.rememberMe,
                     onChanged: widget.onRememberMeChanged,
-                    title: const Text('Recordarme', style: TextStyle(color: Colors.white)),
+                    title: const Text(
+                      'Recordarme',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 16),
 
-                // Botón
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 32,
                     ),
-                    onPressed: widget.isLoading ? null : widget.onLoginPressed,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12.0),
-                      child: widget.isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Ingresar',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  onPressed: widget.isLoading ? null : widget.onLoginPressed,
+                  child: widget.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Ingresar',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                 ),
 
                 if (widget.error != null) ...[
                   const SizedBox(height: 24),
-                  // Mensaje error
+
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    // ELIMINAMOS padding general para controlar mejor el header vs contenido
+                    clipBehavior: Clip.antiAlias, // Asegura bordes duros
                     decoration: BoxDecoration(
-                      color: AppTheme.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.error.withOpacity(0.3)),
+                      color: AppTheme.error.withOpacity(0.05),
+                      // Borde completo, no solo a la izquierda, para dar sensación de "caja" o "consola"
+                      border: Border.all(
+                        color: AppTheme.error.withOpacity(0.5),
+                        width: 1.5,
+                      ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Icon(Icons.error_outline, color: AppTheme.error, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.error!,
-                            style: TextStyle(color: AppTheme.error),
+                        // 1. HEADER INDUSTRIAL (Tipo etiqueta de advertencia)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                AppTheme.error, // Fondo sólido para el header
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons
+                                    .warning_amber_sharp, // Usamos la versión SHARP (puntiaguda)
+                                color: Colors
+                                    .white, // Contraste máximo sobre el rojo/error
+                                size: 14,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                "// ERROR", // Texto decorativo técnico
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily:
+                                      'monospace', // Clave para el look industrial
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // 2. CUERPO DEL MENSAJE
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // El mensaje de error real
+                              Expanded(
+                                child: Text(
+                                  widget.error!
+                                      .toUpperCase(), // Mayúsculas para más impacto
+                                  style: TextStyle(
+                                    color: AppTheme.error,
+                                    fontFamily: 'monospace', // Look terminal
+                                    fontSize: 12,
+                                    height: 1.4,
+                                    letterSpacing: 0.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

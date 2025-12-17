@@ -29,11 +29,12 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
 
     return Column(
       children: [
+        const SizedBox(height: 15),
         TextField(
           controller: _controller,
           decoration: const InputDecoration(
             labelText: 'Palabra clave',
-            hintText: 'Ingrese nombre del proyecto, etc.',
+            hintText: 'Ingrese el nombre del proyecto.',
             border: OutlineInputBorder(),
           ),
           onChanged: (value) {

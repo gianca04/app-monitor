@@ -28,7 +28,7 @@ class WorkReportViewScreen extends ConsumerWidget {
 
   Future<void> _downloadPdf(BuildContext context, WidgetRef ref) async {
     final pdfNotifier = ref.read(workReportPdfProvider.notifier);
-    
+
     // Mostrar diálogo de progreso
     showDialog(
       context: context,
@@ -65,7 +65,10 @@ class WorkReportViewScreen extends ConsumerWidget {
           backgroundColor: Theme.of(context).cardTheme.color,
           title: Row(
             children: [
-              Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.check_circle,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 8),
               const Text('PDF Descargado'),
             ],
@@ -74,13 +77,20 @@ class WorkReportViewScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('El archivo se guardó en:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              Text(
+                'El archivo se guardó en:',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 file.path,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.7),
                   fontFamily: 'monospace',
                 ),
               ),
@@ -89,7 +99,12 @@ class WorkReportViewScreen extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('CERRAR', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              child: Text(
+                'CERRAR',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -119,6 +134,55 @@ class WorkReportViewScreen extends ConsumerWidget {
 
   void _goBack(BuildContext context) {
     context.go('/work-reports');
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('CONFIRMAR ELIMINACIÓN'),
+        content: const Text(
+          'Esta acción no se puede deshacer. ¿Eliminar registro permanentemente?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('CANCELAR'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              try {
+                // Show loading indicator or block UI could be better, but keeping it simple as per previous pattern
+                await ref
+                    .read(workReportsProvider.notifier)
+                    .deleteWorkReport(id);
+                // On success, go back to list
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Reporte eliminado exitosamente'),
+                    ),
+                  );
+                  context.go('/work-reports');
+                }
+              } catch (e) {
+                // Error handled by provider/UI, but generally show snackbar
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al eliminar: $e')),
+                  );
+                }
+              }
+            },
+            child: Text(
+              'ELIMINAR',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -177,7 +241,7 @@ class WorkReportViewScreen extends ConsumerWidget {
           ),
           // REGLA: Botón con borde y feedback contenido
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 8.0),
             child: Center(
               child: Material(
                 color: Colors.transparent,
@@ -202,15 +266,40 @@ class WorkReportViewScreen extends ConsumerWidget {
                           size: 16,
                           color: colorScheme.primary,
                         ),
-                        //const SizedBox(width: 8),
-                        //Text(
-                        //  '',// 'EDITAR'
-                        //  style: TextStyle(
-                        //    color: colorScheme.primary,
-                        //    fontWeight: FontWeight.bold,
-                        //    fontSize: 12,
-                        //  ),
-                        //),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Botón de eliminar
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _confirmDelete(context, ref, id),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colorScheme.error.withOpacity(0.5),
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: colorScheme.error,
+                        ),
                       ],
                     ),
                   ),
@@ -667,7 +756,12 @@ class _PhotoEntryCard extends StatelessWidget {
   final dynamic photo; // Tipar esto correctamente con tu modelo si es posible
   const _PhotoEntryCard({required this.theme, required this.photo});
 
-  void _showPhotoModal(BuildContext context, String url, String title, String? description) {
+  void _showPhotoModal(
+    BuildContext context,
+    String url,
+    String title,
+    String? description,
+  ) {
     ModernBottomModal.show(
       context,
       title: title,
@@ -699,7 +793,12 @@ class _PhotoEntryCard extends StatelessWidget {
     );
   }
 
-  void _showFullScreenPhoto(BuildContext context, String url, String title, String? description) {
+  void _showFullScreenPhoto(
+    BuildContext context,
+    String url,
+    String title,
+    String? description,
+  ) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -721,9 +820,7 @@ class _PhotoEntryCard extends StatelessWidget {
                 child: InteractiveViewer(
                   minScale: 0.5,
                   maxScale: 8.0,
-                  child: Center(
-                    child: ImageViewer(url: url),
-                  ),
+                  child: Center(child: ImageViewer(url: url)),
                 ),
               ),
               if (description != null && description.isNotEmpty)
@@ -804,7 +901,9 @@ class _PhotoEntryCard extends StatelessWidget {
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.white10),
                             ),
-                            child: ImageViewer(url: photo.beforeWork.photoPath!),
+                            child: ImageViewer(
+                              url: photo.beforeWork.photoPath!,
+                            ),
                           ),
                         ),
                         Html(
