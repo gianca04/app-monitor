@@ -1839,7 +1839,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 // COMPONENTES VISUALES INDUSTRIALES AUXILIARES
 // ============================================
 
-class _IndustrialPhotoEntry extends StatefulWidget {
+class _IndustrialPhotoEntry extends ConsumerStatefulWidget {
   final int index;
   final Map<String, dynamic> data;
   final WorkReport? report;
@@ -1862,10 +1862,11 @@ class _IndustrialPhotoEntry extends StatefulWidget {
   });
 
   @override
-  State<_IndustrialPhotoEntry> createState() => _IndustrialPhotoEntryState();
+  ConsumerState<_IndustrialPhotoEntry> createState() =>
+      _IndustrialPhotoEntryState();
 }
 
-class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
+class _IndustrialPhotoEntryState extends ConsumerState<_IndustrialPhotoEntry> {
   late FleatherController _afterController;
   late FleatherController _beforeController;
   final GlobalKey<EditorState> _afterKey = GlobalKey();
@@ -1874,61 +1875,114 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
   @override
   void initState() {
     super.initState();
+    _afterController = FleatherController();
+    _beforeController = FleatherController();
     _initControllers();
   }
 
-  void _initControllers() {
+  Future<void> _initControllers() async {
+    // === AFTER WORK DESCRIPTION ===
     try {
       final text = widget.data['descripcion'] ?? '';
-      try {
-        final delta = jsonDecode(text);
-        if (delta is List) {
-          _afterController = FleatherController(
-            document: ParchmentDocument.fromJson(delta),
-          );
-        } else {
-          throw const FormatException('Not a list');
-        }
-      } catch (_) {
-        _afterController = FleatherController(
-          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
-        );
+      if (text.isNotEmpty) {
+        _afterController = await _initFleatherController(text);
+        if (mounted) setState(() {});
       }
     } catch (e) {
-      _afterController = FleatherController();
+      print('❌ [PHOTO ENTRY] Error initializing after controller: $e');
     }
 
+    // === BEFORE WORK DESCRIPTION ===
     try {
       final text = widget.data['before_work_descripcion'] ?? '';
-      try {
-        final delta = jsonDecode(text);
-        if (delta is List) {
-          _beforeController = FleatherController(
-            document: ParchmentDocument.fromJson(delta),
-          );
-        } else {
-          throw const FormatException('Not a list');
-        }
-      } catch (_) {
-        _beforeController = FleatherController(
-          document: ParchmentDocument.fromDelta(Delta()..insert(text)),
-        );
+      if (text.isNotEmpty) {
+        _beforeController = await _initFleatherController(text);
+        if (mounted) setState(() {});
       }
     } catch (e) {
-      _beforeController = FleatherController();
+      print('❌ [PHOTO ENTRY] Error initializing before controller: $e');
     }
 
     _afterController.addListener(() {
-      widget.onAfterDescChanged(
-        jsonEncode(_afterController.document.toDelta().toJson()),
-      );
+      try {
+        final delta = _afterController.document.toDelta().toJson();
+        widget.onAfterDescChanged(jsonEncode({'ops': delta}));
+      } catch (e) {
+        // Handle potential encoding errors
+      }
     });
 
     _beforeController.addListener(() {
-      widget.onBeforeDescChanged(
-        jsonEncode(_beforeController.document.toDelta().toJson()),
-      );
+      try {
+        final delta = _beforeController.document.toDelta().toJson();
+        widget.onBeforeDescChanged(jsonEncode({'ops': delta}));
+      } catch (e) {
+        // Handle potential encoding errors
+      }
     });
+  }
+
+  Future<FleatherController> _initFleatherController(String text) async {
+    if (text.isEmpty) return FleatherController();
+
+    try {
+      // 1. Try converting HTML to Quill using the provider
+      final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
+      final result = await convertHtmlToQuill(text);
+
+      return result.fold(
+        (failure) {
+          // 2. If HTML conversion fails, try robust JSON parsing or plain text
+          try {
+            final delta = jsonDecode(text);
+            if (delta is Map && delta['ops'] != null) {
+              return FleatherController(
+                document: ParchmentDocument.fromJson(delta['ops']),
+              );
+            } else if (delta is List) {
+              return FleatherController(
+                document: ParchmentDocument.fromJson(delta),
+              );
+            }
+            throw const FormatException('Invalid JSON for Delta');
+          } catch (_) {
+            // 3. Fallback: Treat as plain text
+            return FleatherController(
+              document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+            );
+          }
+        },
+        (conversionResult) {
+          // Successfully converted HTML to Delta JSON string
+          // The converter usually returns a JSON string representing the Delta
+          try {
+            final delta = jsonDecode(conversionResult.content);
+            // Verify structure returned by converter (usually {ops: [...]})
+            if (delta is Map && delta['ops'] != null) {
+              return FleatherController(
+                document: ParchmentDocument.fromJson(delta['ops']),
+              );
+            } else if (delta is List) {
+              return FleatherController(
+                document: ParchmentDocument.fromJson(delta),
+              );
+            }
+            throw const FormatException('Invalid Converted JSON');
+          } catch (e) {
+            print('⚠️ [PHOTO ENTRY] Converted HTML JSON invalid: $e');
+            // If conversion result isn't valid JSON, fallback to text
+            return FleatherController(
+              document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+            );
+          }
+        },
+      );
+    } catch (e) {
+      print('⚠️ [PHOTO ENTRY] General error parsing text: $e');
+      return FleatherController(
+        document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+      );
+    }
   }
 
   @override
@@ -1936,6 +1990,57 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
     _afterController.dispose();
     _beforeController.dispose();
     super.dispose();
+  }
+
+  void _showPreview(
+    BuildContext context,
+    Uint8List? bytes,
+    String? url,
+    String title,
+  ) {
+    String? imageUrl;
+    if (bytes != null) {
+      imageUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    } else if (url != null) {
+      imageUrl = url.startsWith('data:')
+          ? url
+          : (url.startsWith('http') ? url : 'data:image/jpeg;base64,$url');
+    }
+
+    if (imageUrl == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            title: Text(
+              title,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 8.0,
+              child: ImageViewer(
+                url: imageUrl!,
+                width: MediaQuery.of(context).size.width,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -1984,7 +2089,7 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
                 // AFTER WORK BLOCK
                 _buildPhotoBlock(
                   context,
-                  'AFTER WORK',
+                  'DESPUÉS DEL TRABAJO',
                   'FOTO FINAL',
                   widget.data['photo_bytes'],
                   widget.data['id'] != null
@@ -2003,7 +2108,7 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
                 // BEFORE WORK BLOCK
                 _buildPhotoBlock(
                   context,
-                  'BEFORE WORK',
+                  'ANTES DEL TRABAJO',
                   'FOTO INICIAL',
                   widget.data['before_work_photo_bytes'],
                   widget.data['id'] != null
@@ -2034,24 +2139,69 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
     GlobalKey<EditorState> editorKey,
     VoidCallback onPick,
   ) {
+    final hasPhoto = bytes != null || url != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Título de la sección de foto
-        Text(
-          title,
-          style: const TextStyle(
-            color: kIndAccent,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: kIndAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+            if (hasPhoto)
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onPick,
+                  borderRadius: BorderRadius.circular(kIndRadius),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.blueAccent, width: 0.5),
+                      borderRadius: BorderRadius.circular(kIndRadius),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.refresh,
+                          size: 14,
+                          color: Colors.blueAccent,
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'CAMBIAR FOTO',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
 
         // Área de la foto (Grande)
         InkWell(
-          onTap: onPick,
+          onTap: hasPhoto
+              ? () => _showPreview(context, bytes, url, title)
+              : onPick,
           child: Container(
             width: double.infinity,
             height: 200,
@@ -2068,7 +2218,7 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
                 : (url != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(kIndRadius - 1),
-                          child: ImageViewer(url: url),
+                          child: ImageViewer(url: url, height: 200),
                         )
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,

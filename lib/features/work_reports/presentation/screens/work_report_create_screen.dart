@@ -11,15 +11,22 @@ class WorkReportCreateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => _goBack(context),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _goBack(context);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => _goBack(context),
+          ),
+          title: const Text('Crear Reporte en la Nube'),
         ),
-        title: const Text('Crear Reporte en la Nube'),
+        body: const WorkReportForm(),
       ),
-      body: const WorkReportForm(),
     );
   }
 }

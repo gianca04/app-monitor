@@ -17,9 +17,8 @@ class ImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final defaultWidth = width ?? screenWidth;
-    final defaultHeight = height ?? 200.0;
+    final defaultWidth = width ?? double.infinity;
+    final defaultHeight = height;
 
     if (url.startsWith('data:')) {
       final parts = url.split(',');
@@ -43,7 +42,10 @@ class ImageViewer extends StatelessWidget {
               children: [
                 Icon(Icons.error, color: Colors.red, size: 48),
                 SizedBox(height: 8),
-                Text('Error loading image', style: TextStyle(color: Colors.red)),
+                Text(
+                  'Error loading image',
+                  style: TextStyle(color: Colors.red),
+                ),
               ],
             ),
           );
@@ -77,7 +79,8 @@ class ImageViewer extends StatelessWidget {
             child: Center(
               child: CircularProgressIndicator(
                 value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
                     : null,
               ),
             ),
@@ -93,7 +96,10 @@ class ImageViewer extends StatelessWidget {
               children: [
                 Icon(Icons.error, color: Colors.red, size: 48),
                 SizedBox(height: 8),
-                Text('Error loading image', style: TextStyle(color: Colors.red)),
+                Text(
+                  'Error loading image',
+                  style: TextStyle(color: Colors.red),
+                ),
               ],
             ),
           );

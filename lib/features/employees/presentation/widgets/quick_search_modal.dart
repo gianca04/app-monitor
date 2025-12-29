@@ -50,10 +50,7 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
         TextField(
           controller: _controller,
           decoration: InputDecoration(
-            prefixIcon: Icon(
-              Icons.search,
-              color: AppTheme.textSecondary,
-            ),
+            prefixIcon: Icon(Icons.search, color: AppTheme.textSecondary),
             labelText: 'Buscar colaborador',
             hintText: 'Ingrese nombre, DNI, etc.',
             border: const OutlineInputBorder(),
@@ -90,7 +87,10 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
                     Navigator.of(context).pop(employee);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.surface,
                       border: Border.all(color: AppTheme.border),
@@ -98,16 +98,12 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.badge,
-                          color: AppTheme.primaryAccent,
-                        ),
+                        Icon(Icons.badge, color: AppTheme.primaryAccent),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              
                               const SizedBox(height: 4),
                               Text(
                                 employee.fullName ?? 'Sin nombre',
@@ -116,7 +112,8 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              if (employee.documentNumber != null || employee.position != null)
+                              if (employee.documentNumber != null ||
+                                  employee.position != null)
                                 Text(
                                   '${employee.documentNumber ?? ''} ${employee.documentNumber != null && employee.position != null ? '- ' : ''}${employee.position ?? ''}',
                                   style: TextStyle(
@@ -126,10 +123,6 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
                                 ),
                             ],
                           ),
-                        ),
-                        Icon(
-                          Icons.arrow_drop_down,
-                          color: AppTheme.textSecondary,
                         ),
                       ],
                     ),

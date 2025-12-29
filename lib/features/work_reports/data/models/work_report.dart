@@ -55,10 +55,18 @@ class WorkReport {
         'createdAt': json['created_at'],
         'updatedAt': json['updated_at'],
       }),
-      employee: json['employee'] != null ? Employee.fromJson(json['employee']) : null,
-      project: json['project'] != null ? Project.fromJson(json['project']) : null,
-      photos: (json['photos'] as List?)?.map((e) => Photo.fromJson(e)).toList() ?? [],
-      summary: json['summary'] != null ? Summary.fromJson(json['summary']) : null,
+      employee: json['employee'] != null
+          ? Employee.fromJson(json['employee'])
+          : null,
+      project: json['project'] != null
+          ? Project.fromJson(json['project'])
+          : null,
+      photos:
+          (json['photos'] as List?)?.map((e) => Photo.fromJson(e)).toList() ??
+          [],
+      summary: json['summary'] != null
+          ? Summary.fromJson(json['summary'])
+          : null,
     );
   }
 
@@ -121,11 +129,7 @@ class Resources {
   final String? personnel;
   final String? materials;
 
-  Resources({
-    this.tools,
-    this.personnel,
-    this.materials,
-  });
+  Resources({this.tools, this.personnel, this.materials});
 
   factory Resources.fromJson(Map<String, dynamic> json) {
     return Resources(
@@ -136,11 +140,7 @@ class Resources {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'tools': tools,
-      'personnel': personnel,
-      'materials': materials,
-    };
+    return {'tools': tools, 'personnel': personnel, 'materials': materials};
   }
 }
 
@@ -148,23 +148,14 @@ class Signatures {
   final String? supervisor;
   final String? manager;
 
-  Signatures({
-    this.supervisor,
-    this.manager,
-  });
+  Signatures({this.supervisor, this.manager});
 
   factory Signatures.fromJson(Map<String, dynamic> json) {
-    return Signatures(
-      supervisor: json['supervisor'],
-      manager: json['manager'],
-    );
+    return Signatures(supervisor: json['supervisor'], manager: json['manager']);
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'supervisor': supervisor,
-      'manager': manager,
-    };
+    return {'supervisor': supervisor, 'manager': manager};
   }
 }
 
@@ -172,10 +163,7 @@ class Timestamps {
   final String? createdAt;
   final String? updatedAt;
 
-  Timestamps({
-    this.createdAt,
-    this.updatedAt,
-  });
+  Timestamps({this.createdAt, this.updatedAt});
 
   factory Timestamps.fromJson(Map<String, dynamic> json) {
     return Timestamps(
@@ -185,10 +173,7 @@ class Timestamps {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-    };
+    return {'createdAt': createdAt, 'updatedAt': updatedAt};
   }
 }
 
@@ -219,7 +204,9 @@ class Employee {
       firstName: json['first_name'] as String?,
       lastName: json['last_name'] as String?,
       fullName: json['full_name'] as String?,
-      position: json['position'] != null ? Position.fromJson(json['position']) : null,
+      position: json['position'] != null
+          ? Position.fromJson(json['position'])
+          : null,
     );
   }
 
@@ -240,23 +227,14 @@ class Position {
   final int? id;
   final String? name;
 
-  Position({
-    this.id,
-    this.name,
-  });
+  Position({this.id, this.name});
 
   factory Position.fromJson(Map<String, dynamic> json) {
-    return Position(
-      id: json['id'] as int?,
-      name: json['name'] as String?,
-    );
+    return Position(id: json['id'] as int?, name: json['name'] as String?);
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-    };
+    return {'id': id, 'name': name};
   }
 }
 
@@ -293,7 +271,9 @@ class Project {
         'endDate': json['end_date'],
       }),
       status: json['status_text'] as String?,
-      subClient: json['subClient'] != null ? SubClient.fromJson(json['subClient']) : null,
+      subClient: json['subClient'] != null
+          ? SubClient.fromJson(json['subClient'])
+          : null,
       client: json['client'],
     );
   }
@@ -316,11 +296,7 @@ class Location {
   final double? longitude;
   final String? coordinates;
 
-  Location({
-    this.latitude,
-    this.longitude,
-    this.coordinates,
-  });
+  Location({this.latitude, this.longitude, this.coordinates});
 
   factory Location.fromJson(Map<String, dynamic> json) {
     return Location(
@@ -343,23 +319,14 @@ class Dates {
   final String? startDate;
   final String? endDate;
 
-  Dates({
-    this.startDate,
-    this.endDate,
-  });
+  Dates({this.startDate, this.endDate});
 
   factory Dates.fromJson(Map<String, dynamic> json) {
-    return Dates(
-      startDate: json['startDate'],
-      endDate: json['endDate'],
-    );
+    return Dates(startDate: json['startDate'], endDate: json['endDate']);
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'startDate': startDate,
-      'endDate': endDate,
-    };
+    return {'startDate': startDate, 'endDate': endDate};
   }
 }
 
@@ -367,23 +334,14 @@ class SubClient {
   final int? id;
   final String? name;
 
-  SubClient({
-    this.id,
-    this.name,
-  });
+  SubClient({this.id, this.name});
 
   factory SubClient.fromJson(Map<String, dynamic> json) {
-    return SubClient(
-      id: json['id'] as int?,
-      name: json['name'] as String?,
-    );
+    return SubClient(id: json['id'] as int?, name: json['name'] as String?);
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-    };
+    return {'id': id, 'name': name};
   }
 }
 
@@ -392,11 +350,7 @@ class Summary {
   final int? photosCount;
   final bool? hasSignatures;
 
-  Summary({
-    this.hasPhotos,
-    this.photosCount,
-    this.hasSignatures,
-  });
+  Summary({this.hasPhotos, this.photosCount, this.hasSignatures});
 
   factory Summary.fromJson(Map<String, dynamic> json) {
     return Summary(

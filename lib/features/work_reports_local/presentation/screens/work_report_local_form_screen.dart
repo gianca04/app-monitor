@@ -1780,11 +1780,19 @@ class _LocalImageViewerScreen extends StatelessWidget {
     Widget imageWidget;
 
     if (bytes != null) {
-      imageWidget = Image.memory(bytes!, fit: BoxFit.contain);
+      imageWidget = Image.memory(
+        bytes!,
+        fit: BoxFit.fitWidth,
+        width: double.infinity,
+      );
     } else if (filePath != null && filePath!.isNotEmpty) {
       final file = File(filePath!);
       if (file.existsSync()) {
-        imageWidget = Image.file(file, fit: BoxFit.contain);
+        imageWidget = Image.file(
+          file,
+          fit: BoxFit.fitWidth,
+          width: double.infinity,
+        );
       } else {
         imageWidget = const Center(
           child: Text(

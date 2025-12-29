@@ -191,223 +191,234 @@ class WorkReportViewScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        elevation: 0, // REGLA: Sombras eliminadas
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => _goBack(context),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _goBack(context);
+      },
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: theme.appBarTheme.backgroundColor,
+          elevation: 0, // REGLA: Sombras eliminadas
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => _goBack(context),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: colorScheme.outline, height: 1),
+          ),
+          actions: [
+            // Botón de descarga PDF
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _downloadPdf(context, ref),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.primary.withOpacity(0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.download_outlined,
+                            size: 16,
+                            color: colorScheme.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // REGLA: Botón con borde y feedback contenido
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.go('/work-reports/$id/edit'),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.primary.withOpacity(0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          4,
+                        ), // REGLA: Radio 4
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: colorScheme.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Botón de eliminar
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _confirmDelete(context, ref, id),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.error.withOpacity(0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            size: 16,
+                            color: colorScheme.error,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: colorScheme.outline, height: 1),
-        ),
-        actions: [
-          // Botón de descarga PDF
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Center(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _downloadPdf(context, ref),
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: colorScheme.primary.withOpacity(0.5),
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.download_outlined,
-                          size: 16,
-                          color: colorScheme.primary,
-                        ),
-                      ],
-                    ),
+        body: state.isLoading
+            ? Center(
+                child: CircularProgressIndicator(color: colorScheme.primary),
+              )
+            : state.error != null
+            ? Center(
+                child: Text(
+                  'Error: ${state.error}',
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              )
+            : state.report == null
+            ? Center(
+                child: Text(
+                  'Report not found',
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
-              ),
-            ),
-          ),
-          // REGLA: Botón con borde y feedback contenido
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Center(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => context.go('/work-reports/$id/edit'),
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: colorScheme.primary.withOpacity(0.5),
+              )
+            : SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. GENERAL INFO SECTION
+                    IndustrialCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SectionHeader(
+                            theme: theme,
+                            title: 'INFORMACIÓN GENERAL',
+                            icon: Icons.info_outline,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            state.report!.name?.toUpperCase() ?? 'N/A',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontSize: 20,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _InfoRow(
+                                  theme: theme,
+                                  label: 'FECHA',
+                                  value: state.report!.reportDate,
+                                ),
+                              ),
+                              Expanded(
+                                child: _InfoRow(
+                                  theme: theme,
+                                  label: 'HORA INICIO',
+                                  value: state.report!.startTime,
+                                ),
+                              ),
+                              Expanded(
+                                child: _InfoRow(
+                                  theme: theme,
+                                  label: 'HORA FIN',
+                                  value: state.report!.endTime,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Divider(
+                            color: Colors.white10,
+                            height: 1,
+                          ), // REGLA: Separadores
+                          const SizedBox(height: 16),
+                          Text(
+                            'DESCRIPCIÓN',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 12,
+                            ),
+                          ),
+                          Html(
+                            data: state.report!.description ?? '',
+                            style: {
+                              "body": Style(
+                                color: colorScheme.onSurface,
+                                margin: Margins.zero,
+                                fontSize: FontSize(14),
+                              ),
+                            },
+                          ),
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(4), // REGLA: Radio 4
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.edit_outlined,
-                          size: 16,
-                          color: colorScheme.primary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Botón de eliminar
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _confirmDelete(context, ref, id),
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: colorScheme.error.withOpacity(0.5),
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          size: 16,
-                          color: colorScheme.error,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: state.isLoading
-          ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
-          : state.error != null
-          ? Center(
-              child: Text(
-                'Error: ${state.error}',
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-            )
-          : state.report == null
-          ? Center(
-              child: Text(
-                'Report not found',
-                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
-              ),
-            )
-          : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. GENERAL INFO SECTION
-                  IndustrialCard(
-                    child: Column(
+
+                    const SizedBox(height: 16),
+
+                    // 2. CONTEXT (PROJECT & EMPLOYEE)
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _SectionHeader(
-                          theme: theme,
-                          title: 'INFORMACIÓN GENERAL',
-                          icon: Icons.info_outline,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          state.report!.name?.toUpperCase() ?? 'N/A',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontSize: 20,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _InfoRow(
-                                theme: theme,
-                                label: 'DATE',
-                                value: state.report!.reportDate,
-                              ),
-                            ),
-                            Expanded(
-                              child: _InfoRow(
-                                theme: theme,
-                                label: 'START TIME',
-                                value: state.report!.startTime,
-                              ),
-                            ),
-                            Expanded(
-                              child: _InfoRow(
-                                theme: theme,
-                                label: 'END TIME',
-                                value: state.report!.endTime,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Divider(
-                          color: Colors.white10,
-                          height: 1,
-                        ), // REGLA: Separadores
-                        const SizedBox(height: 16),
-                        Text(
-                          'DESCRIPTION',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontSize: 12,
-                          ),
-                        ),
-                        Html(
-                          data: state.report!.description ?? '',
-                          style: {
-                            "body": Style(
-                              color: colorScheme.onSurface,
-                              margin: Margins.zero,
-                              fontSize: FontSize(14),
-                            ),
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 2. CONTEXT (PROJECT & EMPLOYEE)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: IndustrialCard(
+                        IndustrialCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -425,16 +436,14 @@ class WorkReportViewScreen extends ConsumerWidget {
                               const SizedBox(height: 8),
                               _InfoRow(
                                 theme: theme,
-                                label: 'POSITION',
+                                label: 'PISICIÓN',
                                 value: state.report!.employee?.position?.name,
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: IndustrialCard(
+                        const SizedBox(height: 16),
+                        IndustrialCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -466,183 +475,199 @@ class WorkReportViewScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 3. RESOURCES SECTION
-                  IndustrialCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _SectionHeader(
-                          theme: theme,
-                          title: 'RECURSOS Y EJECUCIÓN',
-                          icon: Icons.construction,
-                        ),
-                        const SizedBox(height: 12),
-                        _ResourceBlock(
-                          theme: theme,
-                          title: 'HERRAMIENTAS',
-                          htmlContent: state.report!.resources?.tools,
-                        ),
-                        const Divider(color: Colors.white10),
-                        _ResourceBlock(
-                          theme: theme,
-                          title: 'PERSONAL',
-                          htmlContent: state.report!.resources?.personnel,
-                        ),
-                        const Divider(color: Colors.white10),
-                        _ResourceBlock(
-                          theme: theme,
-                          title: 'MATERIALES',
-                          htmlContent:
-                              (state.report!.resources?.materials?.isEmpty ??
-                                  true)
-                              ? ''
-                              : state.report!.resources!.materials,
-                        ),
-                        const Divider(color: Colors.white10),
-                        _ResourceBlock(
-                          theme: theme,
-                          title: 'SUGERENCIAS',
-                          htmlContent: state.report!.suggestions,
-                        ),
                       ],
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
-
-                  // 4. PHOTOS SECTION
-                  if (state.report!.photos != null &&
-                      state.report!.photos!.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Text(
-                        'EVIDENCIAS (${state.report!.summary?.photosCount ?? 0})',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          letterSpacing: 1.0,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    ...state.report!.photos!.map(
-                      (photo) => _PhotoEntryCard(theme: theme, photo: photo),
-                    ),
                     const SizedBox(height: 16),
-                  ],
 
-                  // 5. SIGNATURES & TIMESTAMPS
-                  IndustrialCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _SectionHeader(
-                          theme: theme,
-                          title: 'VALIDACIÓN',
-                          icon: Icons.verified_user_outlined,
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            if (state.report!.signatures?.supervisor != null)
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'SUPERVISOR',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(fontSize: 10),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Colors.white10,
-                                        ),
-                                      ),
-                                      child: ImageViewer(
-                                        url: _extractDataUri(
-                                          state.report!.signatures!.supervisor!,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (state.report!.signatures?.supervisor != null &&
-                                state.report!.signatures?.manager != null)
-                              const SizedBox(width: 16),
-                            if (state.report!.signatures?.manager != null)
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'MANAGER',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(fontSize: 10),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Colors.white10,
-                                        ),
-                                      ),
-                                      child: ImageViewer(
-                                        url: _extractDataUri(
-                                          state.report!.signatures!.manager!,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Divider(color: Colors.white10),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'CREADO: ${state.report!.timestamps?.createdAt ?? '-'}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  fontSize: 10,
-                                  color: colorScheme.onSurface.withOpacity(0.5),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                'UPDATED: ${state.report!.timestamps?.updatedAt ?? '-'}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  fontSize: 10,
-                                  color: colorScheme.onSurface.withOpacity(0.5),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    // 3. RESOURCES SECTION
+                    IndustrialCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SectionHeader(
+                            theme: theme,
+                            title: 'RECURSOS Y EJECUCIÓN',
+                            icon: Icons.construction,
+                          ),
+                          const SizedBox(height: 12),
+                          _ResourceBlock(
+                            theme: theme,
+                            title: 'HERRAMIENTAS',
+                            htmlContent: state.report!.resources?.tools,
+                          ),
+                          const Divider(color: Colors.white10),
+                          _ResourceBlock(
+                            theme: theme,
+                            title: 'PERSONAL',
+                            htmlContent: state.report!.resources?.personnel,
+                          ),
+                          const Divider(color: Colors.white10),
+                          _ResourceBlock(
+                            theme: theme,
+                            title: 'MATERIALES',
+                            htmlContent:
+                                (state.report!.resources?.materials?.isEmpty ??
+                                    true)
+                                ? ''
+                                : state.report!.resources!.materials,
+                          ),
+                          const Divider(color: Colors.white10),
+                          _ResourceBlock(
+                            theme: theme,
+                            title: 'SUGERENCIAS',
+                            htmlContent: state.report!.suggestions,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 40), // Bottom padding
-                ],
+
+                    const SizedBox(height: 16),
+
+                    // 4. PHOTOS SECTION
+                    if (state.report!.photos != null &&
+                        state.report!.photos!.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Text(
+                          'EVIDENCIAS (${state.report!.summary?.photosCount ?? 0})',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            letterSpacing: 1.0,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      ...state.report!.photos!.map(
+                        (photo) => _PhotoEntryCard(theme: theme, photo: photo),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 5. SIGNATURES & TIMESTAMPS
+                    IndustrialCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SectionHeader(
+                            theme: theme,
+                            title: 'VALIDACIÓN',
+                            icon: Icons.verified_user_outlined,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              if (state.report!.signatures?.supervisor != null)
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'SUPERVISOR',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(fontSize: 10),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: Colors.white10,
+                                          ),
+                                        ),
+                                        child: ImageViewer(
+                                          url: _extractDataUri(
+                                            state
+                                                .report!
+                                                .signatures!
+                                                .supervisor!,
+                                          ),
+                                          height: 100,
+                                          width: double.infinity,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (state.report!.signatures?.supervisor !=
+                                      null &&
+                                  state.report!.signatures?.manager != null)
+                                const SizedBox(width: 16),
+                              if (state.report!.signatures?.manager != null)
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'MANAGER',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(fontSize: 10),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: Colors.white10,
+                                          ),
+                                        ),
+                                        child: ImageViewer(
+                                          url: _extractDataUri(
+                                            state.report!.signatures!.manager!,
+                                          ),
+                                          height: 100,
+                                          width: double.infinity,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Divider(color: Colors.white10),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'CREADO: ${state.report!.timestamps?.createdAt ?? '-'}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontSize: 10,
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.5,
+                                    ),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'UPDATED: ${state.report!.timestamps?.updatedAt ?? '-'}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontSize: 10,
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.5,
+                                    ),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  textAlign: TextAlign.right,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 40), // Bottom padding
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }
@@ -773,7 +798,11 @@ class _PhotoEntryCard extends StatelessWidget {
             child: InteractiveViewer(
               minScale: 0.5,
               maxScale: 4.0,
-              child: ImageViewer(url: url),
+              child: ImageViewer(
+                url: url,
+                width: MediaQuery.of(context).size.width,
+                fit: BoxFit.fitWidth,
+              ),
             ),
           ),
           if (description != null && description.isNotEmpty) ...[
@@ -820,7 +849,13 @@ class _PhotoEntryCard extends StatelessWidget {
                 child: InteractiveViewer(
                   minScale: 0.5,
                   maxScale: 8.0,
-                  child: Center(child: ImageViewer(url: url)),
+                  child: Center(
+                    child: ImageViewer(
+                      url: url,
+                      width: MediaQuery.of(context).size.width,
+                      fit: BoxFit.fitWidth,
+                    ),
+                  ),
                 ),
               ),
               if (description != null && description.isNotEmpty)
@@ -903,6 +938,9 @@ class _PhotoEntryCard extends StatelessWidget {
                             ),
                             child: ImageViewer(
                               url: photo.beforeWork.photoPath!,
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
                             ),
                           ),
                         ),
@@ -948,7 +986,12 @@ class _PhotoEntryCard extends StatelessWidget {
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.white10),
                             ),
-                            child: ImageViewer(url: photo.afterWork.photoPath!),
+                            child: ImageViewer(
+                              url: photo.afterWork.photoPath!,
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                         Html(

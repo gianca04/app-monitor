@@ -184,7 +184,9 @@ class _WorkReportLocalFormVisualState
 
           // Set project name if selected and not set
           if (_selectedProjectId != null && _projectController.text.isEmpty) {
-            final project = projects.firstWhere((p) => p.id == _selectedProjectId);
+            final project = projects.firstWhere(
+              (p) => p.id == _selectedProjectId,
+            );
             _projectController.text = project.name;
           }
 
@@ -204,7 +206,9 @@ class _WorkReportLocalFormVisualState
                 // Project Selector
                 IndustrialSelector(
                   label: 'PROYECTO ASIGNADO',
-                  value: _projectController.text.isEmpty ? null : _projectController.text,
+                  value: _projectController.text.isEmpty
+                      ? null
+                      : _projectController.text,
                   icon: Icons.business,
                   onTap: () => _selectProject(projects),
                 ),
@@ -250,7 +254,9 @@ class _WorkReportLocalFormVisualState
                     Expanded(
                       flex: 2,
                       child: TextFormField(
-                        controller: TextEditingController(text: '2025-12-02'), // Example date
+                        controller: TextEditingController(
+                          text: '2025-12-02',
+                        ), // Example date
                         readOnly: true,
                         decoration: _inputDecoration(
                           label: 'FECHA',
@@ -324,7 +330,11 @@ class _WorkReportLocalFormVisualState
                         padding: const EdgeInsets.only(left: 16, top: 8),
                         child: Row(
                           children: [
-                            Icon(Icons.description, color: Colors.grey, size: 18),
+                            Icon(
+                              Icons.description,
+                              color: Colors.grey,
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'DESCRIPCIÓN GENERAL',
@@ -485,7 +495,11 @@ class _WorkReportLocalFormVisualState
                         padding: const EdgeInsets.only(left: 16, top: 8),
                         child: Row(
                           children: [
-                            Icon(Icons.inventory_2, color: Colors.grey, size: 18),
+                            Icon(
+                              Icons.inventory_2,
+                              color: Colors.grey,
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'MATERIALES / INSUMOS',
@@ -860,7 +874,7 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
                 // AFTER WORK BLOCK
                 _buildPhotoBlock(
                   context,
-                  'AFTER WORK',
+                  'DESPUÉS DEL TRABAJO',
                   'FOTO FINAL',
                   widget.data['photo_bytes'],
                   widget.onPickAfter,
@@ -873,7 +887,7 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
                 // BEFORE WORK BLOCK
                 _buildPhotoBlock(
                   context,
-                  'BEFORE WORK',
+                  'ANTES DEL TRABAJO',
                   'FOTO INICIAL',
                   widget.data['before_work_photo_bytes'],
                   widget.onPickBefore,
@@ -931,11 +945,7 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.camera_alt,
-                        color: Colors.grey,
-                        size: 40,
-                      ),
+                      Icon(Icons.camera_alt, color: Colors.grey, size: 40),
                       const SizedBox(height: 8),
                       Text(
                         btnLabel,

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fleather/fleather.dart';
+import 'dart:convert';
 import '../providers/photos_provider.dart';
 import '../../data/models/photo.dart';
+import '../../../../core/services/quill_converter_providers.dart';
 
 // --- Constantes de Diseño Industrial ---
 const Color kIndBg = Color(0xFF1F1F1F);
@@ -24,18 +27,93 @@ class PhotoForm extends ConsumerStatefulWidget {
 class _PhotoFormState extends ConsumerState<PhotoForm> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _workReportIdController;
-  late TextEditingController _afterWorkDescriptionController;
-  late TextEditingController _beforeWorkDescriptionController;
+
+  // Fleather Controllers
+  late FleatherController _afterWorkDescriptionController;
+  late FleatherController _beforeWorkDescriptionController;
+  final GlobalKey<EditorState> _afterEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _beforeEditorKey = GlobalKey();
 
   MultipartFile? _afterWorkPhoto;
   MultipartFile? _beforeWorkPhoto;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _workReportIdController = TextEditingController(text: widget.photo?.workReportId.toString() ?? '');
-    _afterWorkDescriptionController = TextEditingController(text: widget.photo?.afterWork.description ?? '');
-    _beforeWorkDescriptionController = TextEditingController(text: widget.photo?.beforeWork.description ?? '');
+    _workReportIdController = TextEditingController(
+      text: widget.photo?.workReportId.toString() ?? '',
+    );
+
+    // Initialize Fleather controllers
+    _initAfterWorkController();
+    _initBeforeWorkController();
+  }
+
+  Future<void> _initAfterWorkController() async {
+    final text = widget.photo?.afterWork.description ?? '';
+    _afterWorkDescriptionController = await _initFleatherController(text);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _initBeforeWorkController() async {
+    final text = widget.photo?.beforeWork.description ?? '';
+    _beforeWorkDescriptionController = await _initFleatherController(text);
+    if (mounted) setState(() {});
+  }
+
+  Future<FleatherController> _initFleatherController(String text) async {
+    if (text.isEmpty) return FleatherController();
+
+    try {
+      // 1. Try converting HTML to Quill
+      final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
+      final result = await convertHtmlToQuill(text);
+
+      return result.fold(
+        (failure) {
+          // 2. If HTML conversion fails, try JSON parsing
+          try {
+            final delta = jsonDecode(text);
+            if (delta is Map && delta['ops'] != null) {
+              return FleatherController(
+                document: ParchmentDocument.fromJson(delta['ops']),
+              );
+            } else if (delta is List) {
+              return FleatherController(
+                document: ParchmentDocument.fromJson(delta),
+              );
+            }
+            throw const FormatException('Invalid JSON');
+          } catch (_) {
+            // 3. Fallback: Treat as plain text
+            return FleatherController(
+              document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+            );
+          }
+        },
+        (conversionResult) {
+          // Successfully converted HTML
+          try {
+            final delta = jsonDecode(conversionResult.content);
+            if (delta is Map && delta['ops'] != null) {
+              return FleatherController(
+                document: ParchmentDocument.fromJson(delta['ops']),
+              );
+            }
+            throw const FormatException('Invalid Converted JSON');
+          } catch (e) {
+            return FleatherController(
+              document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+            );
+          }
+        },
+      );
+    } catch (e) {
+      return FleatherController(
+        document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+      );
+    }
   }
 
   @override
@@ -52,7 +130,10 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      final multipartFile = MultipartFile.fromBytes(bytes, filename: pickedFile.name);
+      final multipartFile = MultipartFile.fromBytes(
+        bytes,
+        filename: pickedFile.name,
+      );
 
       setState(() {
         if (isAfterWork) {
@@ -62,6 +143,21 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
         }
       });
     }
+  }
+
+  Future<String?> _getHtmlContent(FleatherController controller) async {
+    if (controller.document.toPlainText().trim().isEmpty) return null;
+
+    final deltaJson = jsonEncode({
+      'ops': controller.document.toDelta().toJson(),
+    });
+    final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
+    final result = await convertQuillToHtml(deltaJson);
+
+    return result.fold(
+      (failure) => null, // Or handle error?
+      (success) => success.content,
+    );
   }
 
   @override
@@ -74,7 +170,10 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
           filled: true,
           fillColor: kIndSurface,
           labelStyle: const TextStyle(color: Colors.grey),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(kIndRadius),
             borderSide: const BorderSide(color: Colors.white24),
@@ -108,7 +207,8 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
                   ),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                   keyboardType: TextInputType.number,
-                  validator: (value) => value?.isEmpty ?? true ? 'Campo requerido' : null,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
 
                 const SizedBox(height: 24),
@@ -118,7 +218,7 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
                 // --- SECCIÓN AFTER WORK (REQUERIDO) ---
                 _buildSectionTitle('EVIDENCIA FINAL (AFTER WORK)'),
                 const SizedBox(height: 12),
-                
+
                 // Widget visual personalizado para el Picker
                 _IndustrialImagePicker(
                   label: 'FOTO FINAL',
@@ -126,17 +226,12 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
                   onTap: () => _pickImage(true),
                   isRequired: true,
                 ),
-                
+
                 const SizedBox(height: 12),
-                TextFormField(
+                _buildFleatherEditor(
+                  label: 'DESCRIPCIÓN DE LA EVIDENCIA',
                   controller: _afterWorkDescriptionController,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'DESCRIPCIÓN DE LA EVIDENCIA',
-                    alignLabelWithHint: true,
-                    prefixIcon: Icon(Icons.description, color: Colors.grey),
-                  ),
-                  validator: (value) => value?.isEmpty ?? true ? 'La descripción es obligatoria' : null,
+                  editorKey: _afterEditorKey,
                 ),
 
                 const SizedBox(height: 24),
@@ -146,23 +241,19 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
                 // --- SECCIÓN BEFORE WORK (OPCIONAL) ---
                 _buildSectionTitle('EVIDENCIA INICIAL (BEFORE WORK)'),
                 const SizedBox(height: 12),
-                
+
                 _IndustrialImagePicker(
                   label: 'FOTO INICIAL (OPCIONAL)',
                   isFileSelected: _beforeWorkPhoto != null,
                   onTap: () => _pickImage(false),
                   isRequired: false,
                 ),
-                
+
                 const SizedBox(height: 12),
-                TextFormField(
+                _buildFleatherEditor(
+                  label: 'DESCRIPCIÓN INICIAL',
                   controller: _beforeWorkDescriptionController,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'DESCRIPCIÓN INICIAL',
-                    alignLabelWithHint: true,
-                    prefixIcon: Icon(Icons.history, color: Colors.grey),
-                  ),
+                  editorKey: _beforeEditorKey,
                 ),
 
                 const SizedBox(height: 32),
@@ -171,19 +262,27 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
                 SizedBox(
                   height: 54,
                   child: ElevatedButton(
-                    onPressed: _submit,
+                    onPressed: _isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kIndAccent,
-                      foregroundColor: Colors.black, // Texto negro sobre ámbar para alto contraste
+                      foregroundColor: Colors
+                          .black, // Texto negro sobre ámbar para alto contraste
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(kIndRadius),
                       ),
                     ),
-                    child: Text(
-                      widget.photo == null ? 'REGISTRAR EVIDENCIA' : 'ACTUALIZAR EVIDENCIA',
-                      style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0),
-                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.black)
+                        : Text(
+                            widget.photo == null
+                                ? 'REGISTRAR EVIDENCIA'
+                                : 'ACTUALIZAR EVIDENCIA',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -191,6 +290,54 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFleatherEditor({
+    required String label,
+    required FleatherController controller,
+    required GlobalKey<EditorState> editorKey,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kIndSurface,
+        border: Border.all(color: kIndBorder),
+        borderRadius: BorderRadius.circular(kIndRadius),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                const Icon(Icons.description, color: Colors.grey, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: kIndBorder),
+          FleatherToolbar.basic(controller: controller, editorKey: editorKey),
+          Container(
+            height: 150,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: FleatherEditor(
+              controller: controller,
+              focusNode: FocusNode(),
+              editorKey: editorKey,
+              padding: const EdgeInsets.all(8),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -208,9 +355,9 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      if (_afterWorkPhoto == null) {
+      if (_afterWorkPhoto == null && widget.photo == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('⚠️ La foto final es obligatoria'),
@@ -221,19 +368,58 @@ class _PhotoFormState extends ConsumerState<PhotoForm> {
         return;
       }
 
-      if (widget.photo == null) {
-        ref.read(photosProvider.notifier).createPhoto(
-              int.parse(_workReportIdController.text),
-              _afterWorkPhoto!,
-              _afterWorkDescriptionController.text,
-              _beforeWorkPhoto,
-              _beforeWorkDescriptionController.text.isEmpty ? null : _beforeWorkDescriptionController.text,
-            );
-      } else {
-        // Update logic placeholder
-      }
+      setState(() => _isLoading = true);
 
-      Navigator.of(context).pop();
+      try {
+        final afterHtml = await _getHtmlContent(
+          _afterWorkDescriptionController,
+        );
+        final beforeHtml = await _getHtmlContent(
+          _beforeWorkDescriptionController,
+        );
+
+        if (afterHtml == null && widget.photo == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ La descripción final es obligatoria'),
+            ),
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        if (widget.photo == null) {
+          await ref
+              .read(photosProvider.notifier)
+              .createPhoto(
+                int.parse(_workReportIdController.text),
+                _afterWorkPhoto!,
+                afterHtml ?? '',
+                _beforeWorkPhoto,
+                beforeHtml,
+              );
+        } else {
+          await ref
+              .read(photosProvider.notifier)
+              .updatePhoto(
+                widget.photo!.id!,
+                _afterWorkPhoto,
+                afterHtml ?? '',
+                _beforeWorkPhoto,
+                beforeHtml,
+              );
+        }
+
+        if (mounted) Navigator.of(context).pop();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 }
@@ -256,7 +442,9 @@ class _IndustrialImagePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     // Si hay archivo, borde Ámbar sólido. Si no, borde gris discontinuo (simulado con opacidad)
     final borderColor = isFileSelected ? kIndAccent : kIndBorder;
-    final bgColor = isFileSelected ? kIndAccent.withOpacity(0.1) : Colors.transparent;
+    final bgColor = isFileSelected
+        ? kIndAccent.withOpacity(0.1)
+        : Colors.transparent;
     final iconColor = isFileSelected ? kIndAccent : Colors.grey;
 
     return InkWell(
@@ -266,7 +454,10 @@ class _IndustrialImagePicker extends StatelessWidget {
         height: 80, // Altura fija para consistencia
         decoration: BoxDecoration(
           color: bgColor,
-          border: Border.all(color: borderColor, width: isFileSelected ? 1.5 : 1),
+          border: Border.all(
+            color: borderColor,
+            width: isFileSelected ? 1.5 : 1,
+          ),
           borderRadius: BorderRadius.circular(kIndRadius),
         ),
         child: Row(
@@ -293,7 +484,9 @@ class _IndustrialImagePicker extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    color: isFileSelected ? kIndAccent.withOpacity(0.8) : Colors.grey,
+                    color: isFileSelected
+                        ? kIndAccent.withOpacity(0.8)
+                        : Colors.grey,
                     fontSize: 11,
                   ),
                 ),
@@ -301,8 +494,11 @@ class _IndustrialImagePicker extends StatelessWidget {
             ),
             if (isFileSelected) ...[
               const SizedBox(width: 16),
-              const Text('CAMBIAR', style: TextStyle(color: Colors.white38, fontSize: 10)),
-            ]
+              const Text(
+                'CAMBIAR',
+                style: TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+            ],
           ],
         ),
       ),
