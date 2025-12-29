@@ -20,6 +20,8 @@ import '../../../work_report_photos_local/domain/entities/work_report_photo_loca
 import '../../../work_report_photos_local/presentation/providers/work_report_photos_local_provider.dart';
 import '../../../employees/data/models/quick_search_response.dart';
 import '../../../employees/presentation/widgets/quick_search_modal.dart';
+import '../../../photos/presentation/widgets/photo_action_viewer.dart';
+import '../../../photos/presentation/widgets/image_preview_modal.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
 const Color kIndBg = AppTheme.background;
@@ -1658,18 +1660,13 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
         const SizedBox(height: 8),
 
         // Photo area
-        GestureDetector(
-          onTap: onPick,
-          child: Container(
-            height: 180,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: kIndBg,
-              border: Border.all(color: kIndBorder),
-              borderRadius: BorderRadius.circular(kIndRadius),
-            ),
-            child: _buildPhotoPreview(bytes, localPath),
-          ),
+        PhotoActionViewer(
+          title: title,
+          url: localPath,
+          bytes: bytes,
+          onPlaceholderTap: onPick,
+          borderRadius: kIndRadius,
+          borderColor: kIndBorder,
         ),
         const SizedBox(height: 8),
 
@@ -1715,116 +1712,6 @@ class _IndustrialPhotoEntryState extends State<_IndustrialPhotoEntry> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildPhotoPreview(Uint8List? bytes, String? localPath) {
-    if (bytes != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(kIndRadius),
-        child: GestureDetector(
-          onTap: () => _showLocalImageViewer(bytes: bytes),
-          child: Image.memory(bytes, fit: BoxFit.cover),
-        ),
-      );
-    } else if (localPath != null && localPath.isNotEmpty) {
-      final file = File(localPath);
-      if (file.existsSync()) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(kIndRadius),
-          child: GestureDetector(
-            onTap: () => _showLocalImageViewer(filePath: localPath),
-            child: Image.file(file, fit: BoxFit.cover),
-          ),
-        );
-      }
-    }
-
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_photo_alternate, color: Colors.grey, size: 40),
-          SizedBox(height: 8),
-          Text(
-            'Tocar para agregar foto',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLocalImageViewer({Uint8List? bytes, String? filePath}) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) =>
-            _LocalImageViewerScreen(bytes: bytes, filePath: filePath),
-      ),
-    );
-  }
-}
-
-// ============================================
-// VISOR DE IMAGEN LOCAL
-// ============================================
-
-class _LocalImageViewerScreen extends StatelessWidget {
-  final Uint8List? bytes;
-  final String? filePath;
-
-  const _LocalImageViewerScreen({this.bytes, this.filePath});
-
-  @override
-  Widget build(BuildContext context) {
-    Widget imageWidget;
-
-    if (bytes != null) {
-      imageWidget = Image.memory(
-        bytes!,
-        fit: BoxFit.fitWidth,
-        width: double.infinity,
-      );
-    } else if (filePath != null && filePath!.isNotEmpty) {
-      final file = File(filePath!);
-      if (file.existsSync()) {
-        imageWidget = Image.file(
-          file,
-          fit: BoxFit.fitWidth,
-          width: double.infinity,
-        );
-      } else {
-        imageWidget = const Center(
-          child: Text(
-            'Imagen no encontrada',
-            style: TextStyle(color: Colors.white),
-          ),
-        );
-      }
-    } else {
-      imageWidget = const Center(
-        child: Text(
-          'Sin imagen disponible',
-          style: TextStyle(color: Colors.white),
-        ),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Vista previa',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-      body: InteractiveViewer(
-        minScale: 0.5,
-        maxScale: 4.0,
-        child: Center(child: imageWidget),
-      ),
     );
   }
 }

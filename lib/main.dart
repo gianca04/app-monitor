@@ -15,6 +15,7 @@ import 'features/work_reports_local/data/models/resources_model.dart';
 import 'features/work_reports_local/data/models/signatures_model.dart';
 import 'features/work_reports_local/data/models/timestamps_local_model.dart';
 import 'features/work_report_photos_local/data/models/work_report_photo_local_model.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +44,6 @@ void main() async {
 
   runApp(
     ProviderScope(
-      
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
       ],
@@ -62,6 +62,13 @@ class MainApp extends ConsumerWidget {
       title: 'Industrial App',
       theme: AppTheme.industrialTheme,
       routerConfig: router,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en', ''), Locale('es', '')],
+      locale: const Locale('es', ''),
     );
   }
 }

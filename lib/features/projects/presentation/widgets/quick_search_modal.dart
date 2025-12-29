@@ -16,6 +16,15 @@ class _QuickSearchModalState extends ConsumerState<QuickSearchModal> {
   Timer? _debounceTimer;
 
   @override
+  void initState() {
+    super.initState();
+    // Realizar búsqueda inicial para mostrar resultados al abrir el modal
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(quickSearchProvider.notifier).search('');
+    });
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _debounceTimer?.cancel();

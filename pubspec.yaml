@@ -23,7 +23,9 @@ dependencies:
   vibration: ^3.1.4
   shared_preferences: ^2.5.3
   dartz: ^0.10.1
-  intl: ^0.19.0
+  intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
   syncfusion_flutter_signaturepad: ^20.4.54
   markdown_editor_plus: ^0.2.15
   fleather: ^1.17.0

@@ -357,10 +357,10 @@ packages:
     dependency: "direct main"
     description:
       name: fleather
-      sha256: f370c7d9c497ca4d6d74b0e6e47f01a5c4c040008767c1ee907021b1b18cf90c
+      sha256: baa1cbba5de755adf8114eac3b8adf352f06a18e55d1d58636e9c10a0f86aed5
       url: "https://pub.dev"
     source: hosted
-    version: "1.17.0"
+    version: "1.26.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -390,6 +390,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+  flutter_localizations:
+    dependency: "direct main"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   flutter_markdown:
     dependency: transitive
     description:
@@ -652,10 +657,10 @@ packages:
     dependency: "direct main"
     description:
       name: intl
-      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
+      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
       url: "https://pub.dev"
     source: hosted
-    version: "0.19.0"
+    version: "0.20.2"
   io:
     dependency: transitive
     description:

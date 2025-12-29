@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:open_file/open_file.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
+import '../../../photos/presentation/widgets/image_preview_modal.dart';
 import '../../../../core/widgets/industrial_card.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../work_report_pdf/presentation/providers/work_report_pdf_provider.dart';
@@ -828,54 +829,11 @@ class _PhotoEntryCard extends StatelessWidget {
     String title,
     String? description,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: EdgeInsets.zero,
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            title: Text(title, style: const TextStyle(color: Colors.white)),
-            leading: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 8.0,
-                  child: Center(
-                    child: ImageViewer(
-                      url: url,
-                      width: MediaQuery.of(context).size.width,
-                      fit: BoxFit.fitWidth,
-                    ),
-                  ),
-                ),
-              ),
-              if (description != null && description.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.black.withOpacity(0.8),
-                  child: Html(
-                    data: description,
-                    style: {
-                      "body": Style(
-                        color: Colors.white,
-                        fontSize: FontSize(16),
-                      ),
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
+    ImagePreviewModal.show(
+      context,
+      url: url,
+      title: title,
+      description: description,
     );
   }
 

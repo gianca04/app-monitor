@@ -9,7 +9,7 @@ import 'package:fleather/fleather.dart';
 import '../../../../core/widgets/industrial_signature.dart';
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
-import '../../../photos/presentation/widgets/image_viewer.dart';
+import '../../../photos/presentation/widgets/photo_action_viewer.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../employees/presentation/widgets/quick_search_modal.dart';
 import '../../../employees/data/models/quick_search_response.dart';
@@ -1992,57 +1992,6 @@ class _IndustrialPhotoEntryState extends ConsumerState<_IndustrialPhotoEntry> {
     super.dispose();
   }
 
-  void _showPreview(
-    BuildContext context,
-    Uint8List? bytes,
-    String? url,
-    String title,
-  ) {
-    String? imageUrl;
-    if (bytes != null) {
-      imageUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-    } else if (url != null) {
-      imageUrl = url.startsWith('data:')
-          ? url
-          : (url.startsWith('http') ? url : 'data:image/jpeg;base64,$url');
-    }
-
-    if (imageUrl == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: EdgeInsets.zero,
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            title: Text(
-              title,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 8.0,
-              child: ImageViewer(
-                url: imageUrl!,
-                width: MediaQuery.of(context).size.width,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -2198,47 +2147,14 @@ class _IndustrialPhotoEntryState extends ConsumerState<_IndustrialPhotoEntry> {
         const SizedBox(height: 8),
 
         // Área de la foto (Grande)
-        InkWell(
-          onTap: hasPhoto
-              ? () => _showPreview(context, bytes, url, title)
-              : onPick,
-          child: Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.black26,
-              border: Border.all(color: kIndBorder),
-              borderRadius: BorderRadius.circular(kIndRadius),
-            ),
-            child: bytes != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(kIndRadius - 1),
-                    child: Image.memory(bytes, fit: BoxFit.cover),
-                  )
-                : (url != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(kIndRadius - 1),
-                          child: ImageViewer(url: url, height: 200),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.camera_alt,
-                              color: Colors.grey,
-                              size: 40,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              btnLabel,
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        )),
-          ),
+        PhotoActionViewer(
+          title: title,
+          url: url,
+          bytes: bytes,
+          placeholderLabel: btnLabel,
+          onPlaceholderTap: onPick,
+          borderRadius: kIndRadius,
+          borderColor: kIndBorder,
         ),
         const SizedBox(height: 12),
 
