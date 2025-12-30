@@ -10,7 +10,6 @@ import 'package:fleather/fleather.dart';
 import 'package:monitor/features/work_reports/presentation/widgets/work_report_progress_overlay.dart';
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
-import '../../../photos/presentation/widgets/photo_action_viewer.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../employees/presentation/widgets/quick_search_modal.dart';
 import '../../../employees/data/models/quick_search_response.dart';
@@ -495,22 +494,30 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     });
   }
 
-  Future<void> _pickPhotoImage(int index, bool isAfterWork) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> _updatePhoto(
+    int index,
+    bool isAfterWork, {
+    XFile? file,
+    Uint8List? bytes,
+    required String description,
+  }) async {
+    final descKey = isAfterWork ? 'descripcion' : 'before_work_descripcion';
 
-    if (pickedFile != null) {
-      // 1. Read bytes
-      final originalBytes = await pickedFile.readAsBytes();
+    setState(() {
+      _photos[index][descKey] = description;
 
-      // 2. Compress to WebP
+      if (file != null && bytes != null) {
+        // We do NOT compress here immediately?
+        // WorkReportForm did compress. WorkReportEditForm existing _pickPhotoImage did compress.
+        // So I should compress.
+      }
+    });
+
+    if (file != null && bytes != null) {
       final compressionService = ref.read(imageCompressionServiceProvider);
-      final compressedBytes = await compressionService.compressToWebp(
-        originalBytes,
-      );
+      final compressedBytes = await compressionService.compressToWebp(bytes);
 
-      // 3. Create MultipartFile with .webp extension
-      final filename = pickedFile.name;
+      final filename = file.name;
       final nameWithoutExt = filename.contains('.')
           ? filename.substring(0, filename.lastIndexOf('.'))
           : filename;
@@ -1343,13 +1350,22 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                       index: entry.key,
                       data: entry.value,
                       report: widget.report,
-                      onPickAfter: () => _pickPhotoImage(entry.key, true),
-                      onPickBefore: () => _pickPhotoImage(entry.key, false),
+                      onUpdateAfter: (file, bytes, desc) => _updatePhoto(
+                        entry.key,
+                        true,
+                        file: file,
+                        bytes: bytes,
+                        description: desc,
+                      ),
+                      onUpdateBefore: (file, bytes, desc) => _updatePhoto(
+                        entry.key,
+                        false,
+                        file: file,
+                        bytes: bytes,
+                        description: desc,
+                      ),
                       onRemove: () => _deletePhoto(entry.key),
                       onSave: () => _savePhoto(entry.key),
-                      onAfterDescChanged: (v) => entry.value['descripcion'] = v,
-                      onBeforeDescChanged: (v) =>
-                          entry.value['before_work_descripcion'] = v,
                       isEditMode: true,
                     );
                   }),

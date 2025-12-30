@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
@@ -595,22 +596,23 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     return Future.wait(futures);
   }
 
-  Future<void> _pickPhotoImage(int index, bool isAfterWork) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> _updatePhoto(
+    int index,
+    bool isAfterWork, {
+    XFile? file,
+    Uint8List? bytes,
+    required String description,
+  }) async {
+    // Update description always
+    final descKey = isAfterWork ? 'descripcion' : 'before_work_descripcion';
+    _photos[index][descKey] = description;
 
-    if (pickedFile != null) {
-      // 1. Read bytes
-      final originalBytes = await pickedFile.readAsBytes();
-
-      // 2. Compress to WebP
+    // Handle Image Update if present
+    if (file != null && bytes != null) {
       final compressionService = ref.read(imageCompressionServiceProvider);
-      final compressedBytes = await compressionService.compressToWebp(
-        originalBytes,
-      );
+      final compressedBytes = await compressionService.compressToWebp(bytes);
 
-      // 3. Create MultipartFile with .webp extension
-      final filename = pickedFile.name;
+      final filename = file.name;
       final nameWithoutExt = filename.contains('.')
           ? filename.substring(0, filename.lastIndexOf('.'))
           : filename;
@@ -631,6 +633,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           _photos[index]['before_work_photo_bytes'] = compressedBytes;
         }
       });
+    } else {
+      // Just refresh UI for description change
+      setState(() {});
     }
   }
 
@@ -1206,12 +1211,23 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       index: entry.key,
                       data: entry.value,
                       report: widget.report,
-                      onPickAfter: () => _pickPhotoImage(entry.key, true),
-                      onPickBefore: () => _pickPhotoImage(entry.key, false),
+                      onUpdateAfter: (file, bytes, desc) => _updatePhoto(
+                        entry.key,
+                        true,
+                        file: file,
+                        bytes: bytes,
+                        description: desc,
+                      ),
+                      onUpdateBefore: (file, bytes, desc) => _updatePhoto(
+                        entry.key,
+                        false,
+                        file: file,
+                        bytes: bytes,
+                        description: desc,
+                      ),
                       onRemove: () => _removePhoto(entry.key),
-                      onAfterDescChanged: (v) => entry.value['descripcion'] = v,
-                      onBeforeDescChanged: (v) =>
-                          entry.value['before_work_descripcion'] = v,
+                      // onSave no es necesario en creación (WorkReportForm), pero lo dejamos null o implementamos si queremos guardar individualmente (no soportado aquí)
+                      onSave: null,
                     );
                   }),
 
