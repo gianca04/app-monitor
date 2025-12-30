@@ -558,11 +558,13 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
     if (confirmed != true) return;
 
-    // Convert descriptions from Delta to HTML before saving
-    final descripcionHtml = await _convertDeltaToHtml(photo['descripcion']);
-    final beforeWorkDescripcionHtml = await _convertDeltaToHtml(
-      photo['before_work_descripcion'],
-    );
+    // Convert descriptions from Delta to HTML before saving concurrently
+    final results = await Future.wait([
+      _convertDeltaToHtml(photo['descripcion']),
+      _convertDeltaToHtml(photo['before_work_descripcion']),
+    ]);
+    final descripcionHtml = results[0];
+    final beforeWorkDescripcionHtml = results[1];
 
     if (photo['id'] == null) {
       // Create new photo
@@ -1403,120 +1405,47 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         // Convert Quill Delta to HTML for description
         final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
 
-        String? descriptionHtml;
-        if (_descriptionController != null &&
-            _descriptionController!.document.toPlainText().trim().isNotEmpty) {
-          final descriptionDelta = jsonEncode({
-            'ops': _descriptionController!.document.toDelta().toJson(),
-          });
-          final result = await convertQuillToHtml(descriptionDelta);
-          result.fold(
-            (failure) {
-              print(
-                '⚠️ [SUBMIT] Failed to convert description to HTML: ${failure.message}',
-              );
-              descriptionHtml = jsonEncode(
-                _descriptionController!.document.toDelta().toJson(),
-              );
-            },
-            (conversionResult) {
-              descriptionHtml = conversionResult.content;
-              print('✅ [SUBMIT] Description converted to HTML');
-            },
-          );
+        // Helper function for parallel conversion
+        Future<String?> convertField(
+          FleatherController? controller,
+          String name,
+        ) async {
+          if (controller != null &&
+              controller.document.toPlainText().trim().isNotEmpty) {
+            final descriptionDelta = jsonEncode({
+              'ops': controller.document.toDelta().toJson(),
+            });
+            final result = await convertQuillToHtml(descriptionDelta);
+            return result.fold(
+              (failure) {
+                print(
+                  '⚠️ [SUBMIT] Failed to convert $name to HTML: ${failure.message}',
+                );
+                return jsonEncode(controller.document.toDelta().toJson());
+              },
+              (conversionResult) {
+                print('✅ [SUBMIT] $name converted to HTML');
+                return conversionResult.content;
+              },
+            );
+          }
+          return null;
         }
 
-        String? toolsHtml;
-        if (_toolsController != null &&
-            _toolsController!.document.toPlainText().trim().isNotEmpty) {
-          final toolsDelta = jsonEncode({
-            'ops': _toolsController!.document.toDelta().toJson(),
-          });
-          final result = await convertQuillToHtml(toolsDelta);
-          result.fold(
-            (failure) {
-              print(
-                '⚠️ [SUBMIT] Failed to convert tools to HTML: ${failure.message}',
-              );
-              toolsHtml = jsonEncode(
-                _toolsController!.document.toDelta().toJson(),
-              );
-            },
-            (conversionResult) {
-              toolsHtml = conversionResult.content;
-              print('✅ [SUBMIT] Tools converted to HTML');
-            },
-          );
-        }
+        // Execute all conversions in parallel
+        final results = await Future.wait([
+          convertField(_descriptionController, 'Description'),
+          convertField(_toolsController, 'Tools'),
+          convertField(_personnelController, 'Personnel'),
+          convertField(_materialsController, 'Materials'),
+          convertField(_suggestionsController, 'Suggestions'),
+        ]);
 
-        String? personnelHtml;
-        if (_personnelController != null &&
-            _personnelController!.document.toPlainText().trim().isNotEmpty) {
-          final personnelDelta = jsonEncode({
-            'ops': _personnelController!.document.toDelta().toJson(),
-          });
-          final result = await convertQuillToHtml(personnelDelta);
-          result.fold(
-            (failure) {
-              print(
-                '⚠️ [SUBMIT] Failed to convert personnel to HTML: ${failure.message}',
-              );
-              personnelHtml = jsonEncode(
-                _personnelController!.document.toDelta().toJson(),
-              );
-            },
-            (conversionResult) {
-              personnelHtml = conversionResult.content;
-              print('✅ [SUBMIT] Personnel converted to HTML');
-            },
-          );
-        }
-
-        String? materialsHtml;
-        if (_materialsController != null &&
-            _materialsController!.document.toPlainText().trim().isNotEmpty) {
-          final materialsDelta = jsonEncode({
-            'ops': _materialsController!.document.toDelta().toJson(),
-          });
-          final result = await convertQuillToHtml(materialsDelta);
-          result.fold(
-            (failure) {
-              print(
-                '⚠️ [SUBMIT] Failed to convert materials to HTML: ${failure.message}',
-              );
-              materialsHtml = jsonEncode(
-                _materialsController!.document.toDelta().toJson(),
-              );
-            },
-            (conversionResult) {
-              materialsHtml = conversionResult.content;
-              print('✅ [SUBMIT] Materials converted to HTML');
-            },
-          );
-        }
-
-        String? suggestionsHtml;
-        if (_suggestionsController != null &&
-            _suggestionsController!.document.toPlainText().trim().isNotEmpty) {
-          final suggestionsDelta = jsonEncode({
-            'ops': _suggestionsController!.document.toDelta().toJson(),
-          });
-          final result = await convertQuillToHtml(suggestionsDelta);
-          result.fold(
-            (failure) {
-              print(
-                '⚠️ [SUBMIT] Failed to convert suggestions to HTML: ${failure.message}',
-              );
-              suggestionsHtml = jsonEncode(
-                _suggestionsController!.document.toDelta().toJson(),
-              );
-            },
-            (conversionResult) {
-              suggestionsHtml = conversionResult.content;
-              print('✅ [SUBMIT] Suggestions converted to HTML');
-            },
-          );
-        }
+        final descriptionHtml = results[0];
+        final toolsHtml = results[1];
+        final personnelHtml = results[2];
+        final materialsHtml = results[3];
+        final suggestionsHtml = results[4];
 
         await ref
             .read(workReportsProvider.notifier)
@@ -1609,4 +1538,3 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     }
   }
 }
-
