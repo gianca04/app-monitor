@@ -46,7 +46,10 @@ GoRouter appRouter(WidgetRef ref) {
           ),
           GoRoute(
             path: '/work-reports',
-            builder: (context, state) => const WorkReportsListScreen(),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              return WorkReportsListScreen(extra: extra);
+            },
           ),
           GoRoute(
             path: '/work-reports/create',

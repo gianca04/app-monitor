@@ -40,7 +40,7 @@ class IndustrialFeedback {
                   ), // Icono negro para contraste con verde
                   const SizedBox(width: 8),
                   Text(
-                    "// SYSTEM_ACCESS_OK",
+                    "// OPERACION EXITOSA",
                     style: TextStyle(
                       color: Colors.black, // Texto negro sobre verde neón
                       fontFamily: 'monospace',
@@ -123,7 +123,7 @@ class IndustrialFeedback {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    "// SYSTEM_ERROR_LOG",
+                    "// ERROR",
                     style: TextStyle(
                       color: Colors.white,
                       fontFamily: 'monospace',

@@ -284,10 +284,11 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     }
   }
 
-  Future<void> deleteWorkReport(int id) async {
+  Future<Map<String, dynamic>> deleteWorkReport(int id) async {
     try {
-      await deleteWorkReportUseCase(id);
+      final response = await deleteWorkReportUseCase(id);
       await loadWorkReports();
+      return response;
     } on DioException catch (e) {
       String errorMessage;
       if (e.type == DioExceptionType.connectionTimeout ||
@@ -301,7 +302,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
         errorMessage = 'Error al eliminar el reporte. Por favor, intenta nuevamente.';
       }
       if (mounted) state = state.copyWith(error: errorMessage);
-      rethrow; // Para que la UI pueda manejar el error
+      rethrow;
     } catch (e) {
       if (mounted) state = state.copyWith(error: 'Error al eliminar el reporte. Por favor, intenta nuevamente.');
       rethrow;

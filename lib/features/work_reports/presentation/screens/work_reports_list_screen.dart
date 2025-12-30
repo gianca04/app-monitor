@@ -9,8 +9,11 @@ import '../widgets/reports_fab_menu.dart' as fab_menu;
 import 'package:monitor/core/widgets/modern_bottom_modal.dart';
 // import 'package:monitor/core/theme_config.dart';
 
+import 'package:monitor/core/widgets/industrial_feedback.dart';
+
 class WorkReportsListScreen extends ConsumerStatefulWidget {
-  const WorkReportsListScreen({super.key});
+  final Map<String, dynamic>? extra;
+  const WorkReportsListScreen({super.key, this.extra});
 
   @override
   ConsumerState<WorkReportsListScreen> createState() =>
@@ -27,9 +30,36 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
-    Future.microtask(
-      () => ref.read(workReportsProvider.notifier).loadWorkReports(),
-    );
+
+    // Check for extra data on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleExtraData();
+      ref.read(workReportsProvider.notifier).loadWorkReports();
+    });
+  }
+
+  @override
+  void didUpdateWidget(WorkReportsListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.extra != oldWidget.extra) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleExtraData();
+      });
+    }
+  }
+
+  void _handleExtraData() {
+    if (widget.extra != null && widget.extra!['success'] == true) {
+      final message = widget.extra!['message'] ?? 'Operación exitosa';
+      ScaffoldMessenger.of(context).showSnackBar(
+        IndustrialFeedback.buildSuccess(
+          message: message.toUpperCase(),
+          onDismiss: () {},
+        ),
+      );
+      // Force refresh if needed, although loadWorkReports is called in init
+      ref.read(workReportsProvider.notifier).loadWorkReports();
+    }
   }
 
   @override
@@ -151,48 +181,6 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
 
           // El FAB ahora es un widget autónomo
           Positioned(bottom: 16, right: 16, child: fab_menu.ReportsFabMenu()),
-        ],
-      ),
-    );
-  }
-
-  // --- Métodos Auxiliares para Diálogos (Mucho más limpios) ---
-
-  void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('CONFIRMAR ELIMINACIÓN'),
-        content: const Text(
-          'Esta acción no se puede deshacer. ¿Eliminar registro permanentemente?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('CANCELAR'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              try {
-                await ref
-                    .read(workReportsProvider.notifier)
-                    .deleteWorkReport(id);
-                // Success, list is reloaded automatically
-              } catch (e) {
-                // Error occurred, show SnackBar
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al eliminar el reporte: $e')),
-                  );
-                }
-              }
-            },
-            child: Text(
-              'ELIMINAR',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
         ],
       ),
     );

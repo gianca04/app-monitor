@@ -48,7 +48,7 @@ abstract class WorkReportsDataSource {
     String? supervisorSignature,
     String? managerSignature,
   );
-  Future<void> deleteWorkReport(int id);
+  Future<Map<String, dynamic>> deleteWorkReport(int id);
 }
 
 class WorkReportsDataSourceImpl implements WorkReportsDataSource {
@@ -348,9 +348,10 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
   }
 
   @override
-  Future<void> deleteWorkReport(int id) async {
-    await dio.delete(
+  Future<Map<String, dynamic>> deleteWorkReport(int id) async {
+    final response = await dio.delete(
       '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id',
     );
+    return response.data;
   }
 }

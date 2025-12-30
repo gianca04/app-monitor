@@ -14,5 +14,5 @@ abstract class WorkReportsRepository {
   Future<WorkReport> getWorkReport(int id);
   Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos, String? supervisorSignature, String? managerSignature);
   Future<WorkReport> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, String? supervisorSignature, String? managerSignature);
-  Future<void> deleteWorkReport(int id);
+  Future<Map<String, dynamic>> deleteWorkReport(int id);
 }

@@ -5,7 +5,7 @@ class DeleteWorkReportUseCase {
 
   DeleteWorkReportUseCase(this.repository);
 
-  Future<void> call(int id) async {
+  Future<Map<String, dynamic>> call(int id) async {
     return await repository.deleteWorkReport(id);
   }
 }

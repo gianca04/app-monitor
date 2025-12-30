@@ -45,7 +45,7 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
   }
 
   @override
-  Future<void> deleteWorkReport(int id) async {
+  Future<Map<String, dynamic>> deleteWorkReport(int id) async {
     return await dataSource.deleteWorkReport(id);
   }
 }

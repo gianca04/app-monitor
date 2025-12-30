@@ -9,7 +9,7 @@ import '../../../photos/presentation/widgets/image_viewer.dart';
 import '../../../photos/presentation/widgets/image_preview_modal.dart';
 import '../../../../core/widgets/industrial_card.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
-import '../../../work_report_pdf/presentation/providers/work_report_pdf_provider.dart';
+import '../../../../core/widgets/industrial_feedback.dart';
 
 class WorkReportViewScreen extends ConsumerWidget {
   final int id;
@@ -27,7 +27,7 @@ class WorkReportViewScreen extends ConsumerWidget {
     return url; // Fallback to original if no data: found
   }
 
-  Future<void> _downloadPdf(BuildContext context, WidgetRef ref) async {
+  /*Future<void> _downloadPdf(BuildContext context, WidgetRef ref) async {
     final pdfNotifier = ref.read(workReportPdfProvider.notifier);
 
     // Mostrar diálogo de progreso
@@ -132,6 +132,7 @@ class WorkReportViewScreen extends ConsumerWidget {
       );
     }
   }
+  */
 
   void _goBack(BuildContext context) {
     context.go('/work-reports');
@@ -140,38 +141,48 @@ class WorkReportViewScreen extends ConsumerWidget {
   void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('CONFIRMAR ELIMINACIÓN'),
         content: const Text(
           'Esta acción no se puede deshacer. ¿Eliminar registro permanentemente?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('CANCELAR'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               try {
-                // Show loading indicator or block UI could be better, but keeping it simple as per previous pattern
-                await ref
+                // Show loading indicator or block UI could be better in a real app
+                final response = await ref
                     .read(workReportsProvider.notifier)
                     .deleteWorkReport(id);
-                // On success, go back to list
+
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Reporte eliminado exitosamente'),
-                    ),
-                  );
-                  context.go('/work-reports');
+                  // Construimos la estructura de respuesta solicitada
+                  final result = {
+                    "success": true,
+                    "message":
+                        response['message'] ??
+                        "Reporte de trabajo eliminado exitosamente",
+                    "data": {"id": id},
+                    "meta": {
+                      "apiVersion": "1.0",
+                      "timestamp": DateTime.now().toIso8601String(),
+                    },
+                  };
+                  // Regresamos el resultado al ir a la lista
+                  context.go('/work-reports', extra: result);
                 }
               } catch (e) {
-                // Error handled by provider/UI, but generally show snackbar
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al eliminar: $e')),
+                    IndustrialFeedback.buildError(
+                      message: 'ERROR AL ELIMINAR: $e',
+                      onDismiss: () {},
+                    ),
                   );
                 }
               }
@@ -219,7 +230,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => _downloadPdf(context, ref),
+                    // onTap: () => _downloadPdf(context, ref),
                     borderRadius: BorderRadius.circular(4),
                     child: Container(
                       padding: const EdgeInsets.symmetric(

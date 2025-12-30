@@ -1,13 +1,10 @@
 import 'dart:typed_data';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fleather/fleather.dart';
 import '../../data/models/work_report.dart';
 import '../../../photos/presentation/widgets/photo_action_viewer.dart';
 import '../../../../core/theme_config.dart';
-import '../../../../core/services/quill_converter_providers.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
 const Color kIndBg = AppTheme.background;
@@ -48,126 +45,39 @@ class IndustrialPhotoEntry extends ConsumerStatefulWidget {
 }
 
 class _IndustrialPhotoEntryState extends ConsumerState<IndustrialPhotoEntry> {
-  late FleatherController _afterController;
-  late FleatherController _beforeController;
-  final GlobalKey<EditorState> _afterEditorKey = GlobalKey();
-  final GlobalKey<EditorState> _beforeEditorKey = GlobalKey();
+  late TextEditingController _afterController;
+  late TextEditingController _beforeController;
+
+  String _stripHtmlTags(String htmlString) {
+    return htmlString.replaceAll(RegExp(r'<[^>]*>'), '');
+  }
 
   @override
   void initState() {
     super.initState();
-    // Initialize with empty controllers first to avoid late initialization error
-    _afterController = FleatherController();
-    _beforeController = FleatherController();
+    _afterController = TextEditingController();
+    _beforeController = TextEditingController();
 
-    // Then load the actual content asynchronously
     _initControllers();
   }
 
-  Future<void> _initControllers() async {
+  void _initControllers() {
     // === AFTER WORK DESCRIPTION ===
-    try {
-      final text = widget.data['descripcion'] ?? '';
-      if (text.isNotEmpty) {
-        _afterController = await _initFleatherController(text);
-        if (mounted) setState(() {});
-      }
-    } catch (e) {
-      print('❌ [PHOTO ENTRY] Error initializing after controller: $e');
-    }
+    final afterText = _stripHtmlTags(widget.data['descripcion'] ?? '');
+    _afterController.text = afterText;
 
     // === BEFORE WORK DESCRIPTION ===
-    try {
-      final text = widget.data['before_work_descripcion'] ?? '';
-      if (text.isNotEmpty) {
-        _beforeController = await _initFleatherController(text);
-        if (mounted) setState(() {});
-      }
-    } catch (e) {
-      print('❌ [PHOTO ENTRY] Error initializing before controller: $e');
-    }
+    final beforeText = _stripHtmlTags(widget.data['before_work_descripcion'] ?? '');
+    _beforeController.text = beforeText;
 
     // Listeners for changes
     _afterController.addListener(() {
-      try {
-        final delta = _afterController.document.toDelta().toJson();
-        widget.onAfterDescChanged(jsonEncode({'ops': delta}));
-      } catch (e) {
-        // Handle potential encoding errors
-      }
+      widget.onAfterDescChanged(_afterController.text);
     });
 
     _beforeController.addListener(() {
-      try {
-        final delta = _beforeController.document.toDelta().toJson();
-        widget.onBeforeDescChanged(jsonEncode({'ops': delta}));
-      } catch (e) {
-        // Handle potential encoding errors
-      }
+      widget.onBeforeDescChanged(_beforeController.text);
     });
-  }
-
-  Future<FleatherController> _initFleatherController(String text) async {
-    if (text.isEmpty) return FleatherController();
-
-    try {
-      // 1. Try converting HTML to Quill using the provider
-      final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
-      final result = await convertHtmlToQuill(text);
-
-      return result.fold(
-        (failure) {
-          // 2. If HTML conversion fails, try robust JSON parsing or plain text
-          try {
-            final delta = jsonDecode(text);
-            if (delta is Map && delta['ops'] != null) {
-              return FleatherController(
-                document: ParchmentDocument.fromJson(delta['ops']),
-              );
-            } else if (delta is List) {
-              return FleatherController(
-                document: ParchmentDocument.fromJson(delta),
-              );
-            }
-            throw const FormatException('Invalid JSON for Delta');
-          } catch (_) {
-            // 3. Fallback: Treat as plain text
-            return FleatherController(
-              document: ParchmentDocument.fromDelta(Delta()..insert(text)),
-            );
-          }
-        },
-        (conversionResult) {
-          // Successfully converted HTML to Delta JSON string
-          // The converter usually returns a JSON string representing the Delta
-          try {
-            final delta = jsonDecode(conversionResult.content);
-            // Verify structure returned by converter (usually {ops: [...]} )
-            if (delta is Map && delta['ops'] != null) {
-              return FleatherController(
-                document: ParchmentDocument.fromJson(delta['ops']),
-              );
-            } else if (delta is List) {
-              return FleatherController(
-                document: ParchmentDocument.fromJson(delta),
-              );
-            }
-            throw const FormatException('Invalid Converted JSON');
-          } catch (e) {
-            print('⚠️ [PHOTO ENTRY] Converted HTML JSON invalid: $e');
-            // If conversion result isn't valid JSON, fallback to text
-            return FleatherController(
-              document: ParchmentDocument.fromDelta(Delta()..insert(text)),
-            );
-          }
-        },
-      );
-    } catch (e) {
-      print('⚠️ [PHOTO ENTRY] General error parsing text: $e');
-      return FleatherController(
-        document: ParchmentDocument.fromDelta(Delta()..insert(text)),
-      );
-    }
   }
 
   @override
@@ -246,7 +156,6 @@ class _IndustrialPhotoEntryState extends ConsumerState<IndustrialPhotoEntry> {
                       : null,
                   widget.onPickAfter,
                   _afterController,
-                  _afterEditorKey,
                 ),
                 const Divider(color: Colors.white10, height: 24),
                 _buildPhotoBlock(
@@ -262,7 +171,6 @@ class _IndustrialPhotoEntryState extends ConsumerState<IndustrialPhotoEntry> {
                       : null,
                   widget.onPickBefore,
                   _beforeController,
-                  _beforeEditorKey,
                 ),
               ],
             ),
@@ -279,8 +187,7 @@ class _IndustrialPhotoEntryState extends ConsumerState<IndustrialPhotoEntry> {
     Uint8List? bytes,
     String? url,
     VoidCallback onPick,
-    FleatherController controller,
-    GlobalKey<EditorState> editorKey,
+    TextEditingController controller,
   ) {
     final hasPhoto = bytes != null || url != null;
 
@@ -354,25 +261,15 @@ class _IndustrialPhotoEntryState extends ConsumerState<IndustrialPhotoEntry> {
             border: Border.all(color: kIndBorder),
             borderRadius: BorderRadius.circular(kIndRadius),
           ),
-          child: Column(
-            children: [
-              FleatherToolbar.basic(
-                controller: controller,
-                editorKey: editorKey,
-              ),
-              Container(
-                height: 150,
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: kIndBorder)),
-                ),
-                child: FleatherEditor(
-                  controller: controller,
-                  padding: const EdgeInsets.all(12),
-                  focusNode: FocusNode(),
-                  editorKey: editorKey,
-                ),
-              ),
-            ],
+          child: TextField(
+            controller: controller,
+            maxLines: null,
+            minLines: 5,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(12),
+            ),
+            style: const TextStyle(color: Colors.white),
           ),
         ),
       ],

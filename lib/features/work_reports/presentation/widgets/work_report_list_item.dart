@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:go_router/go_router.dart';
 import 'package:monitor/core/theme_config.dart'; // Asumo que tienes esto
 import 'package:monitor/core/widgets/industrial_card.dart';
+import 'package:monitor/core/widgets/industrial_feedback.dart';
 import '../../data/models/work_report.dart';
+import '../providers/work_reports_provider.dart';
 
 // Definimos constantes locales para mantener la regla del 4
 const double _kRadius = 4.0;
 const double _kGridSpacing = 2.0;
 
-class WorkReportListItem extends StatelessWidget {
+class WorkReportListItem extends ConsumerWidget {
   final WorkReport report;
   // Botones de acción eliminados por solicitud del usuario
   // Se han movido a la vista de detalle
@@ -25,7 +28,7 @@ class WorkReportListItem extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
