@@ -24,6 +24,7 @@ import '../../../../core/widgets/industrial_signature.dart';
 import '../../../../core/theme_config.dart';
 import '../../../../core/services/quill_converter_providers.dart';
 import 'industrial_photo_entry.dart';
+import '../../../../core/services/image_compression_service.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
 const Color kIndBg = AppTheme.background;
@@ -497,19 +498,35 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
+      // 1. Read bytes
+      final originalBytes = await pickedFile.readAsBytes();
+
+      // 2. Compress to WebP
+      final compressionService = ref.read(imageCompressionServiceProvider);
+      final compressedBytes = await compressionService.compressToWebp(
+        originalBytes,
+      );
+
+      // 3. Create MultipartFile with .webp extension
+      final filename = pickedFile.name;
+      final nameWithoutExt = filename.contains('.')
+          ? filename.substring(0, filename.lastIndexOf('.'))
+          : filename;
+      final newFilename = '$nameWithoutExt.webp';
+
       final multipartFile = MultipartFile.fromBytes(
-        bytes,
-        filename: pickedFile.name,
+        compressedBytes,
+        filename: newFilename,
+        contentType: DioMediaType.parse('image/webp'),
       );
 
       setState(() {
         if (isAfterWork) {
           _photos[index]['photo'] = multipartFile;
-          _photos[index]['photo_bytes'] = bytes;
+          _photos[index]['photo_bytes'] = compressedBytes;
         } else {
           _photos[index]['before_work_photo'] = multipartFile;
-          _photos[index]['before_work_photo_bytes'] = bytes;
+          _photos[index]['before_work_photo_bytes'] = compressedBytes;
         }
       });
     }

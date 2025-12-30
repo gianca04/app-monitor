@@ -3,13 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:typed_data';
 import 'dart:convert';
 import 'package:fleather/fleather.dart';
 import '../../../../core/widgets/industrial_signature.dart';
 import '../../data/models/work_report.dart';
 import '../providers/work_reports_provider.dart';
-import '../../../photos/presentation/widgets/photo_action_viewer.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../employees/presentation/widgets/quick_search_modal.dart';
 import '../../../employees/data/models/quick_search_response.dart';
@@ -21,6 +19,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import 'industrial_selector.dart';
 import '../../../../core/theme_config.dart';
 import '../../../../core/services/quill_converter_providers.dart';
+import '../../../../core/services/image_compression_service.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -599,19 +598,35 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
+      // 1. Read bytes
+      final originalBytes = await pickedFile.readAsBytes();
+
+      // 2. Compress to WebP
+      final compressionService = ref.read(imageCompressionServiceProvider);
+      final compressedBytes = await compressionService.compressToWebp(
+        originalBytes,
+      );
+
+      // 3. Create MultipartFile with .webp extension
+      final filename = pickedFile.name;
+      final nameWithoutExt = filename.contains('.')
+          ? filename.substring(0, filename.lastIndexOf('.'))
+          : filename;
+      final newFilename = '$nameWithoutExt.webp';
+
       final multipartFile = MultipartFile.fromBytes(
-        bytes,
-        filename: pickedFile.name,
+        compressedBytes,
+        filename: newFilename,
+        contentType: DioMediaType.parse('image/webp'),
       );
 
       setState(() {
         if (isAfterWork) {
           _photos[index]['photo'] = multipartFile;
-          _photos[index]['photo_bytes'] = bytes;
+          _photos[index]['photo_bytes'] = compressedBytes;
         } else {
           _photos[index]['before_work_photo'] = multipartFile;
-          _photos[index]['before_work_photo_bytes'] = bytes;
+          _photos[index]['before_work_photo_bytes'] = compressedBytes;
         }
       });
     }

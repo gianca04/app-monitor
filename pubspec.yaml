@@ -32,6 +32,7 @@ dependencies:
   path_provider: ^2.1.2
   equatable: ^2.0.5
   open_file: ^3.5.10
+  flutter_image_compress: ^2.4.0
 
 dev_dependencies:
   flutter_test:
