@@ -28,6 +28,7 @@ import '../../../work_reports_local/presentation/providers/work_reports_local_pr
 import '../../../work_report_photos_local/domain/entities/work_report_photo_local_entity.dart';
 import '../../../work_report_photos_local/presentation/providers/work_report_photos_local_provider.dart';
 import 'industrial_photo_entry.dart';
+import 'package:monitor/features/work_reports/presentation/widgets/work_report_progress_overlay.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
 const Color kIndBg = AppTheme.background;
@@ -78,6 +79,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   List<Map<String, dynamic>> _photos = [];
 
   bool _isLoading = false;
+  WorkReportSubmissionStage _submissionStage = WorkReportSubmissionStage.idle;
 
   @override
   void initState() {
@@ -660,630 +662,658 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           ),
         ),
       ),
-      child: Container(
-        color: kIndBg,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              // --- SECTION 1: CONTEXT ---
-              _buildSectionHeader(
-                Theme.of(context),
-                title: 'CONTEXTO OPERATIVO',
-                icon: Icons.location_on,
-              ),
-              const SizedBox(height: 12),
-
-              // Project Selector
-              IndustrialSelector(
-                label: 'PROYECTO ASIGNADO',
-                value: _selectedProject != null
-                    ? '${_selectedProject!.name} (ID: ${_selectedProject!.id})'
-                    : null,
-                icon: Icons.business,
-                onTap: () async {
-                  final result = await ModernBottomModal.show<ProjectQuick>(
-                    context,
-                    title: 'Seleccionar Proyecto',
-                    content: const projects_modal.QuickSearchModal(),
-                  );
-                  if (result != null) {
-                    setState(() {
-                      _selectedProject = result;
-                      _projectIdController.text = result.id.toString();
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-
-              // Employee Selector
-              IndustrialSelector(
-                label: 'RESPONSABLE TÉCNICO',
-                value: _selectedEmployee != null
-                    ? '${_selectedEmployee!.fullName}'
-                    : null,
-                subValue: _selectedEmployee != null
-                    ? 'DOC: ${_selectedEmployee!.documentNumber}'
-                    : null,
-                icon: Icons.badge,
-                onTap: () async {
-                  final result = await ModernBottomModal.show<EmployeeQuick>(
-                    context,
-                    title: 'Seleccionar Empleado',
-                    content: const QuickSearchModal(),
-                  );
-                  if (result != null) {
-                    setState(() {
-                      _selectedEmployee = result;
-                      _employeeIdController.text = result.id.toString();
-                    });
-                  }
-                },
-              ),
-
-              const SizedBox(height: 24),
-              const Divider(color: Colors.white10),
-              const SizedBox(height: 24),
-
-              // --- SECTION 2: REPORT DETAILS ---
-              _buildSectionHeader(
-                Theme.of(context),
-                title: 'DETALLES DEL REPORTE',
-                icon: Icons.description,
-              ),
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'NOMBRE DEL REPORTE',
-                  prefixIcon: Icon(Icons.title, color: AppTheme.textSecondary),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 12),
-
-              // Date & Time Row
-              Column(
-                // <--- 1. CONTENEDOR PRINCIPAL: Vertical
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        children: [
+          Container(
+            color: kIndBg,
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
                 children: [
-                  // --- 1. CAMPO FECHA (Full Width) ---
-                  TextFormField(
-                    controller: _reportDateController,
-                    readOnly: true,
-                    decoration: const InputDecoration(labelText: 'FECHA'),
+                  // --- SECTION 1: CONTEXT ---
+                  _buildSectionHeader(
+                    Theme.of(context),
+                    title: 'CONTEXTO OPERATIVO',
+                    icon: Icons.location_on,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Project Selector
+                  IndustrialSelector(
+                    label: 'PROYECTO ASIGNADO',
+                    value: _selectedProject != null
+                        ? '${_selectedProject!.name} (ID: ${_selectedProject!.id})'
+                        : null,
+                    icon: Icons.business,
                     onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2101),
+                      final result = await ModernBottomModal.show<ProjectQuick>(
+                        context,
+                        title: 'Seleccionar Proyecto',
+                        content: const projects_modal.QuickSearchModal(),
                       );
-                      if (picked != null) {
-                        _reportDateController.text = picked
-                            .toIso8601String()
-                            .split('T')[0];
+                      if (result != null) {
+                        setState(() {
+                          _selectedProject = result;
+                          _projectIdController.text = result.id.toString();
+                        });
                       }
                     },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Employee Selector
+                  IndustrialSelector(
+                    label: 'RESPONSABLE TÉCNICO',
+                    value: _selectedEmployee != null
+                        ? '${_selectedEmployee!.fullName}'
+                        : null,
+                    subValue: _selectedEmployee != null
+                        ? 'DOC: ${_selectedEmployee!.documentNumber}'
+                        : null,
+                    icon: Icons.badge,
+                    onTap: () async {
+                      final result =
+                          await ModernBottomModal.show<EmployeeQuick>(
+                            context,
+                            title: 'Seleccionar Empleado',
+                            content: const QuickSearchModal(),
+                          );
+                      if (result != null) {
+                        setState(() {
+                          _selectedEmployee = result;
+                          _employeeIdController.text = result.id.toString();
+                        });
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+                  const Divider(color: Colors.white10),
+                  const SizedBox(height: 24),
+
+                  // --- SECTION 2: REPORT DETAILS ---
+                  _buildSectionHeader(
+                    Theme.of(context),
+                    title: 'DETALLES DEL REPORTE',
+                    icon: Icons.description,
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'NOMBRE DEL REPORTE',
+                      prefixIcon: Icon(
+                        Icons.title,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'Requerido' : null,
                   ),
+                  const SizedBox(height: 12),
 
-                  const SizedBox(height: 16), // Espacio entre Fecha y Horas
-                  // --- 2. HORA INICIO Y HORA FIN (Row Anidada) ---
-                  Row(
-                    // <--- 2. Fila para las Horas
+                  // Date & Time Row
+                  Column(
+                    // <--- 1. CONTENEDOR PRINCIPAL: Vertical
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        // 50%
-                        child: TextFormField(
-                          controller: _startTimeController,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: 'INICIO (HH:mm)',
-                          ),
-                          onTap: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.now(),
-                            );
-                            if (picked != null) {
-                              _startTimeController.text =
-                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                            }
-                          },
-                        ),
+                      // --- 1. CAMPO FECHA (Full Width) ---
+                      TextFormField(
+                        controller: _reportDateController,
+                        readOnly: true,
+                        decoration: const InputDecoration(labelText: 'FECHA'),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2101),
+                          );
+                          if (picked != null) {
+                            _reportDateController.text = picked
+                                .toIso8601String()
+                                .split('T')[0];
+                          }
+                        },
+                        validator: (value) =>
+                            value?.isEmpty ?? true ? 'Requerido' : null,
                       ),
-                      const SizedBox(
-                        width: 8,
-                      ), // Espacio entre los campos de hora
-                      Expanded(
-                        // 50%
-                        child: TextFormField(
-                          controller: _endTimeController,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: 'FIN (HH:mm)',
-                          ),
-                          onTap: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.now(),
-                            );
-                            if (picked != null) {
-                              _endTimeController.text =
-                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: kIndSurface,
-                  border: Border.all(color: kIndBorder),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(kIndRadius),
-                    topRight: Radius.circular(kIndRadius),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, top: 8),
-                      child: Row(
+
+                      const SizedBox(height: 16), // Espacio entre Fecha y Horas
+                      // --- 2. HORA INICIO Y HORA FIN (Row Anidada) ---
+                      Row(
+                        // <--- 2. Fila para las Horas
                         children: [
-                          Icon(Icons.description, color: Colors.grey, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'DESCRIPCIÓN GENERAL',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 13,
+                          Expanded(
+                            // 50%
+                            child: TextFormField(
+                              controller: _startTimeController,
+                              readOnly: true,
+                              decoration: const InputDecoration(
+                                labelText: 'INICIO (HH:mm)',
+                              ),
+                              onTap: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.now(),
+                                );
+                                if (picked != null) {
+                                  _startTimeController.text =
+                                      '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 8,
+                          ), // Espacio entre los campos de hora
+                          Expanded(
+                            // 50%
+                            child: TextFormField(
+                              controller: _endTimeController,
+                              readOnly: true,
+                              decoration: const InputDecoration(
+                                labelText: 'FIN (HH:mm)',
+                              ),
+                              onTap: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.now(),
+                                );
+                                if (picked != null) {
+                                  _endTimeController.text =
+                                      '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                                }
+                              },
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    if (_descriptionController == null)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else ...[
-                      FleatherToolbar.basic(
-                        controller: _descriptionController!,
-                        editorKey: _descriptionEditorKey,
-                      ),
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: kIndBorder),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(kIndRadius),
-                            bottomRight: Radius.circular(kIndRadius),
-                          ),
-                        ),
-                        child: FleatherEditor(
-                          controller: _descriptionController!,
-                          padding: const EdgeInsets.all(16),
-                          focusNode: FocusNode(),
-                          editorKey: _descriptionEditorKey,
-                        ),
-                      ),
                     ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              const Divider(color: Colors.white10),
-              const SizedBox(height: 24),
-
-              // --- SECTION 3: RESOURCES ---
-              _buildSectionHeader(
-                Theme.of(context),
-                title: 'RECURSOS UTILIZADOS',
-                icon: Icons.build,
-              ),
-              const SizedBox(height: 12),
-
-              Container(
-                decoration: BoxDecoration(
-                  color: kIndSurface,
-                  border: Border.all(color: kIndBorder),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(kIndRadius),
-                    topRight: Radius.circular(kIndRadius),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, top: 8),
-                      child: Row(
-                        children: [
-                          Icon(Icons.build, color: Colors.grey, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'HERRAMIENTAS / EQUIPOS',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: kIndSurface,
+                      border: Border.all(color: kIndBorder),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(kIndRadius),
+                        topRight: Radius.circular(kIndRadius),
                       ),
                     ),
-                    if (_toolsController == null)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else ...[
-                      FleatherToolbar.basic(
-                        controller: _toolsController!,
-                        editorKey: _editorKey,
-                      ),
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: kIndBorder),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(kIndRadius),
-                            bottomRight: Radius.circular(kIndRadius),
-                          ),
-                        ),
-                        child: FleatherEditor(
-                          controller: _toolsController!,
-                          padding: const EdgeInsets.all(16),
-                          focusNode: FocusNode(),
-                          editorKey: _editorKey,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: kIndSurface,
-                  border: Border.all(color: kIndBorder),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(kIndRadius),
-                    topRight: Radius.circular(kIndRadius),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, top: 8),
-                      child: Row(
-                        children: [
-                          Icon(Icons.group, color: Colors.grey, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'PERSONAL ADICIONAL',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_personnelController == null)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else ...[
-                      FleatherToolbar.basic(
-                        controller: _personnelController!,
-                        editorKey: _personnelEditorKey,
-                      ),
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: kIndBorder),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(kIndRadius),
-                            bottomRight: Radius.circular(kIndRadius),
-                          ),
-                        ),
-                        child: FleatherEditor(
-                          controller: _personnelController!,
-                          padding: const EdgeInsets.all(16),
-                          focusNode: FocusNode(),
-                          editorKey: _personnelEditorKey,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: kIndSurface,
-                  border: Border.all(color: kIndBorder),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(kIndRadius),
-                    topRight: Radius.circular(kIndRadius),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, top: 8),
-                      child: Row(
-                        children: [
-                          Icon(Icons.inventory_2, color: Colors.grey, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'MATERIALES / INSUMOS',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_materialsController == null)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else ...[
-                      FleatherToolbar.basic(
-                        controller: _materialsController!,
-                        editorKey: _materialsEditorKey,
-                      ),
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: kIndBorder),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(kIndRadius),
-                            bottomRight: Radius.circular(kIndRadius),
-                          ),
-                        ),
-                        child: FleatherEditor(
-                          controller: _materialsController!,
-                          padding: const EdgeInsets.all(16),
-                          focusNode: FocusNode(),
-                          editorKey: _materialsEditorKey,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: kIndSurface,
-                  border: Border.all(color: kIndBorder),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(kIndRadius),
-                    topRight: Radius.circular(kIndRadius),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, top: 8),
-                      child: Row(
-                        children: [
-                          Icon(Icons.lightbulb, color: Colors.grey, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'OBSERVACIONES / SUGERENCIAS',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_suggestionsController == null)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else ...[
-                      FleatherToolbar.basic(
-                        controller: _suggestionsController!,
-                        editorKey: _suggestionsEditorKey,
-                      ),
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: kIndBorder),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(kIndRadius),
-                            bottomRight: Radius.circular(kIndRadius),
-                          ),
-                        ),
-                        child: FleatherEditor(
-                          controller: _suggestionsController!,
-                          padding: const EdgeInsets.all(16),
-                          focusNode: FocusNode(),
-                          editorKey: _suggestionsEditorKey,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              const Divider(color: Colors.white10),
-              const SizedBox(height: 24),
-
-              // --- SECTION 4: EVIDENCE ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildSectionHeader(
-                    Theme.of(context),
-                    title: 'EVIDENCIA FOTOGRÁFICA',
-                    icon: Icons.photo,
-                  ),
-                  TextButton.icon(
-                    onPressed: _addPhoto,
-                    icon: const Icon(Icons.add, size: 16, color: kIndAccent),
-                    label: const Text(
-                      'AGREGAR',
-                      style: TextStyle(color: kIndAccent),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              if (_photos.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.white10,
-                      style: BorderStyle.solid,
-                    ),
-                    borderRadius: BorderRadius.circular(kIndRadius),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'No hay evidencia adjunta',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                ),
-
-              ..._photos.asMap().entries.map((entry) {
-                return IndustrialPhotoEntry(
-                  key: ObjectKey(entry.value),
-                  index: entry.key,
-                  data: entry.value,
-                  report: widget.report,
-                  onPickAfter: () => _pickPhotoImage(entry.key, true),
-                  onPickBefore: () => _pickPhotoImage(entry.key, false),
-                  onRemove: () => _removePhoto(entry.key),
-                  onAfterDescChanged: (v) => entry.value['descripcion'] = v,
-                  onBeforeDescChanged: (v) =>
-                      entry.value['before_work_descripcion'] = v,
-                );
-              }),
-
-              const SizedBox(height: 24),
-              const Divider(color: Colors.white10),
-              const SizedBox(height: 24),
-
-              // ... dentro de tu build ...
-              _buildSectionHeader(
-                Theme.of(context),
-                title: 'VALIDACIÓN Y FIRMAS',
-                icon: Icons.edit,
-              ), // Asumo que este widget ya lo tienes estilizado
-              const SizedBox(height: 12),
-
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: IndustrialSignatureBox(
-                      title: 'SUPERVISOR',
-                      base64:
-                          _supervisorSignatureBytes, // Variable de estado String?
-                      onTap: () => _pickImage(true), // true = es supervisor
-                    ),
-                  ),
-
-                  const SizedBox(width: 12), // Separación industrial
-                  // Slot Gerencia
-                  Expanded(
-                    child: IndustrialSignatureBox(
-                      title: 'GERENCIA / CLIENTE',
-                      base64:
-                          _managerSignatureBytes, // Variable de estado String?
-                      onTap: () =>
-                          _pickImage(false), // false = es gerente/cliente
-                    ),
-                  ),
-                ],
-              ), // --- SECTION 5: VALIDATION ---
-
-              const SizedBox(height: 32),
-
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kIndAccent,
-                    foregroundColor: Colors.black,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(kIndRadius),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.black,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, top: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.description,
+                                color: Colors.grey,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'DESCRIPCIÓN GENERAL',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 13,
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+                        if (_descriptionController == null)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else ...[
+                          FleatherToolbar.basic(
+                            controller: _descriptionController!,
+                            editorKey: _descriptionEditorKey,
+                          ),
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: kIndBorder),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(kIndRadius),
+                                bottomRight: Radius.circular(kIndRadius),
+                              ),
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              'CARGANDO...',
-                              style: TextStyle(
+                            child: FleatherEditor(
+                              controller: _descriptionController!,
+                              padding: const EdgeInsets.all(16),
+                              focusNode: FocusNode(),
+                              editorKey: _descriptionEditorKey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  const Divider(color: Colors.white10),
+                  const SizedBox(height: 24),
+
+                  // --- SECTION 3: RESOURCES ---
+                  _buildSectionHeader(
+                    Theme.of(context),
+                    title: 'RECURSOS UTILIZADOS',
+                    icon: Icons.build,
+                  ),
+                  const SizedBox(height: 12),
+
+                  Container(
+                    decoration: BoxDecoration(
+                      color: kIndSurface,
+                      border: Border.all(color: kIndBorder),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(kIndRadius),
+                        topRight: Radius.circular(kIndRadius),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, top: 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.build, color: Colors.grey, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'HERRAMIENTAS / EQUIPOS',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_toolsController == null)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else ...[
+                          FleatherToolbar.basic(
+                            controller: _toolsController!,
+                            editorKey: _editorKey,
+                          ),
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: kIndBorder),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(kIndRadius),
+                                bottomRight: Radius.circular(kIndRadius),
+                              ),
+                            ),
+                            child: FleatherEditor(
+                              controller: _toolsController!,
+                              padding: const EdgeInsets.all(16),
+                              focusNode: FocusNode(),
+                              editorKey: _editorKey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: kIndSurface,
+                      border: Border.all(color: kIndBorder),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(kIndRadius),
+                        topRight: Radius.circular(kIndRadius),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, top: 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.group, color: Colors.grey, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'PERSONAL ADICIONAL',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_personnelController == null)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else ...[
+                          FleatherToolbar.basic(
+                            controller: _personnelController!,
+                            editorKey: _personnelEditorKey,
+                          ),
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: kIndBorder),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(kIndRadius),
+                                bottomRight: Radius.circular(kIndRadius),
+                              ),
+                            ),
+                            child: FleatherEditor(
+                              controller: _personnelController!,
+                              padding: const EdgeInsets.all(16),
+                              focusNode: FocusNode(),
+                              editorKey: _personnelEditorKey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: kIndSurface,
+                      border: Border.all(color: kIndBorder),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(kIndRadius),
+                        topRight: Radius.circular(kIndRadius),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, top: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.inventory_2,
+                                color: Colors.grey,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'MATERIALES / INSUMOS',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_materialsController == null)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else ...[
+                          FleatherToolbar.basic(
+                            controller: _materialsController!,
+                            editorKey: _materialsEditorKey,
+                          ),
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: kIndBorder),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(kIndRadius),
+                                bottomRight: Radius.circular(kIndRadius),
+                              ),
+                            ),
+                            child: FleatherEditor(
+                              controller: _materialsController!,
+                              padding: const EdgeInsets.all(16),
+                              focusNode: FocusNode(),
+                              editorKey: _materialsEditorKey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: kIndSurface,
+                      border: Border.all(color: kIndBorder),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(kIndRadius),
+                        topRight: Radius.circular(kIndRadius),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, top: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.lightbulb,
+                                color: Colors.grey,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'OBSERVACIONES / SUGERENCIAS',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_suggestionsController == null)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else ...[
+                          FleatherToolbar.basic(
+                            controller: _suggestionsController!,
+                            editorKey: _suggestionsEditorKey,
+                          ),
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: kIndBorder),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(kIndRadius),
+                                bottomRight: Radius.circular(kIndRadius),
+                              ),
+                            ),
+                            child: FleatherEditor(
+                              controller: _suggestionsController!,
+                              padding: const EdgeInsets.all(16),
+                              focusNode: FocusNode(),
+                              editorKey: _suggestionsEditorKey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  const Divider(color: Colors.white10),
+                  const SizedBox(height: 24),
+
+                  // --- SECTION 4: EVIDENCE ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildSectionHeader(
+                        Theme.of(context),
+                        title: 'EVIDENCIA FOTOGRÁFICA',
+                        icon: Icons.photo,
+                      ),
+                      TextButton.icon(
+                        onPressed: _addPhoto,
+                        icon: const Icon(
+                          Icons.add,
+                          size: 16,
+                          color: kIndAccent,
+                        ),
+                        label: const Text(
+                          'AGREGAR',
+                          style: TextStyle(color: kIndAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (_photos.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.white10,
+                          style: BorderStyle.solid,
+                        ),
+                        borderRadius: BorderRadius.circular(kIndRadius),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'No hay evidencia adjunta',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+
+                  ..._photos.asMap().entries.map((entry) {
+                    return IndustrialPhotoEntry(
+                      key: ObjectKey(entry.value),
+                      index: entry.key,
+                      data: entry.value,
+                      report: widget.report,
+                      onPickAfter: () => _pickPhotoImage(entry.key, true),
+                      onPickBefore: () => _pickPhotoImage(entry.key, false),
+                      onRemove: () => _removePhoto(entry.key),
+                      onAfterDescChanged: (v) => entry.value['descripcion'] = v,
+                      onBeforeDescChanged: (v) =>
+                          entry.value['before_work_descripcion'] = v,
+                    );
+                  }),
+
+                  const SizedBox(height: 24),
+                  const Divider(color: Colors.white10),
+                  const SizedBox(height: 24),
+
+                  // ... dentro de tu build ...
+                  _buildSectionHeader(
+                    Theme.of(context),
+                    title: 'VALIDACIÓN Y FIRMAS',
+                    icon: Icons.edit,
+                  ), // Asumo que este widget ya lo tienes estilizado
+                  const SizedBox(height: 12),
+
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: IndustrialSignatureBox(
+                          title: 'SUPERVISOR',
+                          base64:
+                              _supervisorSignatureBytes, // Variable de estado String?
+                          onTap: () => _pickImage(true), // true = es supervisor
+                        ),
+                      ),
+
+                      const SizedBox(width: 12), // Separación industrial
+                      // Slot Gerencia
+                      Expanded(
+                        child: IndustrialSignatureBox(
+                          title: 'GERENCIA / CLIENTE',
+                          base64:
+                              _managerSignatureBytes, // Variable de estado String?
+                          onTap: () =>
+                              _pickImage(false), // false = es gerente/cliente
+                        ),
+                      ),
+                    ],
+                  ), // --- SECTION 5: VALIDATION ---
+
+                  const SizedBox(height: 32),
+
+                  SizedBox(
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kIndAccent,
+                        foregroundColor: Colors.black,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(kIndRadius),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'CARGANDO...',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              widget.report == null
+                                  ? (widget.saveType == 'local'
+                                        ? 'GUARDAR LOCALMENTE'
+                                        : 'GENERAR REPORTE')
+                                  : 'ACTUALIZAR REPORTE',
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.0,
                               ),
                             ),
-                          ],
-                        )
-                      : Text(
-                          widget.report == null
-                              ? (widget.saveType == 'local'
-                                    ? 'GUARDAR LOCALMENTE'
-                                    : 'GENERAR REPORTE')
-                              : 'ACTUALIZAR REPORTE',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
-        ),
+          WorkReportProgressOverlay(
+            stage: _submissionStage,
+            isVisible: _isLoading,
+          ),
+        ],
       ),
     );
   }
@@ -1543,7 +1573,10 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           )
           .toList();
 
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _submissionStage = WorkReportSubmissionStage.converting;
+      });
 
       try {
         // Convert Delta to HTML for tools, personnel, materials, suggestions
@@ -1599,6 +1632,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         final personnelHtml = results[3] as String?;
         final materialsHtml = results[4] as String?;
         final suggestionsHtml = results[5] as String?;
+
+        if (mounted) {
+          setState(() {
+            _submissionStage = WorkReportSubmissionStage.uploading;
+          });
+        }
 
         // If explicitly saving locally or offline
         if (!isOnline) {
@@ -1657,6 +1696,12 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                   _supervisorSignature,
                   _managerSignature,
                 );
+
+            if (mounted) {
+              setState(() {
+                _submissionStage = WorkReportSubmissionStage.finalizing;
+              });
+            }
 
             // Invalidate the individual report provider to force reload
             ref.invalidate(workReportProvider(newReport.id!));
@@ -1775,10 +1820,27 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           );
         }
       } finally {
-        if (mounted && _isLoading) {
-          // Only stop loading if we are NOT showing the dialog (which keeps us 'pending' user action? No, dialog is shown, loading should stop)
-          // If we called _showErrorOptionsDialog, we want to stop the loading spinner on the button.
-          setState(() => _isLoading = false);
+        if (mounted &&
+            _isLoading &&
+            _submissionStage != WorkReportSubmissionStage.success &&
+            _submissionStage != WorkReportSubmissionStage.finalizing) {
+          // Only stop loading if we represent a failure or cancellation,
+          // not success (which navigates away) or finalizing.
+          // Actually, finalize happens before navigation.
+          // We can reset if we are not navigating effectively.
+          // But navigation happens in try block.
+          if (mounted) {
+            // If we are here, it means we finished or errored.
+            // If we errored, we should hide overlay.
+            // If success, we navigated away?
+            // Safest is to hide if still mounted and not navigated?
+            // But navigation is async.
+            // Let's just check if we are still mounted.
+            setState(() {
+              _isLoading = false;
+              _submissionStage = WorkReportSubmissionStage.idle;
+            });
+          }
         }
       }
     }

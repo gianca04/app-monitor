@@ -117,14 +117,6 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
               borderRadius: BorderRadius.circular(4.0),
               borderSide: const BorderSide(color: Color(0xFF30363D)),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4.0),
-              borderSide: const BorderSide(color: Color(0xFF30363D)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4.0),
-              borderSide: const BorderSide(color: Color(0xFF6E7681)),
-            ),
             prefixIcon: const Icon(Icons.search, color: Color(0xFFFFAB00)),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,

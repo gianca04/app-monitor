@@ -138,63 +138,88 @@ class WorkReportViewScreen extends ConsumerWidget {
     context.go('/work-reports');
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('CONFIRMAR ELIMINACIÓN'),
-        content: const Text(
-          'Esta acción no se puede deshacer. ¿Eliminar registro permanentemente?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('CANCELAR'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(dialogContext).pop();
-              try {
-                // Show loading indicator or block UI could be better in a real app
-                final response = await ref
-                    .read(workReportsProvider.notifier)
-                    .deleteWorkReport(id);
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    int id,
+  ) async {
+    const double kIndRadius = 4.0; // Constants for local usage if not imported
 
-                if (context.mounted) {
-                  // Construimos la estructura de respuesta solicitada
-                  final result = {
-                    "success": true,
-                    "message":
-                        response['message'] ??
-                        "Reporte de trabajo eliminado exitosamente",
-                    "data": {"id": id},
-                    "meta": {
-                      "apiVersion": "1.0",
-                      "timestamp": DateTime.now().toIso8601String(),
-                    },
-                  };
-                  // Regresamos el resultado al ir a la lista
-                  context.go('/work-reports', extra: result);
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    IndustrialFeedback.buildError(
-                      message: 'ERROR AL ELIMINAR: $e',
-                      onDismiss: () {},
-                    ),
-                  );
-                }
-              }
-            },
-            child: Text(
-              'ELIMINAR',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+    final confirmed = await ModernBottomModal.show<bool>(
+      context,
+      title: 'CONFIRMAR ELIMINACIÓN',
+      content: const Text(
+        'Esta acción no se puede deshacer. ¿Eliminar registro permanentemente?',
+        style: TextStyle(color: Colors.white70),
+      ),
+      actions: [
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(kIndRadius),
+              ),
+            ),
+            child: const Text(
+              'ELIMINAR AHORA',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
     );
+
+    if (confirmed != true) return;
+
+    try {
+      // Show loading indicator or block UI could be better in a real app
+      // For now we trust the modal dismissal and async operation
+
+      final response = await ref
+          .read(workReportsProvider.notifier)
+          .deleteWorkReport(id);
+
+      if (context.mounted) {
+        // Construimos la estructura de respuesta solicitada
+        final result = {
+          "success": true,
+          "message":
+              response['message'] ??
+              "Reporte de trabajo eliminado exitosamente",
+          "data": {"id": id},
+          "meta": {
+            "apiVersion": "1.0",
+            "timestamp": DateTime.now().toIso8601String(),
+          },
+        };
+        // Regresamos el resultado al ir a la lista
+        context.go('/work-reports', extra: result);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          IndustrialFeedback.buildError(
+            message: 'ERROR AL ELIMINAR: $e',
+            onDismiss: () {},
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -448,7 +473,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                               const SizedBox(height: 8),
                               _InfoRow(
                                 theme: theme,
-                                label: 'PISICIÓN',
+                                label: 'POSICIÓN',
                                 value: state.report!.employee?.position?.name,
                               ),
                             ],
@@ -868,7 +893,7 @@ class _PhotoEntryCard extends StatelessWidget {
               ),
             ),
             child: Text(
-              'PHOTO ID: ${photo.id ?? 'N/A'}',
+              'FOTO ID: ${photo.id ?? 'N/A'}',
               style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: 10,
                 fontFamily: 'monospace',
