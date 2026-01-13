@@ -130,18 +130,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
       }
     }
 
-    // Initialize signatures - handle both URLs and base64
-    final supervisorSig = widget.report.signatures?.supervisor;
-    final managerSig = widget.report.signatures?.manager;
-
-    // Store original signatures (could be URLs or base64)
-    _supervisorSignature = supervisorSig;
-    _managerSignature = managerSig;
-
-    // For display, use the same values (SignatureBox now handles both URLs and base64)
-    _supervisorSignatureBytes = supervisorSig;
-    _managerSignatureBytes = managerSig;
-
     print('🔍 [INIT] Initialized signatures from report:');
     print(
       '🔍 [INIT] supervisor: ${_supervisorSignature != null ? "${_supervisorSignature!.substring(0, 50)}..." : "null"}',

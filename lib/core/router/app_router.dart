@@ -12,8 +12,6 @@ import '../../features/Positions/presentation/screens/positions_list_screen.dart
 import '../../features/Positions/presentation/screens/position_form_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
-import '../../features/work_reports_local/presentation/screens/work_reports_local_list_screen.dart';
-import '../../features/work_reports_local/presentation/screens/work_report_local_form_screen.dart';
 
 GoRouter appRouter(WidgetRef ref) {
   return GoRouter(
@@ -91,21 +89,6 @@ GoRouter appRouter(WidgetRef ref) {
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
-          ),
-          GoRoute(
-            path: '/work-reports-local',
-            builder: (context, state) => const WorkReportsLocalListScreen(),
-          ),
-          GoRoute(
-            path: '/work-reports-local/create',
-            builder: (context, state) => const WorkReportLocalFormScreen(),
-          ),
-          GoRoute(
-            path: '/work-reports-local/:id/edit',
-            builder: (context, state) {
-              final id = int.parse(state.pathParameters['id']!);
-              return WorkReportLocalFormScreen(reportId: id);
-            },
           ),
         ],
       ),

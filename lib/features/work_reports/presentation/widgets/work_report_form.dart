@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,15 +21,10 @@ import 'industrial_selector.dart';
 import '../../../../core/theme_config.dart';
 import '../../../../core/services/quill_converter_providers.dart';
 import '../../../../core/services/image_compression_service.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
-import '../../../work_reports_local/domain/entities/work_report_local_entity.dart';
-import '../../../work_reports_local/presentation/providers/work_reports_local_provider.dart';
-import '../../../work_report_photos_local/domain/entities/work_report_photo_local_entity.dart';
-import '../../../work_report_photos_local/presentation/providers/work_report_photos_local_provider.dart';
 import 'industrial_photo_entry.dart';
 import 'package:monitor/features/work_reports/presentation/widgets/work_report_progress_overlay.dart';
+import 'personnel_widget.dart';
+import '../widgets/tools_and_materials_widget.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
 const Color kIndBg = AppTheme.background;
@@ -57,7 +52,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
   FleatherController? _toolsController;
-  FleatherController? _personnelController;
+
   FleatherController? _materialsController;
   FleatherController? _suggestionsController;
   late TextEditingController _employeeIdController;
@@ -65,8 +60,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   final GlobalKey<EditorState> _editorKey = GlobalKey();
   final GlobalKey<EditorState> _descriptionEditorKey = GlobalKey();
-  final GlobalKey<EditorState> _personnelEditorKey = GlobalKey();
-  final GlobalKey<EditorState> _materialsEditorKey = GlobalKey();
+
   final GlobalKey<EditorState> _suggestionsEditorKey = GlobalKey();
 
   EmployeeQuick? _selectedEmployee;
@@ -97,7 +91,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       text: widget.report?.endTime ?? '',
     );
     _initToolsController();
-    _initPersonnelController();
     _initMaterialsController();
     _initSuggestionsController();
     _employeeIdController = TextEditingController(
@@ -290,67 +283,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     }
   }
 
-  Future<void> _initPersonnelController() async {
-    try {
-      final text = widget.report?.resources?.personnel ?? '';
-      if (text.isEmpty) {
-        _personnelController = FleatherController();
-      } else {
-        // Try to convert HTML to Quill Delta
-        final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
-        final result = await convertHtmlToQuill(text);
-
-        result.fold(
-          (failure) {
-            // If conversion fails, try as JSON or plain text
-            try {
-              final delta = jsonDecode(text);
-              if (delta is Map && delta['ops'] != null) {
-                _personnelController = FleatherController(
-                  document: ParchmentDocument.fromJson(delta['ops']),
-                );
-              } else if (delta is List) {
-                _personnelController = FleatherController(
-                  document: ParchmentDocument.fromJson(delta),
-                );
-              } else {
-                throw const FormatException('Not a valid format');
-              }
-            } catch (_) {
-              _personnelController = FleatherController(
-                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
-              );
-            }
-          },
-          (conversionResult) {
-            // Successfully converted HTML to Quill
-            try {
-              final delta = jsonDecode(conversionResult.content);
-              if (delta is Map && delta['ops'] != null) {
-                _personnelController = FleatherController(
-                  document: ParchmentDocument.fromJson(delta['ops']),
-                );
-              } else {
-                throw const FormatException('Invalid format');
-              }
-            } catch (e) {
-              print('Error parsing converted Quill: $e');
-              _personnelController = FleatherController(
-                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
-              );
-            }
-          },
-        );
-      }
-    } catch (err, st) {
-      print('Error initializing personnel controller: $err\n$st');
-      _personnelController = FleatherController();
-    }
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
   Future<void> _initMaterialsController() async {
     try {
       final text = widget.report?.resources?.materials ?? '';
@@ -481,7 +413,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     _startTimeController.dispose();
     _endTimeController.dispose();
     _toolsController?.dispose();
-    _personnelController?.dispose();
     _materialsController?.dispose();
     _suggestionsController?.dispose();
     _employeeIdController.dispose();
@@ -973,127 +904,10 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: kIndSurface,
-                      border: Border.all(color: kIndBorder),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(kIndRadius),
-                        topRight: Radius.circular(kIndRadius),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16, top: 8),
-                          child: Row(
-                            children: [
-                              Icon(Icons.group, color: Colors.grey, size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                'PERSONAL ADICIONAL',
-                                style: TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (_personnelController == null)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        else ...[
-                          FleatherToolbar.basic(
-                            controller: _personnelController!,
-                            editorKey: _personnelEditorKey,
-                          ),
-                          Container(
-                            height: 200,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: kIndBorder),
-                              borderRadius: BorderRadius.only(
-                                bottomLeft: Radius.circular(kIndRadius),
-                                bottomRight: Radius.circular(kIndRadius),
-                              ),
-                            ),
-                            child: FleatherEditor(
-                              controller: _personnelController!,
-                              padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
-                              editorKey: _personnelEditorKey,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+
                   const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: kIndSurface,
-                      border: Border.all(color: kIndBorder),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(kIndRadius),
-                        topRight: Radius.circular(kIndRadius),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16, top: 8),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.inventory_2,
-                                color: Colors.grey,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'MATERIALES / INSUMOS',
-                                style: TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (_materialsController == null)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        else ...[
-                          FleatherToolbar.basic(
-                            controller: _materialsController!,
-                            editorKey: _materialsEditorKey,
-                          ),
-                          Container(
-                            height: 200,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: kIndBorder),
-                              borderRadius: BorderRadius.only(
-                                bottomLeft: Radius.circular(kIndRadius),
-                                bottomRight: Radius.circular(kIndRadius),
-                              ),
-                            ),
-                            child: FleatherEditor(
-                              controller: _materialsController!,
-                              padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
-                              editorKey: _materialsEditorKey,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                  const ToolsAndMaterialsWidget(), const SizedBox(height: 12),
+                  const PersonnelWidget(),
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
@@ -1357,189 +1171,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     );
   }
 
-  // ... (Tu método _submit se mantiene INTACTO) ...
-  Future<void> _saveLocally({
-    required int projectId,
-    required int employeeId,
-    required String name,
-    required String reportDate,
-    String? startTime,
-    String? endTime,
-    String? description,
-    String? tools,
-    String? personnel,
-    String? materials,
-    String? suggestions,
-    String? supervisorSignature,
-    String? managerSignature,
-    required List<Map<String, dynamic>> photos,
-  }) async {
-    setState(() => _isLoading = true);
-    try {
-      // 1. Save photos to local storage
-      final appDir = await getApplicationDocumentsDirectory();
-      final photosDir = Directory('${appDir.path}/work_report_photos');
-      if (!await photosDir.exists()) {
-        await photosDir.create(recursive: true);
-      }
-
-      // 2. Prepare Local Entity
-      final localReport = WorkReportLocalEntity(
-        projectId: projectId,
-        employeeId: employeeId,
-        name: name,
-        description: description,
-        tools: tools,
-        personnel: personnel,
-        materials: materials,
-        suggestions: suggestions,
-        supervisorSignature: supervisorSignature,
-        managerSignature: managerSignature,
-        startTime: startTime,
-        endTime: endTime,
-        isSynced: false,
-        createdAt: DateTime.now().toIso8601String(),
-        updatedAt: DateTime.now().toIso8601String(),
-      );
-
-      // 3. Save Report Header
-      final createReportUseCase = ref.read(
-        createWorkReportLocalUseCaseProvider,
-      );
-      final result = await createReportUseCase(localReport);
-
-      await result.fold(
-        (failure) async {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Error al guardar localmente: ${failure.message}',
-                ),
-              ),
-            );
-          }
-        },
-        (localId) async {
-          // 4. Save Photos linked to localId
-          final createPhotoUseCase = ref.read(
-            createWorkReportPhotoLocalUseCaseProvider,
-          );
-
-          for (var i = 0; i < photos.length; i++) {
-            final photoData = photos[i];
-            String? photoPath;
-            String? beforePhotoPath;
-
-            // Save 'After' Photo
-            if (photoData['photo_bytes'] != null) {
-              final fileName =
-                  'report_${localId}_photo_${i}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-              final file = File(path.join(photosDir.path, fileName));
-              await file.writeAsBytes(photoData['photo_bytes']);
-              photoPath = file.path;
-            }
-
-            // Save 'Before' Photo
-            if (photoData['before_work_photo_bytes'] != null) {
-              final fileName =
-                  'report_${localId}_before_${i}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-              final file = File(path.join(photosDir.path, fileName));
-              await file.writeAsBytes(photoData['before_work_photo_bytes']);
-              beforePhotoPath = file.path;
-            }
-
-            if (photoPath != null ||
-                beforePhotoPath != null ||
-                (photoData['descripcion']?.isNotEmpty ?? false) ||
-                (photoData['before_work_descripcion']?.isNotEmpty ?? false)) {
-              final photoEntity = WorkReportPhotoLocalEntity(
-                workReportId: localId,
-                photoPath: photoPath,
-                beforeWorkPhotoPath: beforePhotoPath,
-                descripcion: photoData['descripcion'],
-                beforeWorkDescripcion: photoData['before_work_descripcion'],
-                createdAt: DateTime.now().toIso8601String(),
-                updatedAt: DateTime.now().toIso8601String(),
-              );
-
-              await createPhotoUseCase(photoEntity);
-            }
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Reporte guardado localmente. Se sincronizará cuando haya conexión.',
-                ),
-              ),
-            );
-            context.go('/work-reports');
-          }
-        },
-      );
-    } catch (e) {
-      print('Error saving locally: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error crítico al guardar localmente: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _showErrorOptionsDialog(
-    String errorMessage, {
-    required VoidCallback onRetry,
-    required VoidCallback onSaveLocally,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: kIndSurface,
-        title: const Text(
-          'Error al crear reporte',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          '$errorMessage\n\n¿Qué desea hacer?',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onSaveLocally();
-            },
-            child: const Text(
-              'Guardar Localmente',
-              style: TextStyle(color: kIndAccent),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: kIndAccent),
-            onPressed: () {
-              Navigator.pop(context);
-              onRetry();
-            },
-            child: const Text(
-              'Reintentar',
-              style: TextStyle(color: Colors.black),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       if (_selectedEmployee == null) {
@@ -1562,21 +1193,13 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         orElse: () => false,
       );
 
-      bool isOnline;
-      if (widget.saveType == 'cloud') {
-        if (!actualOnline) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No hay conexión para guardar en la nube'),
-            ),
-          );
-          return;
-        }
-        isOnline = true;
-      } else if (widget.saveType == 'local') {
-        isOnline = false;
-      } else {
-        isOnline = actualOnline;
+      if (widget.saveType == 'cloud' && !actualOnline) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay conexión para guardar en la nube'),
+          ),
+        );
+        return;
       }
 
       // Validate photos
@@ -1633,11 +1256,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           convertField(_descriptionController, 'Description'),
           // 2: Tools
           convertField(_toolsController, 'Tools'),
-          // 3: Personnel
-          convertField(_personnelController, 'Personnel'),
-          // 4: Materials
+          // 3: Materials
           convertField(_materialsController, 'Materials'),
-          // 5: Suggestions
+          // 4: Suggestions
           convertField(_suggestionsController, 'Suggestions'),
         ]);
 
@@ -1645,39 +1266,13 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             results[0] as List<Map<String, dynamic>>;
         final descriptionHtml = results[1] as String?;
         final toolsHtml = results[2] as String?;
-        final personnelHtml = results[3] as String?;
-        final materialsHtml = results[4] as String?;
-        final suggestionsHtml = results[5] as String?;
+        final materialsHtml = results[3] as String?;
+        final suggestionsHtml = results[4] as String?;
 
         if (mounted) {
           setState(() {
             _submissionStage = WorkReportSubmissionStage.uploading;
           });
-        }
-
-        // If explicitly saving locally or offline
-        if (!isOnline) {
-          await _saveLocally(
-            projectId: _selectedProject!.id!,
-            employeeId: int.parse(_employeeIdController.text),
-            name: _nameController.text,
-            reportDate: _reportDateController.text,
-            startTime: _startTimeController.text.isEmpty
-                ? null
-                : _startTimeController.text,
-            endTime: _endTimeController.text.isEmpty
-                ? null
-                : _endTimeController.text,
-            description: descriptionHtml,
-            tools: toolsHtml,
-            personnel: personnelHtml,
-            materials: materialsHtml,
-            suggestions: suggestionsHtml,
-            supervisorSignature: _supervisorSignature,
-            managerSignature: _managerSignature,
-            photos: photosWithHtmlDescriptions,
-          );
-          return;
         }
 
         if (widget.report == null) {
@@ -1705,7 +1300,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       : _endTimeController.text,
                   descriptionHtml,
                   toolsHtml,
-                  personnelHtml,
+                  null, // personnel
                   materialsHtml,
                   suggestionsHtml,
                   photosWithHtmlDescriptions,
@@ -1740,57 +1335,15 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             }
 
             if (mounted) {
-              _showErrorOptionsDialog(
-                errorMessage,
-                onRetry: _submit,
-                onSaveLocally: () => _saveLocally(
-                  projectId: _selectedProject!.id!,
-                  employeeId: int.parse(_employeeIdController.text),
-                  name: _nameController.text,
-                  reportDate: _reportDateController.text,
-                  startTime: _startTimeController.text.isEmpty
-                      ? null
-                      : _startTimeController.text,
-                  endTime: _endTimeController.text.isEmpty
-                      ? null
-                      : _endTimeController.text,
-                  description: descriptionHtml,
-                  tools: toolsHtml,
-                  personnel: personnelHtml,
-                  materials: materialsHtml,
-                  suggestions: suggestionsHtml,
-                  supervisorSignature: _supervisorSignature,
-                  managerSignature: _managerSignature,
-                  photos: photosWithHtmlDescriptions,
-                ),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(errorMessage)));
             }
           } catch (e) {
             if (mounted) {
-              _showErrorOptionsDialog(
-                'Error inesperado: $e',
-                onRetry: _submit,
-                onSaveLocally: () => _saveLocally(
-                  projectId: _selectedProject!.id!,
-                  employeeId: int.parse(_employeeIdController.text),
-                  name: _nameController.text,
-                  reportDate: _reportDateController.text,
-                  startTime: _startTimeController.text.isEmpty
-                      ? null
-                      : _startTimeController.text,
-                  endTime: _endTimeController.text.isEmpty
-                      ? null
-                      : _endTimeController.text,
-                  description: descriptionHtml,
-                  tools: toolsHtml,
-                  personnel: personnelHtml,
-                  materials: materialsHtml,
-                  suggestions: suggestionsHtml,
-                  supervisorSignature: _supervisorSignature,
-                  managerSignature: _managerSignature,
-                  photos: photosWithHtmlDescriptions,
-                ),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Error inesperado: $e')));
             }
           }
         } else {
@@ -1811,7 +1364,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     : _endTimeController.text,
                 descriptionHtml,
                 toolsHtml,
-                personnelHtml,
+                null, // personnel
                 materialsHtml,
                 suggestionsHtml,
                 _supervisorSignature,

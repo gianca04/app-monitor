@@ -6,7 +6,6 @@ import 'package:monitor/core/theme_config.dart';
 import '../../../settings/providers/connectivity_provider.dart';
 import '../../../settings/services/connectivity_service.dart';
 import '../../../projectslocal/presentation/providers/project_providers.dart';
-import '../../../work_reports_local/presentation/providers/work_reports_local_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -40,51 +39,8 @@ class HomeScreen extends ConsumerWidget {
             // SECCIÓN 1: ESTADO DE REGISTROS (Resumen Operativo)
             const SectionTitle(title: "ESTADO DE SINCRONIZACIÓN"),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Consumer(
-                    builder: (context, ref, child) {
-                      final unsyncedCountAsync = ref.watch(
-                        unsyncedWorkReportsLocalCountProvider,
-                      );
-                      final unsyncedCount = unsyncedCountAsync.maybeWhen(
-                        data: (count) => count,
-                        orElse: () => 0,
-                      );
-
-                      return TechCard(
-                        title: "Por Sincronizar",
-                        value: "$unsyncedCount",
-                        icon: Icons.cloud_upload_outlined,
-                        accentColor: Colors.orangeAccent,
-                        borderColor: borderColor,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Consumer(
-                    builder: (context, ref, child) {
-                      final localCountAsync = ref.watch(
-                        workReportsLocalCountProvider,
-                      );
-                      final localCount = localCountAsync.maybeWhen(
-                        data: (count) => count,
-                        orElse: () => 0,
-                      );
-
-                      return TechCard(
-                        title: "Guardados Local",
-                        value: "$localCount",
-                        icon: Icons.save_alt,
-                        accentColor: Colors.blueAccent,
-                        borderColor: borderColor,
-                      );
-                    },
-                  ),
-                ),
+            Row(children: [
+                
               ],
             ),
 

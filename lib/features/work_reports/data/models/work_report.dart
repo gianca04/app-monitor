@@ -9,7 +9,6 @@ class WorkReport {
   final String? endTime;
   final Resources? resources;
   final String? suggestions;
-  final Signatures? signatures;
   final Timestamps? timestamps;
   final Employee? employee;
   final Project? project;
@@ -25,7 +24,6 @@ class WorkReport {
     this.endTime,
     this.resources,
     this.suggestions,
-    this.signatures,
     this.timestamps,
     this.employee,
     this.project,
@@ -47,10 +45,6 @@ class WorkReport {
         'materials': json['materials'],
       }),
       suggestions: json['suggestions'] as String?,
-      signatures: Signatures.fromJson({
-        'supervisor': json['supervisor_signature'],
-        'manager': json['manager_signature'],
-      }),
       timestamps: Timestamps.fromJson({
         'createdAt': json['created_at'],
         'updatedAt': json['updated_at'],
@@ -80,7 +74,6 @@ class WorkReport {
       'endTime': endTime,
       'resources': resources?.toJson(),
       'suggestions': suggestions,
-      'signatures': signatures?.toJson(),
       'timestamps': timestamps?.toJson(),
       'employee': employee?.toJson(),
       'project': project?.toJson(),
@@ -98,7 +91,6 @@ class WorkReport {
     String? endTime,
     Resources? resources,
     String? suggestions,
-    Signatures? signatures,
     Timestamps? timestamps,
     Employee? employee,
     Project? project,
@@ -114,7 +106,6 @@ class WorkReport {
       endTime: endTime ?? this.endTime,
       resources: resources ?? this.resources,
       suggestions: suggestions ?? this.suggestions,
-      signatures: signatures ?? this.signatures,
       timestamps: timestamps ?? this.timestamps,
       employee: employee ?? this.employee,
       project: project ?? this.project,
@@ -133,29 +124,18 @@ class Resources {
 
   factory Resources.fromJson(Map<String, dynamic> json) {
     return Resources(
-      tools: json['tools'],
-      personnel: json['personnel'],
-      materials: json['materials'],
+      tools: json['tools'] as String?,
+      personnel: json['personnel'] as String?,
+      materials: json['materials'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'tools': tools, 'personnel': personnel, 'materials': materials};
-  }
-}
-
-class Signatures {
-  final String? supervisor;
-  final String? manager;
-
-  Signatures({this.supervisor, this.manager});
-
-  factory Signatures.fromJson(Map<String, dynamic> json) {
-    return Signatures(supervisor: json['supervisor'], manager: json['manager']);
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'supervisor': supervisor, 'manager': manager};
+    return {
+      'tools': tools, // Estos ya deben venir como String JSON
+      'personnel': personnel,
+      'materials': materials, // Estos ya deben venir como String JSON
+    };
   }
 }
 
@@ -348,23 +328,17 @@ class SubClient {
 class Summary {
   final bool? hasPhotos;
   final int? photosCount;
-  final bool? hasSignatures;
 
-  Summary({this.hasPhotos, this.photosCount, this.hasSignatures});
+  Summary({this.hasPhotos, this.photosCount});
 
   factory Summary.fromJson(Map<String, dynamic> json) {
     return Summary(
       hasPhotos: json['hasPhotos'] as bool?,
       photosCount: json['photosCount'] as int?,
-      hasSignatures: json['hasSignatures'] as bool?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'hasPhotos': hasPhotos,
-      'photosCount': photosCount,
-      'hasSignatures': hasSignatures,
-    };
+    return {'hasPhotos': hasPhotos, 'photosCount': photosCount};
   }
 }
