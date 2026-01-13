@@ -4,12 +4,7 @@ class EmployeeQuick {
   final String? documentNumber;
   final String? position;
 
-  EmployeeQuick({
-    this.id,
-    this.fullName,
-    this.documentNumber,
-    this.position,
-  });
+  EmployeeQuick({this.id, this.fullName, this.documentNumber, this.position});
 
   factory EmployeeQuick.fromJson(Map<String, dynamic> json) {
     return EmployeeQuick(
@@ -47,7 +42,9 @@ class QuickSearchResponse {
     return QuickSearchResponse(
       success: json['success'] as bool,
       message: json['message'] as String,
-      data: (json['data'] as List).map((e) => EmployeeQuick.fromJson(e)).toList(),
+      data: (json['data'] as List)
+          .map((e) => EmployeeQuick.fromJson(e))
+          .toList(),
       meta: json['meta'] as Map<String, dynamic>?,
     );
   }

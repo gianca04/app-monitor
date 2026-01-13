@@ -5,6 +5,7 @@ import '../../domain/models/personnel.dart';
 import '../../../../core/theme_config.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../employees/presentation/widgets/quick_search_modal.dart';
+import '../../../employees/data/models/quick_search_response.dart';
 
 class PersonnelWidget extends ConsumerWidget {
   const PersonnelWidget({super.key});
@@ -21,10 +22,14 @@ class PersonnelWidget extends ConsumerWidget {
         if (personnel.isEmpty)
           _buildEmptyState("No hay personal asignado")
         else
+          // Usamos el nuevo Widget Deslizable
           ...personnel.map(
-            (p) => _PersonnelListTile(
+            (p) => _SlidablePersonnelTile(
+              key: ValueKey(p.id), // Importante para el rendimiento de la lista
               person: p,
               onTap: () => _showPersonnelForm(context, ref, existing: p),
+              onDelete: () =>
+                  ref.read(personnelProvider.notifier).removePersonnel(p.id),
             ),
           ),
         _buildAddButton(
@@ -105,7 +110,109 @@ class PersonnelWidget extends ConsumerWidget {
   }
 }
 
-// --- TARJETA DE CADA EMPLEADO EN LA LISTA ---
+class _SlidablePersonnelTile extends StatefulWidget {
+  final PersonnelItem person;
+  final VoidCallback onDelete;
+  final VoidCallback onTap;
+
+  const _SlidablePersonnelTile({
+    super.key,
+    required this.person,
+    required this.onDelete,
+    required this.onTap,
+  });
+
+  @override
+  State<_SlidablePersonnelTile> createState() => _SlidablePersonnelTileState();
+}
+
+class _SlidablePersonnelTileState extends State<_SlidablePersonnelTile> {
+  double _dragExtent = 0;
+  bool _isOpen = false;
+  static const double _kActionWidth = 80.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Stack(
+        children: [
+          // --- CAPA TRASERA (BOTÓN ELIMINAR) ---
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.error.withOpacity(0.9), // Rojo
+                borderRadius: BorderRadius.circular(AppTheme.kRadius),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end, // A la derecha
+                children: [
+                  InkWell(
+                    onTap: widget.onDelete,
+                    child: SizedBox(
+                      width: _kActionWidth,
+                      height: double.infinity,
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            "Borrar",
+                            style: TextStyle(color: Colors.white, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // --- CAPA FRONTAL (LA TARJETA VISIBLE) ---
+          GestureDetector(
+            onHorizontalDragUpdate: (details) {
+              setState(() {
+                _dragExtent += details.delta.dx;
+                if (_dragExtent > 0) _dragExtent = 0;
+                if (_dragExtent < -_kActionWidth) _dragExtent = -_kActionWidth;
+              });
+            },
+            onHorizontalDragEnd: (details) {
+              setState(() {
+                if (_dragExtent < -_kActionWidth / 2) {
+                  _dragExtent = -_kActionWidth;
+                  _isOpen = true;
+                } else {
+                  _dragExtent = 0;
+                  _isOpen = false;
+                }
+              });
+            },
+            child: Transform.translate(
+              offset: Offset(_dragExtent, 0),
+              child: _PersonnelListTile(
+                person: widget.person,
+                onTap: _isOpen
+                    ? () => setState(() {
+                        _dragExtent = 0;
+                        _isOpen = false;
+                      })
+                    : widget.onTap,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PersonnelListTile extends StatelessWidget {
   final PersonnelItem person;
   final VoidCallback onTap;
@@ -114,81 +221,115 @@ class _PersonnelListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.kRadius),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B2B28),
-              borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(AppTheme.kRadius),
+          border: Border.all(color: AppTheme.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-            child: const Icon(
-              Icons.check_circle,
-              color: AppTheme.success,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (person.employeeId != null)
-                  Text(
-                    "ID: ${person.employeeId}",
-                    style: const TextStyle(
-                      color: AppTheme.info,
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                Text(
-                  person.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13.5,
-                  ),
-                ),
-                Text(
-                  "${person.positionName} • ${person.hh} HH",
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!person.isNotRegistered)
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icono / Avatar
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.success.withOpacity(0.5)),
-                borderRadius: BorderRadius.circular(4),
+                color: const Color(0xFF1B2B28),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                "REGISTERED",
-                style: TextStyle(
-                  color: AppTheme.success,
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: const Icon(
+                Icons.person,
+                color: AppTheme.success,
+                size: 18,
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: AppTheme.textSecondary),
-            onPressed: onTap,
-          ),
-        ],
+            const SizedBox(width: 8),
+
+            // Textos
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          person.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.0,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (person.employeeId != null) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white10,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            "ID ${person.employeeId}",
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 8.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "${person.positionName} • ${person.hh} HH",
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 10.0,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+
+            // Badge "Registrado"
+            if (!person.isNotRegistered)
+              Container(
+                margin: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppTheme.success.withOpacity(0.5)),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  "REG",
+                  style: TextStyle(
+                    color: AppTheme.success,
+                    fontSize: 7.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+            // Indicador visual
+            const Icon(Icons.chevron_left, color: Colors.white12, size: 16),
+          ],
+        ),
       ),
     );
   }
@@ -208,9 +349,13 @@ class _PersonnelFormContentState extends ConsumerState<PersonnelFormContent> {
   bool _isNotRegistered = false;
   int? _employeeId;
   int? _positionId;
+
+  // Controladores
   final _nameController = TextEditingController();
   final _roleController = TextEditingController();
-  double _hours = 8.0;
+  final _hoursController = TextEditingController();
+
+  double _hours = 4;
 
   @override
   void initState() {
@@ -223,13 +368,27 @@ class _PersonnelFormContentState extends ConsumerState<PersonnelFormContent> {
       _roleController.text = widget.existingItem!.positionName;
       _hours = widget.existingItem!.hh;
     }
+    _hoursController.text = _hours.toString();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _roleController.dispose();
+    _hoursController.dispose();
     super.dispose();
+  }
+
+  void _updateHoursBy(double amount) {
+    double current = double.tryParse(_hoursController.text) ?? 0.0;
+    double newValue = current + amount;
+    if (newValue < 0) newValue = 0;
+    newValue = double.parse(newValue.toStringAsFixed(1));
+
+    setState(() {
+      _hours = newValue;
+      _hoursController.text = _hours.toString();
+    });
   }
 
   @override
@@ -237,12 +396,12 @@ class _PersonnelFormContentState extends ConsumerState<PersonnelFormContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- TOGGLE DE REGISTRO ---
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.inputFill,
+            color: AppTheme.surface,
             borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: AppTheme.border),
           ),
           child: Row(
             children: [
@@ -251,29 +410,42 @@ class _PersonnelFormContentState extends ConsumerState<PersonnelFormContent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "No Registrado",
-                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      "REGISTRADO EN EL SISTEMA",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                     Text(
-                      "Ingresar datos manualmente",
-                      style: TextStyle(color: Colors.grey, fontSize: 11),
+                      "Desactivar para ingreso manual",
+                      style: TextStyle(color: Colors.grey, fontSize: 10),
                     ),
                   ],
                 ),
               ),
               Switch(
-                value: _isNotRegistered,
-                activeColor: AppTheme.primaryAccent,
-                onChanged: (v) {
+                value: !_isNotRegistered, // true = registrado
+                onChanged: (value) {
                   setState(() {
-                    _isNotRegistered = v;
-                    // Limpiamos los campos al cambiar el modo
-                    _nameController.clear();
-                    _roleController.clear();
+                    _isNotRegistered = !value;
+
+                    // --- LÓGICA DE LIMPIEZA SOLICITADA ---
+                    // Al cambiar el switch, limpiamos todos los campos para evitar mezcla de datos
                     _employeeId = null;
                     _positionId = null;
+                    _nameController.clear();
+                    _roleController.clear();
+
+                    // Reseteamos las horas al estándar (8.0)
+                    _hours = 8.0;
+                    _hoursController.text = "8.0";
                   });
                 },
+                activeColor: AppTheme.success,
+                activeTrackColor: AppTheme.success.withOpacity(0.3),
+                inactiveThumbColor: AppTheme.textSecondary,
+                inactiveTrackColor: AppTheme.inputFill,
               ),
             ],
           ),
@@ -284,7 +456,7 @@ class _PersonnelFormContentState extends ConsumerState<PersonnelFormContent> {
         const Text(
           "NOMBRE COMPLETO",
           style: TextStyle(
-            color: Colors.grey,
+            color: AppTheme.textSecondary,
             fontSize: 10,
             fontWeight: FontWeight.bold,
           ),
@@ -292,46 +464,55 @@ class _PersonnelFormContentState extends ConsumerState<PersonnelFormContent> {
         const SizedBox(height: 8),
         TextField(
           controller: _nameController,
-          // Si NO está registrado, se puede escribir. Si SÍ está, es solo lectura (abre buscador)
           readOnly: !_isNotRegistered,
+          style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: _isNotRegistered
                 ? 'Escribir nombre completo'
-                : 'Seleccionar del personal registrado',
+                : 'Seleccionar empleado...',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+            filled: true,
+            fillColor: AppTheme.inputFill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide.none,
+            ),
             suffixIcon: _isNotRegistered
                 ? null
-                : const Icon(Icons.search, size: 20),
+                : const Icon(
+                    Icons.arrow_drop_down_circle_outlined,
+                    size: 20,
+                    color: AppTheme.primaryAccent,
+                  ),
           ),
-          onTap: _isNotRegistered
-              ? null
-              : () async {
-                  // Reutiliza tu modal de búsqueda de empleados
-                  final dynamic result = await ModernBottomModal.show(
+          onTap: !_isNotRegistered
+              ? () async {
+                  // Tu lógica de modal de búsqueda aquí
+                  final result = await ModernBottomModal.show<EmployeeQuick>(
                     context,
-                    content: const QuickSearchModal(),
+                    title: 'Seleccionar Empleado',
+                    content:
+                        const QuickSearchModal(), // O EmployeeSelectModal según lo que decidiste usar
                   );
-
                   if (result != null) {
                     setState(() {
-                      // 'result' debe ser de tipo Employee
                       _employeeId = result.id;
                       _nameController.text = result.fullName ?? "";
-
-                      // Obtenemos el nombre del cargo si viene en el objeto (ajustar según tu QuickSearchResponse)
-                      _roleController.text = result.positionName ?? "";
-                      _positionId = result.positionId;
+                      _roleController.text = result.position ?? "";
+                      _positionId = null;
                     });
                   }
-                },
+                }
+              : null,
         ),
 
         const SizedBox(height: 20),
 
-        // --- CAMPO CARGO INDUSTRIAL ---
+        // --- CAMPO CARGO ---
         const Text(
           "CARGO INDUSTRIAL",
           style: TextStyle(
-            color: Colors.grey,
+            color: AppTheme.textSecondary,
             fontSize: 10,
             fontWeight: FontWeight.bold,
           ),
@@ -339,78 +520,161 @@ class _PersonnelFormContentState extends ConsumerState<PersonnelFormContent> {
         const SizedBox(height: 8),
         TextField(
           controller: _roleController,
-          // Si está registrado, este campo se bloquea porque viene del sistema
           readOnly: !_isNotRegistered,
+          style: TextStyle(
+            color: !_isNotRegistered ? Colors.white70 : Colors.white,
+          ),
           decoration: InputDecoration(
-            hintText: _isNotRegistered
-                ? 'Escribir cargo'
-                : 'Cargo automático del sistema',
+            hintText: 'Cargo del personal',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+            filled: true,
             fillColor: !_isNotRegistered
-                ? AppTheme.inputFill.withOpacity(0.5)
+                ? Colors.black.withOpacity(0.2)
                 : AppTheme.inputFill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide.none,
+            ),
           ),
         ),
 
         const SizedBox(height: 24),
-        const Text(
-          "Distribución de Horas-Hombre",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+
+        // --- SECCIÓN HORAS HOMBRE MEJORADA ---
+        const Row(
+          children: [
+            Icon(
+              Icons.access_time_filled,
+              color: AppTheme.primaryAccent,
+              size: 16,
+            ),
+            SizedBox(width: 8),
+            Text(
+              "DISTRIBUCIÓN DE HORAS",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
 
-        // --- CONTADOR DE HORAS ---
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: AppTheme.inputFill,
             border: Border.all(color: AppTheme.border),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
+              // Etiqueta y descripción
               const Expanded(
-                child: Text(
-                  "Horas Diarias",
-                  style: TextStyle(color: Colors.grey),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Jornada Diaria",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      "Horas efectivas (HH)",
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              _qtyBtn(
-                Icons.remove,
-                () => setState(() => _hours = _hours > 0 ? _hours - 0.5 : 0),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  "$_hours",
+
+              // Botón Menos
+              _qtyBtn(Icons.remove, () => _updateHoursBy(-0.5)),
+
+              const SizedBox(width: 12),
+
+              // --- TEXTFIELD EDITABLE ---
+              Container(
+                width: 70,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(
+                    0xFF162133,
+                  ), // Fondo más oscuro para el input
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: TextField(
+                  controller: _hoursController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: AppTheme.info,
+                    color: AppTheme.info, // Color cyan para resaltar
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  onChanged: (value) {
+                    // Actualizamos la variable _hours al escribir
+                    final parsed = double.tryParse(value);
+                    if (parsed != null) {
+                      setState(() {
+                        _hours = parsed;
+                      });
+                    }
+                  },
                 ),
               ),
-              _qtyBtn(
-                Icons.add,
-                () => setState(() => _hours += 0.5),
-                isPrimary: true,
-              ),
+
+              const SizedBox(width: 12),
+
+              // Botón Más
+              _qtyBtn(Icons.add, () => _updateHoursBy(0.5), isPrimary: true),
             ],
           ),
         ),
 
         const SizedBox(height: 32),
+
+        // --- BOTÓN CONFIRMAR ---
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryAccent,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             onPressed: () {
-              if (_nameController.text.isEmpty) return; // Validación simple
+              // Validación final antes de guardar
+              if (_nameController.text.isEmpty) return;
+
+              // Asegurar que las horas sean el valor del input text
+              final finalHours = double.tryParse(_hoursController.text) ?? 0.0;
 
               final newItem = PersonnelItem(
                 id: widget.existingItem?.id ?? DateTime.now().toString(),
                 employeeId: _employeeId,
                 name: _nameController.text,
-                hh: _hours,
+                hh: finalHours, // Usamos el valor validado
                 positionId: _positionId,
-                positionName: _roleController.text,
+                positionName: _roleController.text.isEmpty
+                    ? "No especificado"
+                    : _roleController.text,
                 isNotRegistered: _isNotRegistered,
               );
 
@@ -423,23 +687,30 @@ class _PersonnelFormContentState extends ConsumerState<PersonnelFormContent> {
               }
               Navigator.pop(context);
             },
-            child: const Text("Confirmar Personal"),
+            child: const Text(
+              "CONFIRMAR PERSONAL",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],
     );
   }
 
+  // Widget auxiliar para botones
   Widget _qtyBtn(IconData icon, VoidCallback onTap, {bool isPrimary = false}) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
       child: Container(
-        padding: const EdgeInsets.all(8),
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
-          color: isPrimary ? AppTheme.info : AppTheme.border,
+          color: isPrimary ? AppTheme.info : const Color(0xFF30363D),
           borderRadius: BorderRadius.circular(4),
+          border: isPrimary ? null : Border.all(color: Colors.white10),
         ),
-        child: Icon(icon, size: 16, color: Colors.white),
+        child: Icon(icon, size: 18, color: Colors.white),
       ),
     );
   }

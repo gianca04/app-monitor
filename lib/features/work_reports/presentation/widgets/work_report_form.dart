@@ -159,6 +159,47 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         }
       });
     }
+    if (widget.report == null) {
+      Future.microtask(() async {
+        final authNotifier = ref.read(authProvider.notifier);
+        final sharedPreferences = authNotifier.sharedPreferences;
+        final employeeId = sharedPreferences.getInt('employee_id');
+        print(
+          'DEBUG: employeeId from SharedPreferences: $employeeId',
+        ); // Agrega esto
+        if (employeeId != null) {
+          final firstName =
+              sharedPreferences.getString('employee_first_name') ?? '';
+          final lastName =
+              sharedPreferences.getString('employee_last_name') ?? '';
+          final documentNumber =
+              sharedPreferences.getString('employee_document_number') ?? '';
+          final position =
+              sharedPreferences.getString('employee_position') ?? '';
+          print(
+            'DEBUG: Loaded employee data - firstName: $firstName, lastName: $lastName, documentNumber: $documentNumber',
+          ); // Agrega esto
+          if (mounted) {
+            setState(() {
+              _selectedEmployee = EmployeeQuick(
+                id: employeeId,
+                fullName: '$firstName $lastName'.trim(),
+                documentNumber: documentNumber,
+                position: position,
+              );
+              _employeeIdController.text = employeeId.toString();
+              print(
+                'DEBUG: _selectedEmployee set to: ${_selectedEmployee?.fullName}',
+              ); // Agrega esto
+            });
+          }
+        } else {
+          print(
+            'DEBUG: No employeeId found in SharedPreferences',
+          ); // Agrega esto
+        }
+      });
+    }
   }
 
   Future<void> _initDescriptionController() async {
