@@ -8,6 +8,8 @@ import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/projectslocal/data/models/project_hive_model.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final sharedPreferences = await SharedPreferences.getInstance();
@@ -35,6 +37,7 @@ class MainApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Industrial App',
       theme: AppTheme.industrialTheme,
+      navigatorKey: rootNavigatorKey,
       routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

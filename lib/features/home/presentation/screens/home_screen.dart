@@ -37,16 +37,18 @@ class HomeScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // SECCIÓN 1: ESTADO DE REGISTROS (Resumen Operativo)
-            const SectionTitle(title: "ESTADO DE SINCRONIZACIÓN"),
-            const SizedBox(height: 10),
+            //const SectionTitle(title: "ESTADO DE SINCRONIZACIÓN"),
+            /*const SizedBox(height: 10),
             Row(children: [
                 
               ],
             ),
-
+              */
             const SizedBox(height: 24),
 
             // SECCIÓN 2: DATOS MAESTROS (Proyectos y Colaboradores)
+            // TODO: Agregar tarjetas de Proyectos y Colaboradores con estado de sincronización
+            /*
             const SectionTitle(title: "DATOS MAESTROS"),
             const SizedBox(height: 10),
 
@@ -83,6 +85,7 @@ class HomeScreen extends ConsumerWidget {
                 );
               },
             ),
+            */
 
             const SizedBox(height: 32),
 
@@ -108,7 +111,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // Botón 2: Reporte Offline
-            ActionButton(
+            /*ActionButton(
               label: "REPORTES SIN CONEXIÓN",
               icon: Icons.wifi_off,
               isPrimary: false, // Estilo secundario pero con borde
@@ -116,6 +119,7 @@ class HomeScreen extends ConsumerWidget {
                 context.go('/work-reports-local');
               },
             ),
+            */
           ],
         ),
       ),

@@ -51,11 +51,9 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
   void _handleExtraData() {
     if (widget.extra != null && widget.extra!['success'] == true) {
       final message = widget.extra!['message'] ?? 'Operación exitosa';
-      ScaffoldMessenger.of(context).showSnackBar(
-        IndustrialFeedback.buildSuccess(
-          message: message.toUpperCase(),
-          onDismiss: () {},
-        ),
+      IndustrialFeedback.showSuccess(
+        message: message.toUpperCase(),
+        onDismiss: () {},
       );
       // Force refresh if needed, although loadWorkReports is called in init
       ref.read(workReportsProvider.notifier).loadWorkReports();

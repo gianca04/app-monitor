@@ -40,18 +40,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.response != null && previous?.response == null) {
-        // 1. Limpiamos cualquier snackbar anterior para que no se acumulen
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-        // 2. Mostramos el SnackBar Industrial
-        ScaffoldMessenger.of(context).showSnackBar(
-          IndustrialFeedback.buildSuccess(
-            // Usamos solo parte del token o un mensaje limpio para que se vea estético
-            message: 'LOGIN EXITOSO: CREDENCIALES VERIFICADAS',
-            onDismiss: () {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            },
-          ),
+        IndustrialFeedback.showSuccess(
+          message: 'LOGIN EXITOSO: CREDENCIALES VERIFICADAS',
+          onDismiss: () {},
         );
 
         // 3. Navegación

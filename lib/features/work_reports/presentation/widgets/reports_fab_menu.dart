@@ -31,12 +31,13 @@ class _ReportsFabMenuState extends ConsumerState<ReportsFabMenu> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (_isExpanded) ...[
-          _FabOption(
+          /*_FabOption(
             icon: Icons.save_as_outlined,
             label: 'LOCAL',
             enabled: true,
             onTap: () => context.go('/work-reports/create?type=local'),
-          ),
+          ),*/
+          // TODO: Habilitar opción local cuando se implemente la funcionalidad
           const SizedBox(height: 12),
           _FabOption(
             icon: Icons.cloud_upload_outlined,

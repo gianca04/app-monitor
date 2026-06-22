@@ -216,11 +216,9 @@ class WorkReportViewScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          IndustrialFeedback.buildError(
-            message: 'ERROR AL ELIMINAR: $e',
-            onDismiss: () {},
-          ),
+        IndustrialFeedback.showError(
+          message: 'ERROR AL ELIMINAR: $e',
+          onDismiss: () {},
         );
       }
     }
