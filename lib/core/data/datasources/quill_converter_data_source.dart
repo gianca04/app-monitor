@@ -27,10 +27,8 @@ class QuillConverterDataSourceImpl implements QuillConverterDataSource {
 
       // Convert to HTML using Parchment's native codec
       final html = _htmlCodec.encode(doc);
-      //print('🔄 [Delta→HTML] Output: ${html.substring(0, html.length > 100 ? 100 : html.length)}...');
       return html;
     } catch (e) {
-      //print('❌ [Delta→HTML] Error: $e');
       throw Exception('Failed to convert Quill to HTML: $e');
     }
   }
@@ -43,8 +41,6 @@ class QuillConverterDataSourceImpl implements QuillConverterDataSource {
         return json.encode({'ops': [{'insert': '\n'}]});
       }
 
-      //print('🔄 [HTML→Delta] Input: ${html.substring(0, html.length > 100 ? 100 : html.length)}...');
-
       // Use Parchment's native HTML codec for robust HTML to Delta conversion
       final doc = _htmlCodec.decode(html);
       final delta = doc.toDelta();
@@ -54,10 +50,8 @@ class QuillConverterDataSourceImpl implements QuillConverterDataSource {
       final Map<String, dynamic> deltaMap = {'ops': ops};
       
       final result = json.encode(deltaMap);
-      print('🔄 [HTML→Delta] Output: ${result.substring(0, result.length > 200 ? 200 : result.length)}...');
       return result;
     } catch (e) {
-      //print('❌ [HTML→Delta] Error: $e');
       // Return a simple delta with the HTML as plain text (fallback)
       return json.encode({
         'ops': [

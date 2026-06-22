@@ -23,8 +23,6 @@ import '../../../../core/services/quill_converter_providers.dart';
 import '../../../../core/services/image_compression_service.dart';
 import 'industrial_photo_entry.dart';
 import 'package:monitor/features/work_reports/presentation/widgets/work_report_progress_overlay.dart';
-import 'personnel_widget.dart';
-import '../widgets/tools_and_materials_widget.dart';
 
 // --- CONSTANTES DE DISEÑO INDUSTRIAL ---
 const Color kIndBg = AppTheme.background;
@@ -52,6 +50,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
   FleatherController? _toolsController;
+  FleatherController? _personnelController;
 
   FleatherController? _materialsController;
   FleatherController? _suggestionsController;
@@ -60,6 +59,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
   final GlobalKey<EditorState> _editorKey = GlobalKey();
   final GlobalKey<EditorState> _descriptionEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _personnelEditorKey = GlobalKey();
+  final GlobalKey<EditorState> _materialsEditorKey = GlobalKey();
 
   final GlobalKey<EditorState> _suggestionsEditorKey = GlobalKey();
 
@@ -91,6 +92,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       text: widget.report?.endTime ?? '',
     );
     _initToolsController();
+    _initPersonnelController();
     _initMaterialsController();
     _initSuggestionsController();
     _employeeIdController = TextEditingController(
@@ -164,9 +166,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         final authNotifier = ref.read(authProvider.notifier);
         final sharedPreferences = authNotifier.sharedPreferences;
         final employeeId = sharedPreferences.getInt('employee_id');
-        print(
-          'DEBUG: employeeId from SharedPreferences: $employeeId',
-        ); // Agrega esto
         if (employeeId != null) {
           final firstName =
               sharedPreferences.getString('employee_first_name') ?? '';
@@ -176,9 +175,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               sharedPreferences.getString('employee_document_number') ?? '';
           final position =
               sharedPreferences.getString('employee_position') ?? '';
-          print(
-            'DEBUG: Loaded employee data - firstName: $firstName, lastName: $lastName, documentNumber: $documentNumber',
-          ); // Agrega esto
           if (mounted) {
             setState(() {
               _selectedEmployee = EmployeeQuick(
@@ -188,15 +184,8 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 position: position,
               );
               _employeeIdController.text = employeeId.toString();
-              print(
-                'DEBUG: _selectedEmployee set to: ${_selectedEmployee?.fullName}',
-              ); // Agrega esto
             });
           }
-        } else {
-          print(
-            'DEBUG: No employeeId found in SharedPreferences',
-          ); // Agrega esto
         }
       });
     }
@@ -246,7 +235,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('Error parsing converted Quill: $e');
               _descriptionController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -255,7 +243,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         );
       }
     } catch (err, st) {
-      print('Error initializing description controller: $err\n$st');
       _descriptionController = FleatherController();
     }
     if (mounted) {
@@ -307,7 +294,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('Error parsing converted Quill: $e');
               _toolsController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -316,8 +302,63 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         );
       }
     } catch (err, st) {
-      print('Error initializing tools controller: $err\n$st');
       _toolsController = FleatherController();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _initPersonnelController() async {
+    try {
+      final text = widget.report?.resources?.personnel ?? '';
+      if (text.isEmpty) {
+        _personnelController = FleatherController();
+      } else {
+        final convertHtmlToQuill = ref.read(convertHtmlToQuillProvider);
+        final result = await convertHtmlToQuill(text);
+
+        result.fold(
+          (failure) {
+            try {
+              final delta = jsonDecode(text);
+              if (delta is Map && delta['ops'] != null) {
+                _personnelController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else if (delta is List) {
+                _personnelController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta),
+                );
+              } else {
+                throw const FormatException('Not a valid format');
+              }
+            } catch (_) {
+              _personnelController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
+          (conversionResult) {
+            try {
+              final delta = jsonDecode(conversionResult.content);
+              if (delta is Map && delta['ops'] != null) {
+                _personnelController = FleatherController(
+                  document: ParchmentDocument.fromJson(delta['ops']),
+                );
+              } else {
+                throw const FormatException('Invalid format');
+              }
+            } catch (e) {
+              _personnelController = FleatherController(
+                document: ParchmentDocument.fromDelta(Delta()..insert(text)),
+              );
+            }
+          },
+        );
+      }
+    } catch (err, st) {
+      _personnelController = FleatherController();
     }
     if (mounted) {
       setState(() {});
@@ -368,7 +409,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('Error parsing converted Quill: $e');
               _materialsController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -377,7 +417,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         );
       }
     } catch (err, st) {
-      print('Error initializing materials controller: $err\n$st');
       _materialsController = FleatherController();
     }
     if (mounted) {
@@ -429,7 +468,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('Error parsing converted Quill: $e');
               _suggestionsController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -438,7 +476,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
         );
       }
     } catch (err, st) {
-      print('Error initializing suggestions controller: $err\n$st');
       _suggestionsController = FleatherController();
     }
     if (mounted) {
@@ -446,6 +483,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     }
   }
 
+  final FocusNode _descriptionFocusNode = FocusNode();
+  final FocusNode _toolsFocusNode = FocusNode();
+  final FocusNode _personnelFocusNode = FocusNode();
+  final FocusNode _materialsFocusNode = FocusNode();
+  final FocusNode _suggestionsFocusNode = FocusNode();
   @override
   void dispose() {
     _nameController.dispose();
@@ -454,10 +496,16 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
     _startTimeController.dispose();
     _endTimeController.dispose();
     _toolsController?.dispose();
+    _personnelController?.dispose();
     _materialsController?.dispose();
     _suggestionsController?.dispose();
     _employeeIdController.dispose();
     _projectIdController.dispose();
+    _descriptionFocusNode.dispose();
+    _toolsFocusNode.dispose();
+    _personnelFocusNode.dispose();
+    _materialsFocusNode.dispose();
+    _suggestionsFocusNode.dispose();
     super.dispose();
   }
 
@@ -519,18 +567,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
       return result.fold(
         (failure) {
-          print(
-            '⚠️ [CONVERT] Failed to convert Delta to HTML: ${failure.message}',
-          );
           return deltaJson; // Return original on failure
         },
-        (conversionResult) {
-          print('✅ [CONVERT] Delta converted to HTML');
-          return conversionResult.content;
-        },
+        (conversionResult) => conversionResult.content,
       );
     } catch (e) {
-      print('⚠️ [CONVERT] Error parsing Delta JSON: $e');
       return deltaJson; // Return original on error
     }
   }
@@ -865,7 +906,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                             child: FleatherEditor(
                               controller: _descriptionController!,
                               padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
+                              focusNode: _descriptionFocusNode,
                               editorKey: _descriptionEditorKey,
                             ),
                           ),
@@ -936,7 +977,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                             child: FleatherEditor(
                               controller: _toolsController!,
                               padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
+                              focusNode: _toolsFocusNode,
                               editorKey: _editorKey,
                             ),
                           ),
@@ -945,11 +986,123 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
+                  Container(
+                    decoration: BoxDecoration(
+                      color: kIndSurface,
+                      border: Border.all(color: kIndBorder),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(kIndRadius),
+                        topRight: Radius.circular(kIndRadius),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, top: 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.group, color: Colors.grey, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'PERSONAL ADICIONAL',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_personnelController == null)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else ...[
+                          FleatherToolbar.basic(
+                            controller: _personnelController!,
+                            editorKey: _personnelEditorKey,
+                          ),
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: kIndBorder),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(kIndRadius),
+                                bottomRight: Radius.circular(kIndRadius),
+                              ),
+                            ),
+                            child: FleatherEditor(
+                              controller: _personnelController!,
+                              padding: const EdgeInsets.all(16),
+                              focusNode: _personnelFocusNode,
+                              editorKey: _personnelEditorKey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 12),
-                  const ToolsAndMaterialsWidget(), const SizedBox(height: 12),
-                  const PersonnelWidget(),
-                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: kIndSurface,
+                      border: Border.all(color: kIndBorder),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(kIndRadius),
+                        topRight: Radius.circular(kIndRadius),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, top: 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.inventory_2, color: Colors.grey, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'MATERIALES / INSUMOS',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_materialsController == null)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else ...[
+                          FleatherToolbar.basic(
+                            controller: _materialsController!,
+                            editorKey: _materialsEditorKey,
+                          ),
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: kIndBorder),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(kIndRadius),
+                                bottomRight: Radius.circular(kIndRadius),
+                              ),
+                            ),
+                            child: FleatherEditor(
+                              controller: _materialsController!,
+                              padding: const EdgeInsets.all(16),
+                              focusNode: _materialsFocusNode,
+                              editorKey: _materialsEditorKey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                   Container(
                     decoration: BoxDecoration(
                       color: kIndSurface,
@@ -1004,7 +1157,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                             child: FleatherEditor(
                               controller: _suggestionsController!,
                               padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
+                              focusNode: _suggestionsFocusNode,
                               editorKey: _suggestionsEditorKey,
                             ),
                           ),
@@ -1275,15 +1428,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             final result = await convertQuillToHtml(delta);
             return result.fold(
               (failure) {
-                print(
-                  '⚠️ [SUBMIT] Failed to convert $name to HTML: ${failure.message}',
-                );
                 return jsonEncode(controller.document.toDelta().toJson());
               },
-              (conversionResult) {
-                print('✅ [SUBMIT] $name converted to HTML');
-                return conversionResult.content;
-              },
+              (conversionResult) => conversionResult.content,
             );
           }
           return null;
@@ -1297,9 +1444,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
           convertField(_descriptionController, 'Description'),
           // 2: Tools
           convertField(_toolsController, 'Tools'),
-          // 3: Materials
+          // 3: Personnel
+          convertField(_personnelController, 'Personnel'),
+          // 4: Materials
           convertField(_materialsController, 'Materials'),
-          // 4: Suggestions
+          // 5: Suggestions
           convertField(_suggestionsController, 'Suggestions'),
         ]);
 
@@ -1307,8 +1456,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
             results[0] as List<Map<String, dynamic>>;
         final descriptionHtml = results[1] as String?;
         final toolsHtml = results[2] as String?;
-        final materialsHtml = results[3] as String?;
-        final suggestionsHtml = results[4] as String?;
+        final personnelHtml = results[3] as String?;
+        final materialsHtml = results[4] as String?;
+        final suggestionsHtml = results[5] as String?;
 
         if (mounted) {
           setState(() {
@@ -1318,14 +1468,6 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
 
         if (widget.report == null) {
           try {
-            print('📝 [FORM] Starting create work report with signatures:');
-            print(
-              '📝 [FORM] _supervisorSignature: ${_supervisorSignature != null ? 'present (${_supervisorSignature!.length} chars)' : 'null'}',
-            );
-            print(
-              '📝 [FORM] _managerSignature: ${_managerSignature != null ? 'present (${_managerSignature!.length} chars)' : 'null'}',
-            );
-
             final newReport = await ref
                 .read(workReportsProvider.notifier)
                 .createWorkReport(
@@ -1341,7 +1483,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       : _endTimeController.text,
                   descriptionHtml,
                   toolsHtml,
-                  null, // personnel
+                  personnelHtml,
                   materialsHtml,
                   suggestionsHtml,
                   photosWithHtmlDescriptions,

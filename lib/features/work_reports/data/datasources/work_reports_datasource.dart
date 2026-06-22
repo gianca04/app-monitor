@@ -257,10 +257,6 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
     String? managerSignature,
   ) async {
     try {
-      print('🔍 [UPDATE] Starting updateWorkReport with id: $id');
-
-      // FUNCIÓN HELPER (Pequeña ayuda local para limpiar la hora)
-      // Si la hora es "12:07:00", devuelve "12:07".
       String formatTime(String time) {
         if (time.length > 5) {
           return time.substring(0, 5);
@@ -273,7 +269,6 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
         'employee_id': employeeId.toString(),
         'name': name,
         'report_date': reportDate,
-        // APLICAMOS LA CORRECCIÓN AQUÍ:
         if (startTime != null) 'start_time': formatTime(startTime),
         if (endTime != null) 'end_time': formatTime(endTime),
 
@@ -297,9 +292,6 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
               MultipartFile.fromBytes(signatureBytes, filename: 'supervisor_signature.png'),
             ),
           );
-          print('🔍 [UPDATE] Added new supervisor_signature as file (${signatureBytes.length} bytes)');
-        } else {
-          print('🔍 [UPDATE] Supervisor signature is existing URL, not sending');
         }
       }
       if (managerSignature != null) {
@@ -312,37 +304,19 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
               MultipartFile.fromBytes(signatureBytes, filename: 'manager_signature.png'),
             ),
           );
-          print('🔍 [UPDATE] Added new manager_signature as file (${signatureBytes.length} bytes)');
-        } else {
-          print('🔍 [UPDATE] Manager signature is existing URL, not sending');
         }
       }
-
-      print('🔍 [UPDATE] FormData files count: ${formData.files.length}');
-
-      // Logs para verificar que ahora enviamos "12:07" y no "12:07:00"
-      print(
-        "📡 [UPDATE] Sending POST to: ${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id",
-      );
 
       final response = await dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id',
         data: formData,
       );
 
-      print('✅ [UPDATE] Response status: ${response.statusCode}');
-
       final replacedData = _replaceUrls(response.data);
       return WorkReport.fromJson(replacedData['data']);
     } on DioException catch (e) {
-      print("❌ [UPDATE] ERROR DIO: ${e.message}");
-      if (e.response != null) {
-        print("❌ [UPDATE] Response status: ${e.response?.statusCode}");
-        print("❌ [UPDATE] Response data: ${e.response?.data}");
-      }
       rethrow;
     } catch (e) {
-      print("❌ [UPDATE] ERROR: $e");
       rethrow;
     }
   }

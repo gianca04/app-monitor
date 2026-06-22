@@ -37,15 +37,8 @@ class ToolsAndMaterialsWidget extends ConsumerWidget {
         )
         .toList();
 
-    // Convertimos a JSON String
     final String materialsJson = jsonEncode(materialsList);
     final String toolsJson = jsonEncode(toolsList);
-
-    // --- IMPRESIÓN EN CONSOLA ---
-    debugPrint("--- JSON MATERIALES ---");
-    debugPrint(materialsJson);
-    debugPrint("--- JSON HERRAMIENTAS ---");
-    debugPrint(toolsJson);
 
     // --- MOSTRAR EN PANTALLA ---
     showDialog(

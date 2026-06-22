@@ -62,6 +62,12 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   final GlobalKey<EditorState> _materialsEditorKey = GlobalKey();
   final GlobalKey<EditorState> _suggestionsEditorKey = GlobalKey();
 
+  final FocusNode _descriptionFocusNode = FocusNode();
+  final FocusNode _toolsFocusNode = FocusNode();
+  final FocusNode _personnelFocusNode = FocusNode();
+  final FocusNode _materialsFocusNode = FocusNode();
+  final FocusNode _suggestionsFocusNode = FocusNode();
+
   EmployeeQuick? _selectedEmployee;
   ProjectQuick? _selectedProject;
 
@@ -130,13 +136,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
       }
     }
 
-    print('🔍 [INIT] Initialized signatures from report:');
-    print(
-      '🔍 [INIT] supervisor: ${_supervisorSignature != null ? "${_supervisorSignature!.substring(0, 50)}..." : "null"}',
-    );
-    print(
-      '🔍 [INIT] manager: ${_managerSignature != null ? "${_managerSignature!.substring(0, 50)}..." : "null"}',
-    );
   }
 
   Future<void> _initDescriptionController() async {
@@ -151,9 +150,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
         result.fold(
           (failure) {
-            print(
-              '❌ [EDIT] HTML conversion failed for description: ${failure.message}',
-            );
             // If conversion fails, try as JSON or plain text
             try {
               final delta = jsonDecode(text);
@@ -176,15 +172,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           },
           (conversionResult) {
             // Successfully converted HTML to Quill
-            print(
-              '✅ [EDIT] HTML converted for description: ${conversionResult.content.substring(0, conversionResult.content.length > 100 ? 100 : conversionResult.content.length)}',
-            );
             try {
               final delta = jsonDecode(conversionResult.content);
               if (delta is Map && delta['ops'] != null) {
-                print(
-                  '✅ [EDIT] Creating FleatherController with ops: ${delta['ops']}',
-                );
                 _descriptionController = FleatherController(
                   document: ParchmentDocument.fromJson(delta['ops']),
                 );
@@ -192,9 +182,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print(
-                '❌ [EDIT] Error parsing converted Quill for description: $e',
-              );
               _descriptionController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -203,7 +190,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         );
       }
     } catch (err, st) {
-      print('❌ [EDIT] Error initializing description controller: $err\n$st');
       _descriptionController = FleatherController();
     }
     if (mounted) {
@@ -214,9 +200,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
   Future<void> _initToolsController() async {
     try {
       final text = widget.report.resources?.tools ?? '';
-      print(
-        '🔧 [EDIT] Tools text received: "${text.substring(0, text.length > 100 ? 100 : text.length)}"',
-      );
       if (text.isEmpty) {
         _toolsController = FleatherController();
       } else {
@@ -226,9 +209,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
         result.fold(
           (failure) {
-            print(
-              '❌ [EDIT] HTML conversion failed for tools: ${failure.message}',
-            );
             // If conversion fails, try as JSON or plain text
             try {
               final delta = jsonDecode(text);
@@ -251,15 +231,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           },
           (conversionResult) {
             // Successfully converted HTML to Quill
-            print(
-              '✅ [EDIT] HTML converted for tools: ${conversionResult.content.substring(0, conversionResult.content.length > 100 ? 100 : conversionResult.content.length)}',
-            );
             try {
               final delta = jsonDecode(conversionResult.content);
               if (delta is Map && delta['ops'] != null) {
-                print(
-                  '✅ [EDIT] Creating FleatherController with ops: ${delta['ops']}',
-                );
                 _toolsController = FleatherController(
                   document: ParchmentDocument.fromJson(delta['ops']),
                 );
@@ -267,7 +241,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('❌ [EDIT] Error parsing converted Quill for tools: $e');
               _toolsController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -276,7 +249,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         );
       }
     } catch (err, st) {
-      print('❌ [EDIT] Error initializing tools controller: $err\n$st');
       _toolsController = FleatherController();
     }
     if (mounted) {
@@ -328,7 +300,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('Error parsing converted Quill: $e');
               _personnelController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -337,7 +308,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         );
       }
     } catch (err, st) {
-      print('Error initializing personnel controller: $err\n$st');
       _personnelController = FleatherController();
     }
     if (mounted) {
@@ -389,7 +359,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                 throw const FormatException('Invalid format');
               }
             } catch (e) {
-              print('Error parsing converted Quill: $e');
               _materialsController = FleatherController(
                 document: ParchmentDocument.fromDelta(Delta()..insert(text)),
               );
@@ -398,7 +367,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         );
       }
     } catch (err, st) {
-      print('Error initializing materials controller: $err\n$st');
       _materialsController = FleatherController();
     }
     if (mounted) {
@@ -424,7 +392,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         );
       }
     } catch (err, st) {
-      print('Error initializing suggestions controller: $err\n$st');
       _suggestionsController = FleatherController();
     }
     if (mounted) {
@@ -445,6 +412,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     _suggestionsController?.dispose();
     _employeeIdController.dispose();
     _projectIdController.dispose();
+    _descriptionFocusNode.dispose();
+    _toolsFocusNode.dispose();
+    _personnelFocusNode.dispose();
+    _materialsFocusNode.dispose();
+    _suggestionsFocusNode.dispose();
     super.dispose();
   }
 
@@ -976,7 +948,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                             child: FleatherEditor(
                               controller: _descriptionController!,
                               padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
+                              focusNode: _descriptionFocusNode,
                               editorKey: _descriptionEditorKey,
                             ),
                           ),
@@ -1046,7 +1018,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                             child: FleatherEditor(
                               controller: _toolsController!,
                               padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
+                              focusNode: _toolsFocusNode,
                               editorKey: _editorKey,
                             ),
                           ),
@@ -1105,7 +1077,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                             child: FleatherEditor(
                               controller: _personnelController!,
                               padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
+                              focusNode: _personnelFocusNode,
                               editorKey: _personnelEditorKey,
                             ),
                           ),
@@ -1168,7 +1140,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                             child: FleatherEditor(
                               controller: _materialsController!,
                               padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
+                              focusNode: _materialsFocusNode,
                               editorKey: _materialsEditorKey,
                             ),
                           ),
@@ -1231,7 +1203,7 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
                             child: FleatherEditor(
                               controller: _suggestionsController!,
                               padding: const EdgeInsets.all(16),
-                              focusNode: FocusNode(),
+                              focusNode: _suggestionsFocusNode,
                               editorKey: _suggestionsEditorKey,
                             ),
                           ),
@@ -1441,21 +1413,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         return;
       }
 
-      print('🔍 [SUBMIT] Starting submit with signatures:');
-      print(
-        '🔍 [SUBMIT] _supervisorSignature: ${_supervisorSignature != null ? "present (${_supervisorSignature!.length} chars)" : "null"}',
-      );
-      print(
-        '🔍 [SUBMIT] _managerSignature: ${_managerSignature != null ? "present (${_managerSignature!.length} chars)" : "null"}',
-      );
-
       setState(() {
         _isLoading = true;
         _submissionStage = WorkReportSubmissionStage.converting;
       });
       try {
-        print('🔍 [SUBMIT] Calling updateWorkReport...');
-
         // Convert Quill Delta to HTML for description
         final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
 
@@ -1472,15 +1434,9 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
             final result = await convertQuillToHtml(descriptionDelta);
             return result.fold(
               (failure) {
-                print(
-                  '⚠️ [SUBMIT] Failed to convert $name to HTML: ${failure.message}',
-                );
                 return jsonEncode(controller.document.toDelta().toJson());
               },
-              (conversionResult) {
-                print('✅ [SUBMIT] $name converted to HTML');
-                return conversionResult.content;
-              },
+              (conversionResult) => conversionResult.content,
             );
           }
           return null;
@@ -1534,7 +1490,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           });
         }
 
-        print('✅ [SUBMIT] Update successful');
         ref.invalidate(workReportProvider(widget.report.id!));
         ref.invalidate(workReportsProvider);
 
@@ -1542,7 +1497,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           context.go('/work-reports/${widget.report.id}');
         }
       } on DioException catch (e) {
-        print('❌ [SUBMIT] DioException: ${e.message}');
         String errorMessage = 'Error updating work report';
         if (e.response?.data != null && e.response!.data['errors'] != null) {
           final errors = e.response!.data['errors'] as Map<String, dynamic>;
@@ -1556,7 +1510,6 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
           ).showSnackBar(SnackBar(content: Text(errorMessage)));
         }
       } catch (e) {
-        print('❌ [SUBMIT] Exception: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error updating work report: $e')),
@@ -1596,18 +1549,11 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
 
       return result.fold(
         (failure) {
-          print(
-            '⚠️ [CONVERT] Failed to convert Delta to HTML: ${failure.message}',
-          );
           return deltaJson; // Return original on failure
         },
-        (conversionResult) {
-          print('✅ [CONVERT] Delta converted to HTML');
-          return conversionResult.content;
-        },
+        (conversionResult) => conversionResult.content,
       );
     } catch (e) {
-      print('⚠️ [CONVERT] Error parsing Delta JSON: $e');
       return deltaJson; // Return original on error
     }
   }

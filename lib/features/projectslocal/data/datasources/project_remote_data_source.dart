@@ -18,10 +18,8 @@ class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
 
     try {
       final response = await dio.get(url, queryParameters: queryParams);
-      print('Sincronización exitosa: ${response.data}');
       return ProjectsSyncResponse.fromJson(response.data);
     } catch (e) {
-      print('Error en sincronización: $e');
       rethrow;
     }
   }

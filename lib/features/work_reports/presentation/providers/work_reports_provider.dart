@@ -224,18 +224,11 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
 
   Future<WorkReport> createWorkReport(int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, List<Map<String, dynamic>> photos, String? supervisorSignature, String? managerSignature) async {
     try {
-      print('📝 [PROVIDER] Starting createWorkReport with signatures:');
-      print('📝 [PROVIDER] supervisorSignature: ${supervisorSignature != null ? 'present (${supervisorSignature.length} chars)' : 'null'}');
-      print('📝 [PROVIDER] managerSignature: ${managerSignature != null ? 'present (${managerSignature.length} chars)' : 'null'}');
-
       final newReport = await createWorkReportUseCase(projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, photos, supervisorSignature, managerSignature);
-
-      print('✅ [PROVIDER] createWorkReport successful, new report ID: ${newReport.id}');
 
       await loadWorkReports();
       return newReport;
     } on DioException catch (e) {
-      print('❌ [PROVIDER] createWorkReport failed with DioException: ${e.message}');
       String errorMessage;
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
@@ -250,7 +243,6 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
       if (mounted) state = state.copyWith(error: errorMessage);
       rethrow;
     } catch (e) {
-      print('❌ [PROVIDER] createWorkReport failed with error: $e');
       if (mounted) state = state.copyWith(error: 'Error al crear el reporte. Por favor, intenta nuevamente.');
       rethrow;
     }
@@ -258,10 +250,6 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
 
   Future<void> updateWorkReport(int id, int projectId, int employeeId, String name, String reportDate, String? startTime, String? endTime, String? description, String? tools, String? personnel, String? materials, String? suggestions, String? supervisorSignature, String? managerSignature) async {
     try {
-      print('📝 [PROVIDER] Starting updateWorkReport with signatures:');
-      print('📝 [PROVIDER] supervisorSignature: ${supervisorSignature != null ? 'present (${supervisorSignature.length} chars)' : 'null'}');
-      print('📝 [PROVIDER] managerSignature: ${managerSignature != null ? 'present (${managerSignature.length} chars)' : 'null'}');
-
       await updateWorkReportUseCase(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature);
       await loadWorkReports();
     } on DioException catch (e) {
