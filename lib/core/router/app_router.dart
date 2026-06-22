@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import 'root_navigator_key.dart';
 import '../widgets/app_layout.dart';
 import '../../features/work_reports/presentation/screens/work_reports_list_screen.dart';
 import '../../features/work_reports/presentation/screens/work_report_view_screen.dart';
@@ -15,6 +16,7 @@ import '../../features/settings/presentation/screens/settings_screen.dart';
 
 GoRouter appRouter(WidgetRef ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     redirect: (context, state) {
       final authState = ref.watch(authProvider);
       final isLoggedIn = authState.isLoggedIn;

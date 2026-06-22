@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/router/app_router.dart';
+import 'core/router/root_navigator_key.dart';
 import 'core/theme_config.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/projectslocal/data/models/project_hive_model.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
-final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +36,6 @@ class MainApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Industrial App',
       theme: AppTheme.industrialTheme,
-      navigatorKey: rootNavigatorKey,
       routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
