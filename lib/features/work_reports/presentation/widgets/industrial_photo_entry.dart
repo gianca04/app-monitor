@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme_config.dart';
 import '../../../../features/photos/presentation/widgets/image_viewer.dart';
@@ -48,6 +47,14 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
   // We don't need text controllers here anymore since editing is in the modal.
   // We just display the text.
 
+  String _sanitizeDescription(String? value) {
+    if (value == null || value.isEmpty) {
+      return '';
+    }
+
+    return value.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -70,8 +77,12 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
 
     final afterBytes = widget.data['photo_bytes'] as Uint8List?;
     final beforeBytes = widget.data['before_work_photo_bytes'] as Uint8List?;
-    final afterDesc = widget.data['descripcion']?.toString() ?? '';
-    final beforeDesc = widget.data['before_work_descripcion']?.toString() ?? '';
+    final afterDesc = _sanitizeDescription(
+      widget.data['descripcion']?.toString(),
+    );
+    final beforeDesc = _sanitizeDescription(
+      widget.data['before_work_descripcion']?.toString(),
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -110,7 +121,7 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
                       color: Colors.black26,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(
+                    /*child: Text(
                       'ID: ${widget.data['id']}',
                       style: const TextStyle(
                         color: Colors.white54,
@@ -118,6 +129,7 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
                         fontFamily: 'monospace',
                       ),
                     ),
+                    */
                   ),
               ],
             ),
@@ -451,7 +463,11 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
     );
 
     if (result != null) {
-      onUpdate(result.file, result.bytes, result.description);
+      onUpdate(
+        result.file,
+        result.bytes,
+        _sanitizeDescription(result.description),
+      );
     }
   }
 }
@@ -486,10 +502,20 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
   Uint8List? _currentBytes;
   XFile? _currentFile;
 
+  String _sanitizeDescription(String? value) {
+    if (value == null || value.isEmpty) {
+      return '';
+    }
+
+    return value.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+  }
+
   @override
   void initState() {
     super.initState();
-    _textController = TextEditingController(text: widget.initialDescription);
+    _textController = TextEditingController(
+      text: _sanitizeDescription(widget.initialDescription),
+    );
     _currentBytes = widget.initialBytes;
 
     if (widget.startWithPicker) {
@@ -574,14 +600,15 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
                 Image.memory(_currentBytes!, fit: BoxFit.contain)
               else if (widget.initialUrl != null &&
                   widget.initialUrl!.isNotEmpty)
-                ImageViewer(url: widget.initialUrl!, fit: BoxFit.contain)
-              else
-                const Center(
+                ImageViewer(url: widget.initialUrl!, fit: BoxFit.contain),
+              //else
+              /*const Center(
                   child: Text(
                     'Sin imagen',
                     style: TextStyle(color: Colors.white24),
                   ),
                 ),
+                */
 
               // Overlay Change Button
               Center(
@@ -658,7 +685,7 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
                       // IMPORTANT: Parent logic needs to know if we CHANGED the file.
                       // If we pass _currentFile (wrapper), it's enough.
                       // But if we passed initialBytes and return same bytes, parent might not know if it's new.
-                      description: _textController.text,
+                      description: _sanitizeDescription(_textController.text),
                     ),
                   );
                 },
