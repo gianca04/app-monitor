@@ -2,6 +2,7 @@ class ApiConstants {
   static const String baseUrl = 'https://monitor.sat-industriales.pe';
   static const String loginEndpoint = '/api/login';
   static const String workReportsEndpoint = '/api/work-reports';
+  static const String workReportPdfEndpoint = '/api/work-report';
   static const String positionsEndpoint = '/api/positions';
   static const String photosEndpoint = '/api/photos';
   static const String employeesEndpoint = '/api/employees';

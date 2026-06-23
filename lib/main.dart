@@ -9,9 +9,14 @@ import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/projectslocal/data/models/project_hive_model.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'core/services/notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final sharedPreferences = await SharedPreferences.getInstance();
+
+  // Initialize Notifications
+  await NotificationService().init();
 
   // Initialize Hive
   await Hive.initFlutter();

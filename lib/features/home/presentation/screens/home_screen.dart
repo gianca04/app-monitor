@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitor/core/theme_config.dart';
 import '../../../settings/providers/connectivity_provider.dart';
 import '../../../settings/services/connectivity_service.dart';
 import '../../../projectslocal/presentation/providers/project_providers.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -22,6 +24,30 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final SharedPreferences sharedPreferences = ref.watch(sharedPreferencesProvider);
+    final userName = sharedPreferences.getString('user_name') ?? 'Usuario';
+    final employeeFirstName =
+        sharedPreferences.getString('employee_first_name') ?? '';
+    final employeeLastName =
+        sharedPreferences.getString('employee_last_name') ?? '';
+
+    final fullName = '$employeeFirstName $employeeLastName'.trim();
+    final displayName = fullName.isNotEmpty ? fullName : userName;
+
+    final hour = DateTime.now().hour;
+    final String greeting;
+    final IconData greetingIcon;
+    if (hour >= 6 && hour < 12) {
+      greeting = 'Buenos días';
+      greetingIcon = Icons.wb_sunny_outlined;
+    } else if (hour >= 12 && hour < 19) {
+      greeting = 'Buenas tardes';
+      greetingIcon = Icons.wb_twilight;
+    } else {
+      greeting = 'Buenas noches';
+      greetingIcon = Icons.bedtime_outlined;
+    }
+
     final connectivityAsync = ref.watch(connectionStatusProvider);
     final isOnline = connectivityAsync.maybeWhen(
       data: (status) => status == ConnectionStatus.online,
@@ -36,14 +62,43 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // SECCIÓN 1: ESTADO DE REGISTROS (Resumen Operativo)
-            //const SectionTitle(title: "ESTADO DE SINCRONIZACIÓN"),
-            /*const SizedBox(height: 10),
-            Row(children: [
-                
+            // Saludo de Bienvenida
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        greeting.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryAccent,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  greetingIcon,
+                  color: AppTheme.textSecondary.withOpacity(0.5),
+                  size: 28,
+                ),
               ],
             ),
-              */
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white10),
             const SizedBox(height: 24),
 
             // SECCIÓN 2: DATOS MAESTROS (Proyectos y Colaboradores)

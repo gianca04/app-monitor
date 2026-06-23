@@ -33,6 +33,7 @@ dependencies:
   equatable: ^2.0.5
   open_file: ^3.5.10
   flutter_image_compress: ^2.4.0
+  flutter_local_notifications: ^22.0.1
 
 dev_dependencies:
   flutter_test:

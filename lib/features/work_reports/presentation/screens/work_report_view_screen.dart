@@ -6,6 +6,9 @@ import 'dart:io';
 import 'package:open_file/open_file.dart';
 import '../providers/work_reports_provider.dart';
 import '../../../photos/presentation/widgets/image_viewer.dart';
+import '../../../work_report_pdf/presentation/providers/work_report_pdf_provider.dart';
+import '../../../../core/theme_config.dart';
+import '../../../../core/services/notification_service.dart';
 // import '../../../photos/presentation/widgets/image_preview_modal.dart'; // Unused
 import '../../../../core/widgets/industrial_card.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
@@ -31,112 +34,148 @@ class WorkReportViewScreen extends ConsumerWidget {
     return url; // Fallback to original if no data: found
   }
 
-  /*Future<void> _downloadPdf(BuildContext context, WidgetRef ref) async {
+  Future<void> _downloadPdf(BuildContext context, WidgetRef ref) async {
     final pdfNotifier = ref.read(workReportPdfProvider.notifier);
+
+    // Solicitar permiso de notificaciones antes de la descarga
+    await NotificationService().requestPermissions();
+    
+    final filename = 'reporte_trabajo_$id.pdf';
+    
+    // Mostrar notificación de inicio de descarga
+    await NotificationService().showDownloadStartNotification(filename: filename);
+
+    bool dialogOpened = false;
+    bool downloadFinished = false;
+    BuildContext? dialogContext;
 
     // Mostrar diálogo de progreso
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardTheme.color,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Descargando PDF...',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            ),
-          ],
-        ),
-      ),
+      builder: (dialogCtx) {
+        dialogContext = dialogCtx;
+        dialogOpened = true;
+        if (downloadFinished) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (dialogContext != null && dialogContext!.mounted) {
+              Navigator.of(dialogContext!).pop();
+            }
+          });
+        }
+        return AlertDialog(
+          backgroundColor: Theme.of(dialogCtx).cardTheme.color,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                color: Theme.of(dialogCtx).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Descargando PDF...',
+                style: TextStyle(color: Theme.of(dialogCtx).colorScheme.onSurface),
+              ),
+            ],
+          ),
+        );
+      },
     );
 
     final file = await pdfNotifier.downloadPdf(id);
+    downloadFinished = true;
 
-    if (context.mounted) {
-      Navigator.of(context).pop(); // Cerrar diálogo de progreso
+    if (dialogOpened && dialogContext != null && dialogContext!.mounted) {
+      Navigator.of(dialogContext!).pop(); // Cerrar diálogo de progreso usando su propio contexto
     }
 
     if (file != null && context.mounted) {
-      // Éxito - mostrar opciones
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          title: Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              const Text('PDF Descargado'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'El archivo se guardó en:',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                file.path,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'CERRAR',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await OpenFile.open(file.path);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.black,
-              ),
-              child: const Text('ABRIR PDF'),
-            ),
-          ],
-        ),
+      // Mostrar notificación de éxito en la barra de estado
+      await NotificationService().showDownloadCompleteNotification(
+        filename: filename,
+        filePath: file.path,
       );
-    } else if (context.mounted) {
-      // Error
-      final pdfState = ref.read(workReportPdfProvider);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(pdfState.error ?? 'Error al descargar el PDF'),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          backgroundColor: AppTheme.inputFill,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.kRadius),
+            side: const BorderSide(color: AppTheme.border),
+          ),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_outline,
+                color: AppTheme.success,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'REPORTE PDF DESCARGADO'.toUpperCase(),
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'ABRIR',
+            textColor: AppTheme.primaryAccent,
+            onPressed: () async {
+              await OpenFile.open(file.path);
+            },
+          ),
         ),
       );
+    } else {
+      // Cancelar la notificación de descarga activa en caso de error
+      await NotificationService().cancelDownloadNotification();
+      
+      if (context.mounted) {
+        final pdfState = ref.read(workReportPdfProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.inputFill,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.kRadius),
+              side: const BorderSide(color: AppTheme.error),
+            ),
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: AppTheme.error,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    (pdfState.error ?? 'ERROR AL DESCARGAR EL PDF').toUpperCase(),
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
-  */
 
   void _goBack(BuildContext context) {
     context.go('/work-reports');
@@ -257,7 +296,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    // onTap: () => _downloadPdf(context, ref),
+                    onTap: () => _downloadPdf(context, ref),
                     borderRadius: BorderRadius.circular(4),
                     child: Container(
                       padding: const EdgeInsets.symmetric(

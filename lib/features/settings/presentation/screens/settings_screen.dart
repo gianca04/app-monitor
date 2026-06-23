@@ -83,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
               _buildIndustrialTile(
                 icon: Icons.info_outline,
                 title: 'Versión del Cliente',
-                subtitle: 'v1.0.0 (Build 2025)',
+                subtitle: 'v0.3.2 (Build 22/06/2026)',
               ),
               const Divider(height: 1, color: Colors.white10),
               _buildIndustrialTile(

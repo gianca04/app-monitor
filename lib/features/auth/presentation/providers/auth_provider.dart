@@ -27,8 +27,12 @@ final authenticatedDioProvider = Provider((ref) {
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
-      options.headers['Accept'] = 'application/json';
-      options.headers['Content-Type'] = 'application/json';
+      if (!options.headers.containsKey('Accept')) {
+        options.headers['Accept'] = 'application/json';
+      }
+      if (!options.headers.containsKey('Content-Type')) {
+        options.headers['Content-Type'] = 'application/json';
+      }
       return handler.next(options);
     },
   ));
