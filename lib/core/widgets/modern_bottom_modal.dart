@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../theme_config.dart';
 
 // Constantes de diseño Industrial
-const Color _kBackgroundColor = Color.fromARGB(255, 0, 0, 0);
-const Color _kBorderColor = Colors.white12;
-const double _kRadius = 4.0;
+const Color _kBackgroundColor = AppTheme.background;
+const Color _kBorderColor = AppTheme.border;
+const double _kRadius = AppTheme.kRadius;
 
 class ModernBottomModal extends StatelessWidget {
   final String? title;
@@ -51,7 +52,7 @@ class ModernBottomModal extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white10,
+                  color: AppTheme.borderHighContrast,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -64,7 +65,7 @@ class ModernBottomModal extends StatelessWidget {
                 child: Text(
                   title!.toUpperCase(),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
+                        color: AppTheme.textPrimary,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.0,
                       ),

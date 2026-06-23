@@ -37,8 +37,10 @@ class ConnectivityIndicator extends ConsumerWidget {
         }
         return _buildIndicator(context, status, displayMode);
       },
-      loading: () => _buildIndicator(context, ConnectionStatus.offline, displayMode),
-      error: (_, __) => _buildIndicator(context, ConnectionStatus.offline, displayMode),
+      loading: () =>
+          _buildIndicator(context, ConnectionStatus.offline, displayMode),
+      error: (_, __) =>
+          _buildIndicator(context, ConnectionStatus.offline, displayMode),
     );
   }
 
@@ -175,11 +177,7 @@ class ConnectivityIndicator extends ConsumerWidget {
   (IconData, Color, String) _getStatusInfo(ConnectionStatus status) {
     switch (status) {
       case ConnectionStatus.online:
-        return (
-          Icons.wifi,
-          AppTheme.success,
-          'Conectado a Internet',
-        );
+        return (Icons.wifi, AppTheme.success, 'Conectado a Internet');
       case ConnectionStatus.noInternet:
         return (Icons.wifi_off, AppTheme.warning, 'Sin Internet');
       case ConnectionStatus.offline:
@@ -222,10 +220,10 @@ class ConnectivityDetailCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connectionStatusAsync = ref.watch(connectionStatusProvider);
-    
+
     // REGLA: Color de fondo técnico y Borde Gris Suave
     final borderColor = AppTheme.border;
-    final cardBgColor = AppTheme.surface; 
+    final cardBgColor = AppTheme.surface;
 
     // REGLA: Reemplazar Card con Container + Decoration
     return Container(
@@ -241,25 +239,27 @@ class ConnectivityDetailCard extends ConsumerWidget {
           child: connectionStatusAsync.when(
             data: (status) => _buildDetailContent(context, status),
             loading: () => _buildLoadingContent(context),
-            error: (_, __) => _buildDetailContent(context, ConnectionStatus.offline),
+            error: (_, __) =>
+                _buildDetailContent(context, ConnectionStatus.offline),
           ),
         ),
       ),
     );
   }
+
   Widget _buildDetailContent(BuildContext context, ConnectionStatus status) {
     final isOnline = status == ConnectionStatus.online;
     final hasNetwork = status != ConnectionStatus.offline;
 
-    // Colores de texto para alto contraste en fondo oscuro
+    // Colores de texto para alto contraste en fondo claro
     final titleStyle = Theme.of(context).textTheme.titleLarge?.copyWith(
       fontWeight: FontWeight.bold,
-      color: Colors.white, // Blanco puro para títulos
+      color: AppTheme.textPrimary, // Texto primario oscuro
       letterSpacing: 0.5,
     );
-    
+
     final subtitleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: Colors.grey.shade400, // Gris claro para subtítulos
+      color: AppTheme.textSecondary, // Gris oscuro/medio para subtítulos
     );
 
     return Column(
@@ -276,7 +276,9 @@ class ConnectivityDetailCard extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: _getStatusColor(status).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+                border: Border.all(
+                  color: _getStatusColor(status).withOpacity(0.3),
+                ),
               ),
               child: Icon(
                 _getMainIcon(status),
@@ -291,29 +293,32 @@ class ConnectivityDetailCard extends ConsumerWidget {
                 children: [
                   Text(
                     _getStatusTitle(status).toUpperCase(), // Estilo técnico
-                    style: titleStyle?.copyWith(fontSize: 16),
+                    style: titleStyle?.copyWith(
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    _getStatusDescription(status),
-                    style: subtitleStyle,
-                  ),
+                  Text(_getStatusDescription(status), style: subtitleStyle),
                 ],
               ),
             ),
           ],
         ),
 
-        // REGLA: Separador Divider blanco suave
-        const Divider(height: 32, color: Colors.white10),
+        // Separador Divider
+        const Divider(height: 32, color: AppTheme.border),
 
         // ESTADOS INDIVIDUALES
         _buildStatusRow(
           context,
           'Conexión de red',
           hasNetwork ? 'CONECTADO' : 'DESCONECTADO', // Mayúsculas
-          hasNetwork ? Icons.check_circle_outline : Icons.highlight_off, // Iconos outline son más limpios
-          hasNetwork ? Colors.greenAccent : Colors.redAccent, // Accents brillan mejor en oscuro
+          hasNetwork
+              ? Icons.check_circle_outline
+              : Icons.highlight_off, // Iconos outline son más limpios
+          hasNetwork
+              ? AppTheme.success
+              : AppTheme.error,
         ),
         const SizedBox(height: 16), // Más espacio para respirar
         _buildStatusRow(
@@ -321,7 +326,7 @@ class ConnectivityDetailCard extends ConsumerWidget {
           'Acceso a Internet',
           isOnline ? 'DISPONIBLE' : 'NO DISPONIBLE',
           isOnline ? Icons.check_circle_outline : Icons.highlight_off,
-          isOnline ? Colors.greenAccent : Colors.redAccent,
+          isOnline ? AppTheme.success : AppTheme.error,
         ),
 
         // CAJA DE ADVERTENCIA (Solo si no hay internet)
@@ -330,17 +335,18 @@ class ConnectivityDetailCard extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              // REGLA: Fondo transparente con tinte y borde definido
-              color: Colors.orangeAccent.withOpacity(0.05),
-              border: Border.all(color: Colors.orangeAccent.withOpacity(0.5)),
+              // Fondo transparente con tinte y borde definido
+              color: AppTheme.warning.withOpacity(0.05),
+              border: Border.all(color: AppTheme.warning.withOpacity(0.3)),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start, // Alinear arriba por si el texto es largo
+              crossAxisAlignment: CrossAxisAlignment
+                  .start, // Alinear arriba por si el texto es largo
               children: [
                 const Icon(
                   Icons.warning_amber_rounded, // Icono más técnico
-                  color: Colors.orangeAccent,
+                  color: AppTheme.warning,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -348,7 +354,7 @@ class ConnectivityDetailCard extends ConsumerWidget {
                   child: Text(
                     'Funciones limitadas. Los datos se guardarán localmente.',
                     style: TextStyle(
-                      color: Colors.orangeAccent.shade100,
+                      color: AppTheme.warning,
                       fontSize: 13,
                       height: 1.4, // Mejor lectura
                     ),
@@ -357,7 +363,7 @@ class ConnectivityDetailCard extends ConsumerWidget {
               ],
             ),
           ),
-        ]
+        ],
       ],
     );
   }
@@ -407,7 +413,7 @@ class ConnectivityDetailCard extends ConsumerWidget {
             ),
           ],
         ),
-        const Divider(height: 32, color: Colors.white10),
+        const Divider(height: 32, color: AppTheme.border),
         _buildLoadingRow(context),
         const SizedBox(height: 16),
         _buildLoadingRow(context),
@@ -428,20 +434,13 @@ class ConnectivityDetailCard extends ConsumerWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Container(
-            height: 14,
-            color: Colors.grey.withOpacity(0.2),
-          ),
+          child: Container(height: 14, color: Colors.grey.withOpacity(0.2)),
         ),
-        Container(
-          height: 14,
-          width: 80,
-          color: Colors.grey.withOpacity(0.3),
-        ),
+        Container(height: 14, width: 80, color: Colors.grey.withOpacity(0.3)),
       ],
     );
   }
-  
+
   Widget _buildStatusRow(
     BuildContext context,
     String label,

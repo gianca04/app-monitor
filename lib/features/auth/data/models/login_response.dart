@@ -18,7 +18,7 @@ class LoginResponse {
     final tokenData = data?['token'] as Map<String, dynamic>?;
     return LoginResponse(
       token: tokenData?['access_token'] ?? '',
-      expiresAt: DateTime.parse(tokenData?['expires_at'] ?? ''),
+      expiresAt: DateTime.tryParse(tokenData?['expires_at'] ?? '') ?? DateTime.now(),
       message: json['message'] ?? '',
       user: data?['user'],
       employee: data?['employee'],

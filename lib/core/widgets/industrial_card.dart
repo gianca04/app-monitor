@@ -17,8 +17,9 @@ class IndustrialCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Definimos los colores base del sistema industrial
-    final effectiveBorderColor = borderColor ?? Colors.grey.shade700;
-    final effectiveBgColor = backgroundColor ?? const Color(0xFF1E1E1E);
+    final theme = Theme.of(context);
+    final effectiveBorderColor = borderColor ?? theme.colorScheme.outline;
+    final effectiveBgColor = backgroundColor ?? theme.colorScheme.surface;
 
     return Container(
       

@@ -40,7 +40,6 @@ class SettingsScreen extends ConsumerWidget {
         shape: const Border(
           bottom: BorderSide(color: kIndustrialBorder),
         ), // Borde inferior
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -85,14 +84,14 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Versión del Cliente',
                 subtitle: 'v0.3.2 (Build 22/06/2026)',
               ),
-              const Divider(height: 1, color: Colors.white10),
+              const Divider(height: 1, color: kIndustrialBorder),
               _buildIndustrialTile(
                 icon: Icons.description_outlined,
                 title: 'Términos de Servicio',
                 trailing: const Icon(Icons.chevron_right, color: Colors.grey),
                 onTap: () {},
               ),
-              const Divider(height: 1, color: Colors.white10),
+              const Divider(height: 1, color: kIndustrialBorder),
               _buildIndustrialTile(
                 icon: Icons.privacy_tip_outlined,
                 title: 'Política de Privacidad',
@@ -145,7 +144,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
 
-        const Divider(height: 1, color: Colors.white10),
+        const Divider(height: 1, color: kIndustrialBorder),
 
         // Selector de modo de visualización
         IndustrialTile(
@@ -161,7 +160,7 @@ class SettingsScreen extends ConsumerWidget {
               : null,
         ),
 
-        const Divider(height: 1, color: Colors.white10),
+        const Divider(height: 1, color: kIndustrialBorder),
 
         // Mostrar cuando está online
         _buildIndustrialTile(
@@ -171,7 +170,7 @@ class SettingsScreen extends ConsumerWidget {
           enabled: preferences.isEnabled,
           trailing: CupertinoSwitch(
             activeColor: kIndustrialAccent,
-            trackColor: Colors.grey[800],
+            trackColor: Colors.grey[300],
             value: preferences.showWhenOnline,
             onChanged: preferences.isEnabled
                 ? (value) async {
@@ -181,7 +180,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
 
-        const Divider(height: 1, color: Colors.white10),
+        const Divider(height: 1, color: kIndustrialBorder),
 
         /*/ Vibración
         /_buildIndustrialTile(
@@ -237,7 +236,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         */
-        const Divider(height: 1, color: Colors.white10),
+        const Divider(height: 1, color: kIndustrialBorder),
 
         // Botón de resetear
         Material(
@@ -272,7 +271,7 @@ class SettingsScreen extends ConsumerWidget {
                     SnackBar(
                       content: const Text(
                         'Configuración restablecida',
-                        style: TextStyle(color: Colors.black),
+                        style: TextStyle(color: Colors.white),
                       ),
                       backgroundColor:
                           kIndustrialAccent, // Ámbar para éxito/info
@@ -289,12 +288,12 @@ class SettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
-                  const Icon(Icons.restore, color: Colors.deepOrangeAccent),
+                  const Icon(Icons.restore, color: Colors.deepOrange),
                   const SizedBox(width: 16),
                   Text(
                     'RESTABLECER VALORES',
                     style: TextStyle(
-                      color: Colors.deepOrangeAccent.shade100,
+                      color: Colors.deepOrange.shade700,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -334,15 +333,15 @@ class SettingsScreen extends ConsumerWidget {
     VoidCallback? onTap,
     bool enabled = true,
   }) {
-    final Color textColor = enabled ? Colors.white : Colors.grey.shade700;
-    final Color iconColor = enabled ? Colors.grey : Colors.grey.shade800;
+    final Color textColor = enabled ? AppTheme.textPrimary : Colors.grey.shade400;
+    final Color iconColor = enabled ? AppTheme.textSecondary : Colors.grey.shade300;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: enabled ? onTap : null,
         splashColor: kIndustrialAccent.withOpacity(0.1), // Feedback Ámbar
-        highlightColor: Colors.white10,
+        highlightColor: Colors.black.withOpacity(0.02),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -367,8 +366,8 @@ class SettingsScreen extends ConsumerWidget {
                         subtitle,
                         style: TextStyle(
                           color: enabled
-                              ? Colors.grey.shade500
-                              : Colors.grey.shade800,
+                              ? AppTheme.textSecondary
+                              : Colors.grey.shade400,
                           fontSize: 13,
                         ),
                       ),
@@ -424,6 +423,7 @@ class SettingsScreen extends ConsumerWidget {
     ConnectivityPreferences preferences,
     ConnectivityPreferencesNotifier notifier,
   ) {
+    final theme = Theme.of(context);
     final modes = [
       {'value': 0, 'name': 'Solo icono', 'icon': Icons.circle},
       {'value': 1, 'name': 'Icono con texto', 'icon': Icons.label},
@@ -433,9 +433,8 @@ class SettingsScreen extends ConsumerWidget {
 
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: kIndustrialSurface, // Fondo oscuro
+      backgroundColor: theme.colorScheme.surface, // Fondo claro
       shape: const RoundedRectangleBorder(
-        // Borde superior recto/casi recto con línea blanca sutil
         side: BorderSide(color: kIndustrialBorder),
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(kIndustrialRadius),
@@ -455,7 +454,7 @@ class SettingsScreen extends ConsumerWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white10,
+                    color: theme.colorScheme.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -465,7 +464,7 @@ class SettingsScreen extends ConsumerWidget {
               Text(
                 'VISUALIZACIÓN',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.0,
                 ),
@@ -473,7 +472,7 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               Text(
                 'Selecciona el formato del indicador:',
-                style: TextStyle(color: Colors.grey.shade500),
+                style: TextStyle(color: AppTheme.textSecondary),
               ),
               const SizedBox(height: 24),
 
@@ -486,7 +485,7 @@ class SettingsScreen extends ConsumerWidget {
                     : kIndustrialBorder;
                 final textColor = isSelected
                     ? kIndustrialAccent
-                    : Colors.white70;
+                    : theme.colorScheme.onSurface.withOpacity(0.8);
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -560,19 +559,19 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Cancel button estilo Outline
-              SizedBox(
+               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(
-                      color: Colors.grey,
-                    ), // Borde gris neutro
+                    side: BorderSide(
+                      color: theme.colorScheme.primary,
+                    ), // Borde de color
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(kIndustrialRadius),
                     ),
-                    foregroundColor: Colors.white,
+                    foregroundColor: theme.colorScheme.primary,
                   ),
                   child: const Text('CANCELAR'),
                 ),

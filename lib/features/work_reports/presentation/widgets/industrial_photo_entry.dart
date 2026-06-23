@@ -296,8 +296,8 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
           child: Container(
             height: 160,
             decoration: BoxDecoration(
-              color: Colors.black26,
-              border: Border.all(color: Colors.white10),
+              color: AppTheme.inputFill,
+              border: Border.all(color: AppTheme.border),
               borderRadius: BorderRadius.circular(kIndRadius),
             ),
             clipBehavior: Clip.antiAlias,
@@ -362,13 +362,14 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black12,
+            color: AppTheme.inputFill,
+            border: Border.all(color: AppTheme.border),
             borderRadius: BorderRadius.circular(kIndRadius),
           ),
           child: Text(
             description.isEmpty ? 'Sin descripción' : description,
             style: TextStyle(
-              color: description.isEmpty ? Colors.white24 : Colors.white70,
+              color: description.isEmpty ? AppTheme.textSecondary.withOpacity(0.6) : AppTheme.textPrimary,
               fontSize: 12,
             ),
             maxLines: 3,
@@ -383,11 +384,11 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.add_a_photo_outlined, color: Colors.white24, size: 32),
+        const Icon(Icons.add_a_photo_outlined, color: AppTheme.textSecondary, size: 32),
         const SizedBox(height: 8),
         const Text(
           'Sin Evidencia',
-          style: TextStyle(color: Colors.white24, fontSize: 10),
+          style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
         ),
         const SizedBox(height: 8),
         // Mini buttons
@@ -399,12 +400,12 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white24),
+                  border: Border.all(color: AppTheme.borderHighContrast),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
                   'SELECCIONAR',
-                  style: TextStyle(color: Colors.white54, fontSize: 10),
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -533,30 +534,30 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
   }
 
   Future<void> _pickImage() async {
+    final theme = Theme.of(context);
     // Show Sheet for Camera/Gallery
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors
-          .transparent, // Use ModernBottomModal style manually or just basic sheet
+      backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        color: kIndSurface,
+        color: theme.colorScheme.surface,
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.white),
-              title: const Text(
+              leading: Icon(Icons.camera_alt, color: theme.colorScheme.primary),
+              title: Text(
                 'Tomar Foto',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.white),
-              title: const Text(
+              leading: Icon(Icons.photo_library, color: theme.colorScheme.primary),
+              title: Text(
                 'Galería',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
@@ -580,6 +581,7 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -639,17 +641,11 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
           controller: _textController,
           maxLines: 5,
           maxLength: 500,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
+          style: TextStyle(color: theme.textTheme.bodyMedium?.color),
+          decoration: const InputDecoration(
             labelText: 'DESCRIPCIÓN',
             alignLabelWithHint: true,
             hintText: 'Ingrese detalles de la evidencia...',
-            filled: true,
-            fillColor: Colors.black12,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
           ),
         ),
 
@@ -659,13 +655,17 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
         Row(
           children: [
             Expanded(
-              child: TextButton(
+              child: OutlinedButton(
                 onPressed: () =>
                     Navigator.pop(context), // Cancel -> returns null
-                child: const Text(
-                  'CANCELAR',
-                  style: TextStyle(color: Colors.grey),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: theme.colorScheme.primary),
+                  foregroundColor: theme.colorScheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(kIndRadius),
+                  ),
                 ),
+                child: const Text('CANCELAR'),
               ),
             ),
             const SizedBox(width: 16),

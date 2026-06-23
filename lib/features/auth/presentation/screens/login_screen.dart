@@ -106,6 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _login() {
+    FocusScope.of(context).unfocus();
     if (_formKey.currentState!.validate()) {
       ref
           .read(authProvider.notifier)
@@ -172,39 +173,58 @@ class _SignInFormState extends State<_SignInForm> {
                 const SizedBox(height: 6),
                 Text(
                   'Ingrese sus credenciales',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.white),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 24),
 
                 // Campo correo
                 TextFormField(
                   controller: widget.emailController,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.white),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF1A1A1A),
+                  ),
+                  cursorColor: const Color(0xFF2d9292),
                   decoration: InputDecoration(
                     labelText: 'Correo Electrónico',
-                    labelStyle: const TextStyle(color: Colors.white),
+                    labelStyle: const TextStyle(color: Color(0xFF4A4A4A)),
+                    floatingLabelStyle: const TextStyle(
+                      color: Color(0xFF2d9292),
+                    ),
+                    hintText: 'ejemplo@correo.com',
+                    hintStyle: const TextStyle(color: Color(0xFF9B9B9B)),
                     prefixIcon: const Icon(
                       Icons.email_outlined,
-                      color: Colors.white,
+                      color: Color(0xFF4A4A4A),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.white24),
+                      borderSide: const BorderSide(color: Color(0xFFD1D1D1)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(
-                        color: Colors.white,
+                        color: Color(0xFF2d9292),
                         width: 2,
                       ),
                     ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFDC2626)),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFDC2626),
+                        width: 2,
+                      ),
+                    ),
+                    errorStyle: const TextStyle(color: Color(0xFFDC2626)),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -220,36 +240,53 @@ class _SignInFormState extends State<_SignInForm> {
                 TextFormField(
                   controller: widget.passwordController,
                   obscureText: !widget.isPasswordVisible,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.white),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF1A1A1A),
+                  ),
+                  cursorColor: const Color(0xFF2d9292),
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
-                    labelStyle: const TextStyle(color: Colors.white),
+                    labelStyle: const TextStyle(color: Color(0xFF4A4A4A)),
+                    floatingLabelStyle: const TextStyle(
+                      color: Color(0xFF2d9292),
+                    ),
+                    hintStyle: const TextStyle(color: Color(0xFF9B9B9B)),
                     prefixIcon: const Icon(
                       Icons.lock_outline_rounded,
-                      color: Colors.white,
+                      color: Color(0xFF4A4A4A),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.white24),
+                      borderSide: const BorderSide(color: Color(0xFFD1D1D1)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(
-                        color: Colors.white,
+                        color: Color(0xFF2d9292),
                         width: 2,
                       ),
                     ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFDC2626)),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFDC2626),
+                        width: 2,
+                      ),
+                    ),
+                    errorStyle: const TextStyle(color: Color(0xFFDC2626)),
                     suffixIcon: IconButton(
                       icon: Icon(
                         widget.isPasswordVisible
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: Colors.white,
+                        color: const Color(0xFF4A4A4A),
                       ),
                       onPressed: widget.onTogglePasswordVisibility,
                     ),
@@ -268,8 +305,15 @@ class _SignInFormState extends State<_SignInForm> {
                 Theme(
                   data: Theme.of(context).copyWith(
                     checkboxTheme: CheckboxThemeData(
-                      fillColor: MaterialStateProperty.all(Colors.white),
-                      checkColor: MaterialStateProperty.all(AppTheme.surface),
+                      fillColor: WidgetStateProperty.resolveWith<Color?>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return const Color(0xFF2d9292);
+                        }
+                        return const Color(0xFFD1D1D1);
+                      }),
+                      checkColor: WidgetStateProperty.all(Colors.white),
                     ),
                   ),
                   child: CheckboxListTile(
@@ -279,7 +323,7 @@ class _SignInFormState extends State<_SignInForm> {
                     onChanged: widget.onRememberMeChanged,
                     title: const Text(
                       'Recordarme',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Color(0xFF4A4A4A)),
                     ),
                   ),
                 ),
@@ -352,7 +396,7 @@ class _SignInFormState extends State<_SignInForm> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                "// ERROR", // Texto decorativo técnico
+                                "ERROR", // Texto decorativo técnico
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontFamily:

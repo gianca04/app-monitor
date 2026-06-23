@@ -1,51 +1,26 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // --- 1. PALETA DE COLORES INDUSTRIAL ---
-  static const Color background = Color.fromARGB(
-    255,
-    0,
-    0,
-    0,
-  ); // Fondo ultra oscuro
-  static const Color surface = Color.fromARGB(
-    255,
-    0,
-    0,
-    0,
-  ); // Superficies de tarjetas
+  // --- 1. PALETA DE COLORES INDUSTRIAL (LIGERA Y ALTO CONTRASTE) ---
+  static const Color background = Color(0xFFFFFFFF); // Blanco puro para máximo contraste bajo el sol
+  static const Color surface = Color(0xFFF8FAFC); // Slate muy claro para tarjetas
 
-  static const Color primaryAccent = Color.fromARGB(
-    255,
-    35,
-    165,
-    165,
-  ); // Industrial Amber (Acción principal)
-  static const Color secondaryAccent = Color(
-    0xFF03DAC6,
-  ); // Electric Teal (Indicadores de estado)
+  static const Color primaryAccent = Color(0xFF0D9488); // Teal oscuro/medio de alta legibilidad
+  static const Color secondaryAccent = Color(0xFF0284C7); // Sky blue de alta visibilidad
 
-  static const Color textPrimary = Color(
-    0xFFE1E4E8,
-  ); // Blanco hueso (Legibilidad alta)
-  static const Color textSecondary = Color(
-    0xFF8B949E,
-  ); // Gris metálico (Metadatos)
+  static const Color textPrimary = Color(0xFF0F172A); // Slate 900 (Casi negro)
+  static const Color textSecondary = Color(0xFF475569); // Slate 600
 
-  static const Color border = Color(0xFF30363D); // Bordes sutiles
-  static const Color borderHighContrast = Color(
-    0xFF6E7681,
-  ); // Bordes activos/focus
+  static const Color border = Color(0xFFE2E8F0); // Borde claro pero visible
+  static const Color borderHighContrast = Color(0xFF94A3B8); // Slate 400
 
-  static const Color error = Color(0xFFF85149); // Rojo alerta industrial
-  static const Color success = Color(0xFF3FB950); // Verde terminal
-  static const Color warning = Color(0xFFD29922); // Amarillo precaución
-  static const Color info = Color(0xFF58A6FF); // Azul informativo
+  static const Color error = Color(0xFFDC2626); // Rojo alerta de campo
+  static const Color success = Color(0xFF16A34A); // Verde semáforo
+  static const Color warning = Color(0xFFD97706); // Amber oscuro para precaución
+  static const Color info = Color(0xFF2563EB); // Azul informativo
 
   // Adicionales
-  static const Color inputFill = Color(
-    0xFF0D1117,
-  ); // Input más oscuro que la tarjeta para profundidad "hundida"
+  static const Color inputFill = Color(0xFFF1F5F9); // Fondo de inputs
 
   // --- 2. CONSTANTES DE DISEÑO ---
   static const double kRadius = 4.0; // La Regla del 4
@@ -55,14 +30,12 @@ class AppTheme {
   static ThemeData get industrialTheme {
     // Definimos el ColorScheme base para que Flutter sepa qué colores usar en sus widgets internos
     final colorScheme =
-        ColorScheme.dark(
+        ColorScheme.light(
           primary: primaryAccent,
           secondary: secondaryAccent,
           surface: surface,
-          surfaceContainerHighest: Color(
-            0xFF262C36,
-          ), // Para badges y fondos secundarios
-          onPrimary: Colors.black, // Texto negro sobre el ámbar para contraste
+          surfaceContainerHighest: Color(0xFFE2E8F0), // Para badges y fondos secundarios
+          onPrimary: Colors.white, // Texto blanco sobre el teal para contraste
           onSurface: textPrimary,
           onSurfaceVariant: textSecondary,
           error: error,
@@ -74,14 +47,13 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: background,
       colorScheme: colorScheme,
       primaryColor: primaryAccent,
 
       // Fuente por defecto (Opcional: Si usas GoogleFonts, ponlo aquí)
-      fontFamily:
-          'Roboto', // O 'Inter', 'JetBrains Mono' queda genial para industrial
+      fontFamily: 'Roboto',
       // --- APP BAR ---
       appBarTheme: const AppBarTheme(
         backgroundColor: surface,
@@ -148,9 +120,8 @@ class AppTheme {
       // --- BOTONES (Unificación de formas) ---
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          //backgroundColor: primaryAccent,
-          backgroundColor: Color(0xFF2B9393),
-          foregroundColor: Colors.black,
+          backgroundColor: primaryAccent,
+          foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           shape: RoundedRectangleBorder(
@@ -164,8 +135,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          //foregroundColor: primaryAccent,
-          foregroundColor: Color(0xFF2B9393),
+          foregroundColor: primaryAccent,
           side: const BorderSide(color: borderHighContrast),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(kRadius),
@@ -175,7 +145,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: textPrimary, // Por defecto blanco/gris
+          foregroundColor: primaryAccent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(kRadius),
           ),
@@ -185,9 +155,8 @@ class AppTheme {
       // --- FAB (Botón Flotante) ---
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: primaryAccent,
-        foregroundColor: Colors.black,
-        elevation:
-            2, // Leve elevación permitida en FAB para separarlo del contenido
+        foregroundColor: Colors.white,
+        elevation: 2, // Leve elevación permitida en FAB para separarlo del contenido
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(
             Radius.circular(kRadius),
@@ -207,14 +176,13 @@ class AppTheme {
         indicatorColor: primaryAccent,
         labelColor: primaryAccent,
         unselectedLabelColor: textSecondary,
-        dividerColor:
-            Colors.transparent, // Ocultamos el divider default del TabBar
+        dividerColor: Colors.transparent, // Ocultamos el divider default del TabBar
         indicatorSize: TabBarIndicatorSize.tab,
       ),
 
       // --- DIÁLOGOS ---
       dialogTheme: DialogThemeData(
-        backgroundColor: surface,
+        backgroundColor: background,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kRadius),

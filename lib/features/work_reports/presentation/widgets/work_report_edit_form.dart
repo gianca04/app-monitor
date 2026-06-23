@@ -534,9 +534,16 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         SizedBox(
           width: double.infinity,
           height: 48,
-          child: TextButton(
+          child: OutlinedButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: kIndAccent),
+              foregroundColor: kIndAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(kIndRadius),
+              ),
+            ),
+            child: const Text('CANCELAR'),
           ),
         ),
       ],
@@ -654,9 +661,16 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         SizedBox(
           width: double.infinity,
           height: 48,
-          child: TextButton(
+          child: OutlinedButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: kIndAccent),
+              foregroundColor: kIndAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(kIndRadius),
+              ),
+            ),
+            child: const Text('CANCELAR'),
           ),
         ),
       ],

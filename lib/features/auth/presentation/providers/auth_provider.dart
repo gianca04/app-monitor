@@ -8,9 +8,19 @@ import '../../data/models/login_response.dart';
 import '../../data/datasources/auth_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/exceptions/auth_exceptions.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
 // Providers para dependencias
-final dioProvider = Provider((ref) => Dio());
+final cookieJarProvider = Provider((ref) => CookieJar());
+
+final dioProvider = Provider((ref) {
+  final dio = Dio();
+  final cookieJar = ref.watch(cookieJarProvider);
+  dio.options.headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36';
+  dio.interceptors.add(CookieManager(cookieJar));
+  return dio;
+});
 final secureStorageProvider = Provider((ref) => const FlutterSecureStorage());
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('SharedPreferences must be initialized in main');
@@ -20,7 +30,11 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 final authenticatedDioProvider = Provider((ref) {
   final dio = Dio();
   final secureStorage = ref.watch(secureStorageProvider);
+  final cookieJar = ref.watch(cookieJarProvider);
 
+  dio.options.headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36';
+
+  dio.interceptors.add(CookieManager(cookieJar));
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) async {
       final token = await secureStorage.read(key: 'auth_token');

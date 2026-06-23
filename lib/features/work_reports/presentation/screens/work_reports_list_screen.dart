@@ -7,7 +7,7 @@ import '../widgets/work_report_list_item.dart';
 import '../widgets/reports_empty_state.dart' as empty_state;
 import '../widgets/reports_fab_menu.dart' as fab_menu;
 import 'package:monitor/core/widgets/modern_bottom_modal.dart';
-// import 'package:monitor/core/theme_config.dart';
+import 'package:monitor/core/theme_config.dart';
 
 import 'package:monitor/core/widgets/industrial_feedback.dart';
 
@@ -108,20 +108,38 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
           controller: _searchController,
           decoration: InputDecoration(
             hintText: 'Buscar reportes...',
-            hintStyle: TextStyle(color: const Color(0xFF8B949E)),
-            filled: true,
-            fillColor: const Color(0xFF0D1117),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4.0),
-              borderSide: const BorderSide(color: Color(0xFF30363D)),
+            hintStyle: TextStyle(
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
             ),
-            prefixIcon: const Icon(Icons.search, color: Color(0xFFFFAB00)),
+            filled: true,
+            fillColor: theme.inputDecorationTheme.fillColor ?? AppTheme.inputFill,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.kRadius),
+              borderSide: BorderSide(color: theme.colorScheme.outline),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.kRadius),
+              borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+            ),
+            prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+            suffixIcon: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _searchController,
+              builder: (context, value, child) {
+                if (value.text.isEmpty) return const SizedBox.shrink();
+                return IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                );
+              },
+            ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 8,
             ),
           ),
-          style: const TextStyle(color: Color(0xFFE1E4E8)),
+          style: TextStyle(color: theme.textTheme.bodyMedium?.color),
         ),
         actions: [
           // Selector de elementos por página
@@ -186,6 +204,7 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
         ? DateTime.parse(currentState.dateTo!)
         : null;
     int selectedPerPage = currentState.perPage ?? 10;
+    final theme = Theme.of(context);
 
     ModernBottomModal.show(
       context,
@@ -237,8 +256,15 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
         ),
       ),
       actions: [
-        TextButton(
+        OutlinedButton(
           onPressed: () => Navigator.pop(context),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: theme.colorScheme.primary),
+            foregroundColor: theme.colorScheme.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.kRadius),
+            ),
+          ),
           child: const Text('CANCELAR'),
         ),
         TextButton(

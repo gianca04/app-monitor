@@ -193,7 +193,7 @@ class WorkReportViewScreen extends ConsumerWidget {
       title: 'CONFIRMAR ELIMINACIÓN',
       content: const Text(
         'Esta acción no se puede deshacer. ¿Eliminar registro permanentemente?',
-        style: TextStyle(color: Colors.white70),
+        style: TextStyle(color: AppTheme.textSecondary),
       ),
       actions: [
         SizedBox(
@@ -202,10 +202,10 @@ class WorkReportViewScreen extends ConsumerWidget {
           child: ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: AppTheme.error,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(kIndRadius),
+                borderRadius: BorderRadius.circular(AppTheme.kRadius),
               ),
             ),
             child: const Text(
@@ -218,9 +218,16 @@ class WorkReportViewScreen extends ConsumerWidget {
         SizedBox(
           width: double.infinity,
           height: 50,
-          child: TextButton(
+          child: OutlinedButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppTheme.primaryAccent),
+              foregroundColor: AppTheme.primaryAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.kRadius),
+              ),
+            ),
+            child: const Text('CANCELAR'),
           ),
         ),
         const SizedBox(height: 24),

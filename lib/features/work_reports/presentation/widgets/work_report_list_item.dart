@@ -110,7 +110,7 @@ class WorkReportListItem extends ConsumerWidget {
               ],
 
               const SizedBox(height: 12),
-              const Divider(height: 1, color: Colors.white10),
+              Divider(height: 1, color: theme.colorScheme.outline),
               const SizedBox(height: 10),
 
               // --- 4. FOOTER: METADATA ---
@@ -166,7 +166,7 @@ class _IdBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(_kRadius),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
       ),
       child: Text(
         '#${id ?? '000'}',
