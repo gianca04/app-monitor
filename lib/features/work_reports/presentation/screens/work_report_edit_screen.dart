@@ -29,14 +29,14 @@ class WorkReportEditScreen extends ConsumerWidget {
             icon: const Icon(Icons.arrow_back),
             onPressed: () => _goBack(context),
           ),
-          title: const Text('Edit Work Report'),
+          title: const Text('Editar Reporte de trabajo'),
         ),
         body: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : state.error != null
             ? Center(child: Text('Error: ${state.error}'))
             : state.report == null
-            ? const Center(child: Text('Report not found'))
+            ? const Center(child: Text('No se encontro el reporte'))
             : WorkReportEditForm(report: state.report!),
       ),
     );

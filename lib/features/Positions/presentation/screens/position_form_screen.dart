@@ -9,11 +9,9 @@ class PositionFormScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(positionId == null ? 'Add Position' : 'Edit Position'),
+        title: Text(positionId == null ? 'Añadir Posición' : 'Editar Posición'),
       ),
-      body: const Center(
-        child: Text('Position Form - To be implemented'),
-      ),
+      body: const Center(child: Text('Position Form - To be implemented')),
     );
   }
 }

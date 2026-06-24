@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 /// Estados de conexión posibles
@@ -15,7 +16,7 @@ enum ConnectionStatus {
 }
 
 /// Servicio para monitorear el estado de conectividad
-class ConnectivityService {
+class ConnectivityService with WidgetsBindingObserver {
   final Connectivity _connectivity;
   final StreamController<ConnectionStatus> _statusController =
       StreamController<ConnectionStatus>.broadcast();
@@ -35,12 +36,22 @@ class ConnectivityService {
     // Escuchar cambios en la conectividad
     _connectivity.onConnectivityChanged.listen(_onConnectivityChanged);
 
+    // Registrar observador del ciclo de vida
+    WidgetsBinding.instance.addObserver(this);
+
     // Verificar estado inicial
     _checkConnectivity();
   }
 
   void _onConnectivityChanged(List<ConnectivityResult> results) {
     _checkConnectivity();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkConnectivity();
+    }
   }
 
   Future<void> _checkConnectivity() async {
@@ -86,6 +97,7 @@ class ConnectivityService {
   }
 
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _statusController.close();
   }
 }

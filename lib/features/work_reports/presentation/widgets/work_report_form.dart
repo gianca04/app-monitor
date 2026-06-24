@@ -565,12 +565,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       final convertQuillToHtml = ref.read(convertQuillToHtmlProvider);
       final result = await convertQuillToHtml(formattedDelta);
 
-      return result.fold(
-        (failure) {
-          return deltaJson; // Return original on failure
-        },
-        (conversionResult) => conversionResult.content,
-      );
+      return result.fold((failure) {
+        return deltaJson; // Return original on failure
+      }, (conversionResult) => conversionResult.content);
     } catch (e) {
       return deltaJson; // Return original on error
     }
@@ -1061,7 +1058,11 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                           padding: const EdgeInsets.only(left: 16, top: 8),
                           child: Row(
                             children: [
-                              Icon(Icons.inventory_2, color: Colors.grey, size: 18),
+                              Icon(
+                                Icons.inventory_2,
+                                color: Colors.grey,
+                                size: 18,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'MATERIALES / INSUMOS',
@@ -1103,6 +1104,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
                       color: kIndSurface,
@@ -1426,12 +1428,9 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
               'ops': controller.document.toDelta().toJson(),
             });
             final result = await convertQuillToHtml(delta);
-            return result.fold(
-              (failure) {
-                return jsonEncode(controller.document.toDelta().toJson());
-              },
-              (conversionResult) => conversionResult.content,
-            );
+            return result.fold((failure) {
+              return jsonEncode(controller.document.toDelta().toJson());
+            }, (conversionResult) => conversionResult.content);
           }
           return null;
         }

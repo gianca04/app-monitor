@@ -35,12 +35,43 @@ class ConnectivityIndicator extends ConsumerWidget {
         if (status == ConnectionStatus.online && !showOnline) {
           return const SizedBox.shrink();
         }
-        return _buildIndicator(context, status, displayMode);
+        return GestureDetector(
+          onTap: () async {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Comprobando señal...'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+            await ref.read(connectivityServiceProvider).checkConnectivity();
+          },
+          child: _buildIndicator(context, status, displayMode),
+        );
       },
-      loading: () =>
-          _buildIndicator(context, ConnectionStatus.offline, displayMode),
-      error: (_, __) =>
-          _buildIndicator(context, ConnectionStatus.offline, displayMode),
+      loading: () => GestureDetector(
+        onTap: () async {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Comprobando señal...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+          await ref.read(connectivityServiceProvider).checkConnectivity();
+        },
+        child: _buildIndicator(context, ConnectionStatus.offline, displayMode),
+      ),
+      error: (_, __) => GestureDetector(
+        onTap: () async {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Comprobando señal...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+          await ref.read(connectivityServiceProvider).checkConnectivity();
+        },
+        child: _buildIndicator(context, ConnectionStatus.offline, displayMode),
+      ),
     );
   }
 
