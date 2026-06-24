@@ -14,6 +14,8 @@ class WorkReport {
   final Project? project;
   final List<Photo>? photos;
   final Summary? summary;
+  final String? supervisorSignature;
+  final String? managerSignature;
 
   WorkReport({
     this.id,
@@ -29,6 +31,8 @@ class WorkReport {
     this.project,
     this.photos,
     this.summary,
+    this.supervisorSignature,
+    this.managerSignature,
   });
 
   factory WorkReport.fromJson(Map<String, dynamic> json) {
@@ -61,6 +65,8 @@ class WorkReport {
       summary: json['summary'] != null
           ? Summary.fromJson(json['summary'])
           : null,
+      supervisorSignature: json['supervisor_signature'] as String?,
+      managerSignature: json['manager_signature'] as String?,
     );
   }
 
@@ -79,6 +85,8 @@ class WorkReport {
       'project': project?.toJson(),
       'photos': photos?.map((e) => e.toJson()).toList(),
       'summary': summary?.toJson(),
+      'supervisor_signature': supervisorSignature,
+      'manager_signature': managerSignature,
     };
   }
 

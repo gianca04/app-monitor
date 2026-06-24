@@ -136,7 +136,16 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
       }
     }
 
+    _supervisorSignature = widget.report.supervisorSignature;
+    _supervisorSignatureBytes = widget.report.supervisorSignature;
+    _managerSignature = widget.report.managerSignature;
+    _managerSignatureBytes = widget.report.managerSignature;
+
+    print('🔍 [INIT_STATE] Supervisor Signature received: ${_supervisorSignature != null ? '${_supervisorSignature!.substring(0, min(50, _supervisorSignature!.length))}...' : 'null'}');
+    print('🔍 [INIT_STATE] Manager Signature received: ${_managerSignature != null ? '${_managerSignature!.substring(0, min(50, _managerSignature!.length))}...' : 'null'}');
   }
+
+  int min(int a, int b) => a < b ? a : b;
 
   Future<void> _initDescriptionController() async {
     try {

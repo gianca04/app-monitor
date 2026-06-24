@@ -13,6 +13,7 @@ import '../../../../core/services/notification_service.dart';
 import '../../../../core/widgets/industrial_card.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
 import '../../../../core/widgets/industrial_feedback.dart';
+import '../../../../core/widgets/industrial_signature.dart';
 import '../widgets/work_report_view/work_report_section_header.dart';
 import '../widgets/work_report_view/work_report_info_row.dart';
 import '../widgets/work_report_view/work_report_resource_block.dart';
@@ -493,6 +494,43 @@ class WorkReportViewScreen extends ConsumerWidget {
                               ),
                             },
                           ),
+                          if (state.report!.supervisorSignature != null || state.report!.managerSignature != null) ...[
+                            const SizedBox(height: 16),
+                            const Divider(
+                              color: Colors.white10,
+                              height: 1,
+                            ),
+                            const SizedBox(height: 16),
+                            WorkReportSectionHeader(
+                              theme: theme,
+                              title: 'VALIDACIÓN Y FIRMAS',
+                              icon: Icons.edit,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (state.report!.supervisorSignature != null)
+                                  Expanded(
+                                    child: IndustrialSignatureBox(
+                                      title: 'SUPERVISOR',
+                                      base64: state.report!.supervisorSignature,
+                                      onTap: () {}, // Solo lectura
+                                    ),
+                                  ),
+                                if (state.report!.supervisorSignature != null && state.report!.managerSignature != null)
+                                  const SizedBox(width: 12),
+                                if (state.report!.managerSignature != null)
+                                  Expanded(
+                                    child: IndustrialSignatureBox(
+                                      title: 'GERENCIA / CLIENTE',
+                                      base64: state.report!.managerSignature,
+                                      onTap: () {}, // Solo lectura
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),

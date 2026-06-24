@@ -155,19 +155,11 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
         if (suggestions != null) 'suggestions': suggestions,
       };
 
-      final formData = FormData.fromMap(mapData);
-
       if (supervisorSignature != null) {
         // Only send if it's a new base64 signature, not an existing URL
         if (!supervisorSignature.startsWith('http://') && !supervisorSignature.startsWith('https://')) {
-          final signatureBytes = _base64DataUrlToBytes(supervisorSignature);
-          formData.files.add(
-            MapEntry(
-              'supervisor_signature',
-              MultipartFile.fromBytes(signatureBytes, filename: 'supervisor_signature.png'),
-            ),
-          );
-          print('🔍 [CREATE] Added new supervisor_signature as file (${signatureBytes.length} bytes)');
+          mapData['supervisor_signature'] = supervisorSignature;
+          print('🔍 [CREATE] Added new supervisor_signature as base64 string');
         } else {
           print('🔍 [CREATE] Supervisor signature is existing URL, not sending');
         }
@@ -175,18 +167,14 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       if (managerSignature != null) {
         // Only send if it's a new base64 signature, not an existing URL
         if (!managerSignature.startsWith('http://') && !managerSignature.startsWith('https://')) {
-          final signatureBytes = _base64DataUrlToBytes(managerSignature);
-          formData.files.add(
-            MapEntry(
-              'manager_signature',
-              MultipartFile.fromBytes(signatureBytes, filename: 'manager_signature.png'),
-            ),
-          );
-          print('🔍 [CREATE] Added new manager_signature as file (${signatureBytes.length} bytes)');
+          mapData['manager_signature'] = managerSignature;
+          print('🔍 [CREATE] Added new manager_signature as base64 string');
         } else {
           print('🔍 [CREATE] Manager signature is existing URL, not sending');
         }
       }
+
+      final formData = FormData.fromMap(mapData);
 
       for (int i = 0; i < photos.length; i++) {
         final photo = photos[i];
@@ -280,32 +268,20 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
         "_method": "PUT",
       };
 
-      final formData = FormData.fromMap(mapData);
-
       if (supervisorSignature != null) {
         // Only send if it's a new base64 signature, not an existing URL
         if (!supervisorSignature.startsWith('http://') && !supervisorSignature.startsWith('https://')) {
-          final signatureBytes = _base64DataUrlToBytes(supervisorSignature);
-          formData.files.add(
-            MapEntry(
-              'supervisor_signature',
-              MultipartFile.fromBytes(signatureBytes, filename: 'supervisor_signature.png'),
-            ),
-          );
+          mapData['supervisor_signature'] = supervisorSignature;
         }
       }
       if (managerSignature != null) {
         // Only send if it's a new base64 signature, not an existing URL
         if (!managerSignature.startsWith('http://') && !managerSignature.startsWith('https://')) {
-          final signatureBytes = _base64DataUrlToBytes(managerSignature);
-          formData.files.add(
-            MapEntry(
-              'manager_signature',
-              MultipartFile.fromBytes(signatureBytes, filename: 'manager_signature.png'),
-            ),
-          );
+          mapData['manager_signature'] = managerSignature;
         }
       }
+
+      final formData = FormData.fromMap(mapData);
 
       final response = await dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}/$id',
