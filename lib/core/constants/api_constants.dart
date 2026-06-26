@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://monitor.sat-industriales.pe';
+  static const String baseUrl = 'http://192.168.10.26:8000';
   static const String loginEndpoint = '/api/login';
   static const String workReportsEndpoint = '/api/work-reports';
   static const String workReportPdfEndpoint = '/api/work-report';
