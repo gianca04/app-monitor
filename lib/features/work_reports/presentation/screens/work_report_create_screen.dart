@@ -18,7 +18,6 @@ class WorkReportCreateScreen extends StatelessWidget {
         _goBack(context);
       },
       child: Scaffold(
-        /*
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -26,7 +25,6 @@ class WorkReportCreateScreen extends StatelessWidget {
           ),
           title: const Text('Crear Reporte en la Nube'),
         ),
-        */
         body: const WorkReportForm(),
       ),
     );

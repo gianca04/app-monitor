@@ -82,7 +82,7 @@ class SettingsScreen extends ConsumerWidget {
               _buildIndustrialTile(
                 icon: Icons.info_outline,
                 title: 'Versión del Cliente',
-                subtitle: 'v0.3.2 (Build 22/06/2026)',
+                subtitle: 'v1.0.1 (Build 26/06/2026)',
               ),
               const Divider(height: 1, color: kIndustrialBorder),
               _buildIndustrialTile(
@@ -333,8 +333,12 @@ class SettingsScreen extends ConsumerWidget {
     VoidCallback? onTap,
     bool enabled = true,
   }) {
-    final Color textColor = enabled ? AppTheme.textPrimary : Colors.grey.shade400;
-    final Color iconColor = enabled ? AppTheme.textSecondary : Colors.grey.shade300;
+    final Color textColor = enabled
+        ? AppTheme.textPrimary
+        : Colors.grey.shade400;
+    final Color iconColor = enabled
+        ? AppTheme.textSecondary
+        : Colors.grey.shade300;
 
     return Material(
       color: Colors.transparent,
@@ -559,7 +563,7 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Cancel button estilo Outline
-               SizedBox(
+              SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),

@@ -64,6 +64,13 @@ class _AppLayoutState extends State<AppLayout> {
 
   @override
   Widget build(BuildContext context) {
+    final location = _routerDelegate.currentConfiguration.uri.path;
+    final shouldHideLayout = location.startsWith('/work-reports');
+
+    if (shouldHideLayout) {
+      return widget.child;
+    }
+
     return Scaffold(
       backgroundColor: _kBgColor,
       appBar: AppBar(

@@ -104,6 +104,10 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
         title: TextField(
           controller: _searchController,
           decoration: InputDecoration(
