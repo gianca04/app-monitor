@@ -56,25 +56,25 @@ class WorkReportPdfDataSourceImpl implements WorkReportPdfDataSource {
           );
 
           if (response.statusCode == 200) {
-            print('📄 [PDF] Archivo guardado con éxito en: ${file.path}');
+            // print('📄 [PDF] Archivo guardado con éxito en: ${file.path}');
             return file;
           }
         } catch (e) {
-          print('⚠️ [PDF] Falló descarga en $dirPath: $e');
+          // print('⚠️ [PDF] Falló descarga en $dirPath: $e');
           // Continuar al siguiente directorio
         }
       }
       
       throw Exception('No se pudo guardar el archivo PDF en ningún directorio disponible.');
     } on DioException catch (e) {
-      print('❌ [PDF] Error DioException: ${e.message}');
+      // print('❌ [PDF] Error DioException: ${e.message}');
       if (e.response != null) {
-        print('❌ [PDF] Response status: ${e.response?.statusCode}');
-        print('❌ [PDF] Response data: ${e.response?.data}');
+        // print('❌ [PDF] Response status: ${e.response?.statusCode}');
+        // print('❌ [PDF] Response data: ${e.response?.data}');
       }
       rethrow;
     } catch (e) {
-      print('❌ [PDF] Error inesperado: $e');
+      // print('❌ [PDF] Error inesperado: $e');
       rethrow;
     }
   }

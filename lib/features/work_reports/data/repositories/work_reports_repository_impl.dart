@@ -10,6 +10,7 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
 
   @override
   Future<WorkReportsResponse> getWorkReports({
+    int? projectId,
     String? search,
     String? dateFrom,
     String? dateTo,
@@ -19,6 +20,7 @@ class WorkReportsRepositoryImpl implements WorkReportsRepository {
     int? page,
   }) async {
     return await dataSource.getWorkReports(
+      projectId: projectId,
       search: search,
       dateFrom: dateFrom,
       dateTo: dateTo,

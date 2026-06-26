@@ -38,7 +38,7 @@ class WorkReportListItem extends ConsumerWidget {
 
     return IndustrialCard(
       child: InkWell(
-        onTap: () => context.go('/work-reports/${report.id}'),
+        onTap: () => context.push('/work-reports/${report.id}'),
         borderRadius: BorderRadius.circular(_kRadius),
         child: Padding(
           padding: const EdgeInsets.all(0.0), // Padding más compacto

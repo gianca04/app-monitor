@@ -11,8 +11,21 @@ class ProjectsDatasourceImpl implements ProjectsDatasource {
 
   @override
   Future<List<Project>> getProjects() async {
-    // Placeholder implementation
-    return [];
+    try {
+      final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.projectsEndpoint}');
+      
+      // Imprimir por consola para visualizar el JSON recibido
+      // print('🚀 [PROJECTS JSON]: ${response.data}');
+
+      // Adaptar según la estructura de respuesta del backend de Laravel
+      // Usualmente viene paginado o envuelto en "data"
+      final List<dynamic> dataList = response.data['data'] ?? response.data;
+      
+      return dataList.map((json) => Project.fromJson(json)).toList();
+    } catch (e) {
+      // print('❌ [PROJECTS ERROR]: $e');
+      rethrow;
+    }
   }
 
   @override

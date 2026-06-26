@@ -13,6 +13,7 @@ import '../../features/Positions/presentation/screens/positions_list_screen.dart
 import '../../features/Positions/presentation/screens/position_form_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/projects/presentation/screens/projects_list_screen.dart';
 
 GoRouter appRouter(WidgetRef ref) {
   return GoRouter(
@@ -46,14 +47,23 @@ GoRouter appRouter(WidgetRef ref) {
           ),
           GoRoute(
             path: '/work-reports',
+            builder: (context, state) => const ProjectsListScreen(),
+          ),
+          GoRoute(
+            path: '/work-reports/project/:projectId',
             builder: (context, state) {
+              final projectId = int.parse(state.pathParameters['projectId']!);
               final extra = state.extra as Map<String, dynamic>?;
-              return WorkReportsListScreen(extra: extra);
+              return WorkReportsListScreen(projectId: projectId, extra: extra);
             },
           ),
           GoRoute(
             path: '/work-reports/create',
-            builder: (context, state) => const WorkReportCreateScreen(),
+            builder: (context, state) {
+              final projectIdStr = state.uri.queryParameters['projectId'];
+              final projectId = projectIdStr != null ? int.tryParse(projectIdStr) : null;
+              return WorkReportCreateScreen(projectId: projectId);
+            },
           ),
           GoRoute(
             path: '/work-reports/:id',

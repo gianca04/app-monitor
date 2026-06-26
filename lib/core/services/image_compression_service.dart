@@ -11,9 +11,9 @@ class ImageCompressionServiceImpl implements ImageCompressionService {
   @override
   Future<Uint8List> compressToWebp(Uint8List imageBytes) async {
     try {
-      print(
-        '🔄 [COMPRESSION] Starting WebP compression. Original size: ${imageBytes.length} bytes',
-      );
+      // print(
+      //   '🔄 [COMPRESSION] Starting WebP compression. Original size: ${imageBytes.length} bytes',
+      // );
 
       final result = await FlutterImageCompress.compressWithList(
         imageBytes,
@@ -23,10 +23,10 @@ class ImageCompressionServiceImpl implements ImageCompressionService {
         format: CompressFormat.webp,
       );
 
-      print('✅ [COMPRESSION] Completed. New size: ${result.length} bytes');
+      // print('✅ [COMPRESSION] Completed. New size: ${result.length} bytes');
       return result;
     } catch (e) {
-      print('⚠️ [COMPRESSION] Failed: $e');
+      // print('⚠️ [COMPRESSION] Failed: $e');
       return imageBytes; // Return original if compression fails
     }
   }

@@ -3,6 +3,7 @@ import '../../data/models/work_reports_response.dart';
 
 abstract class WorkReportsRepository {
   Future<WorkReportsResponse> getWorkReports({
+    int? projectId,
     String? search,
     String? dateFrom,
     String? dateTo,

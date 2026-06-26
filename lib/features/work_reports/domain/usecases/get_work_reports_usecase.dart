@@ -7,6 +7,7 @@ class GetWorkReportsUseCase {
   GetWorkReportsUseCase(this.repository);
 
   Future<WorkReportsResponse> call({
+    int? projectId,
     String? search,
     String? dateFrom,
     String? dateTo,
@@ -16,6 +17,7 @@ class GetWorkReportsUseCase {
     int? page,
   }) async {
     return await repository.getWorkReports(
+      projectId: projectId,
       search: search,
       dateFrom: dateFrom,
       dateTo: dateTo,

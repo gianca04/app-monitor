@@ -38,6 +38,7 @@ class WorkReportsState {
   final bool isLoadingMore;
   final String? error;
   final String? search;
+  final int? projectId;
   final String? dateFrom;
   final String? dateTo;
   final String? sortBy;
@@ -53,6 +54,7 @@ class WorkReportsState {
     this.isLoadingMore = false,
     this.error,
     this.search,
+    this.projectId,
     this.dateFrom,
     this.dateTo,
     this.sortBy = 'report_date',
@@ -69,6 +71,7 @@ class WorkReportsState {
     bool? isLoadingMore,
     String? error,
     String? search,
+    int? projectId,
     String? dateFrom,
     String? dateTo,
     String? sortBy,
@@ -84,6 +87,7 @@ class WorkReportsState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: error ?? this.error,
       search: search ?? this.search,
+      projectId: projectId ?? this.projectId,
       dateFrom: dateFrom ?? this.dateFrom,
       dateTo: dateTo ?? this.dateTo,
       sortBy: sortBy ?? this.sortBy,
@@ -124,6 +128,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     }
     try {
       final response = await getWorkReportsUseCase(
+        projectId: state.projectId,
         search: state.search,
         dateFrom: state.dateFrom,
         dateTo: state.dateTo,
@@ -175,6 +180,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     state = state.copyWith(isLoadingMore: true, error: null);
     try {
       final response = await getWorkReportsUseCase(
+        projectId: state.projectId,
         search: state.search,
         dateFrom: state.dateFrom,
         dateTo: state.dateTo,
@@ -299,6 +305,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
 
   void setFilters({
     String? search,
+    int? projectId,
     String? dateFrom,
     String? dateTo,
     String? sortBy,
@@ -307,6 +314,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
   }) {
     state = state.copyWith(
       search: search,
+      projectId: projectId,
       dateFrom: dateFrom,
       dateTo: dateTo,
       sortBy: sortBy,

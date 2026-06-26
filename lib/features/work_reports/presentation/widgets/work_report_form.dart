@@ -15,6 +15,8 @@ import '../../../employees/data/models/quick_search_response.dart';
 import '../../../projects/presentation/widgets/quick_search_modal.dart'
     as projects_modal;
 import '../../../projects/data/models/quick_search_response.dart';
+import '../../../projects/data/models/project.dart' as proj;
+import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../settings/providers/connectivity_preferences_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'industrial_selector.dart';
@@ -34,8 +36,14 @@ const double kIndRadius = 4.0;
 class WorkReportForm extends ConsumerStatefulWidget {
   final WorkReport? report;
   final String? saveType;
+  final int? preselectedProjectId;
 
-  const WorkReportForm({super.key, this.report, this.saveType});
+  const WorkReportForm({
+    super.key,
+    this.report,
+    this.saveType,
+    this.preselectedProjectId,
+  });
 
   @override
   ConsumerState<WorkReportForm> createState() => _WorkReportFormState();
@@ -99,7 +107,7 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       text: widget.report?.employee?.id.toString() ?? '',
     );
     _projectIdController = TextEditingController(
-      text: widget.report?.project?.id.toString() ?? '',
+      text: widget.report?.project?.id.toString() ?? widget.preselectedProjectId?.toString() ?? '',
     );
 
     if (widget.report?.employee != null) {
@@ -115,6 +123,16 @@ class _WorkReportFormState extends ConsumerState<WorkReportForm> {
       _selectedProject = ProjectQuick(
         id: widget.report!.project!.id,
         name: widget.report!.project!.name,
+      );
+    } else if (widget.preselectedProjectId != null) {
+      final projectsState = ref.read(projectsProvider);
+      final matchingProject = projectsState.projects.firstWhere(
+        (p) => p.id == widget.preselectedProjectId,
+        orElse: () => proj.Project(id: widget.preselectedProjectId, name: 'Proyecto #${widget.preselectedProjectId}'),
+      );
+      _selectedProject = ProjectQuick(
+        id: matchingProject.id ?? widget.preselectedProjectId!,
+        name: matchingProject.name ?? 'Proyecto #${widget.preselectedProjectId}',
       );
     }
 

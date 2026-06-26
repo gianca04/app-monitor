@@ -141,8 +141,8 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
     _managerSignature = widget.report.managerSignature;
     _managerSignatureBytes = widget.report.managerSignature;
 
-    print('🔍 [INIT_STATE] Supervisor Signature received: ${_supervisorSignature != null ? '${_supervisorSignature!.substring(0, min(50, _supervisorSignature!.length))}...' : 'null'}');
-    print('🔍 [INIT_STATE] Manager Signature received: ${_managerSignature != null ? '${_managerSignature!.substring(0, min(50, _managerSignature!.length))}...' : 'null'}');
+    // print('🔍 [INIT_STATE] Supervisor Signature received: ${_supervisorSignature != null ? '${_supervisorSignature!.substring(0, min(50, _supervisorSignature!.length))}...' : 'null'}');
+    // print('🔍 [INIT_STATE] Manager Signature received: ${_managerSignature != null ? '${_managerSignature!.substring(0, min(50, _managerSignature!.length))}...' : 'null'}');
   }
 
   int min(int a, int b) => a < b ? a : b;
@@ -1517,7 +1517,13 @@ class _WorkReportEditFormState extends ConsumerState<WorkReportEditForm> {
         ref.invalidate(workReportsProvider);
 
         if (mounted) {
-          context.go('/work-reports/${widget.report.id}');
+          // Navigate back to the project's work reports list screen
+          final projectId = _selectedProject?.id ?? widget.report.project?.id;
+          if (projectId != null) {
+            context.go('/work-reports/project/$projectId');
+          } else {
+            context.go('/work-reports/${widget.report.id}');
+          }
         }
       } on DioException catch (e) {
         String errorMessage = 'Error updating work report';

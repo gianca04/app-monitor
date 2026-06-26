@@ -85,8 +85,14 @@ class WorkReportViewScreen extends ConsumerWidget {
     }
   }
 
-  void _goBack(BuildContext context) {
-    context.go('/work-reports');
+  void _goBack(BuildContext context, int? projectId) {
+    if (context.canPop()) {
+      context.pop();
+    } else if (projectId != null) {
+      context.go('/work-reports/project/$projectId');
+    } else {
+      context.go('/work-reports');
+    }
   }
 
   Future<void> _confirmDelete(
@@ -166,7 +172,13 @@ class WorkReportViewScreen extends ConsumerWidget {
           },
         };
         // Regresamos el resultado al ir a la lista
-        context.go('/work-reports', extra: result);
+        final currentReportState = ref.read(workReportProvider(id));
+        final projectId = currentReportState.report?.project?.id;
+        if (projectId != null) {
+          context.go('/work-reports/project/$projectId', extra: result);
+        } else {
+          context.go('/work-reports', extra: result);
+        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -184,11 +196,13 @@ class WorkReportViewScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final projectId = state.report?.project?.id;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        _goBack(context);
+        _goBack(context, projectId);
       },
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
@@ -197,7 +211,7 @@ class WorkReportViewScreen extends ConsumerWidget {
           elevation: 0, // REGLA: Sombras eliminadas
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _goBack(context),
+            onPressed: () => _goBack(context, projectId),
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
@@ -245,7 +259,7 @@ class WorkReportViewScreen extends ConsumerWidget {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => context.go('/work-reports/$id/edit'),
+                    onTap: () => context.push('/work-reports/$id/edit'),
                     borderRadius: BorderRadius.circular(4),
                     child: Container(
                       padding: const EdgeInsets.symmetric(

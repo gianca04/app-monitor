@@ -8,6 +8,9 @@ class Project {
   final double? longitude;
   final int? quoteId;
   final int? subClientId;
+  final String? clientName;
+  final String? subClientName;
+  final int? reportsCount;
 
   Project({
     this.id,
@@ -19,6 +22,9 @@ class Project {
     this.longitude,
     this.quoteId,
     this.subClientId,
+    this.clientName,
+    this.subClientName,
+    this.reportsCount,
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
@@ -31,7 +37,10 @@ class Project {
       latitude: json['latitude'] as double?,
       longitude: json['longitude'] as double?,
       quoteId: json['quote_id'] as int?,
-      subClientId: json['sub_client_id'] as int?,
+      subClientId: json['sub_client_id'] as int? ?? (json['sub_client'] != null ? json['sub_client']['id'] as int? : null),
+      clientName: json['client'] != null ? json['client']['business_name'] as String? : null,
+      subClientName: json['sub_client'] != null ? json['sub_client']['name'] as String? : null,
+      reportsCount: json['reports_count'] as int?,
     );
   }
 
@@ -46,6 +55,9 @@ class Project {
       'longitude': longitude,
       'quote_id': quoteId,
       'sub_client_id': subClientId,
+      'client_name': clientName,
+      'sub_client_name': subClientName,
+      'reports_count': reportsCount,
     };
   }
 
@@ -59,6 +71,9 @@ class Project {
     double? longitude,
     int? quoteId,
     int? subClientId,
+    String? clientName,
+    String? subClientName,
+    int? reportsCount,
   }) {
     return Project(
       id: id ?? this.id,
@@ -70,6 +85,9 @@ class Project {
       longitude: longitude ?? this.longitude,
       quoteId: quoteId ?? this.quoteId,
       subClientId: subClientId ?? this.subClientId,
+      clientName: clientName ?? this.clientName,
+      subClientName: subClientName ?? this.subClientName,
+      reportsCount: reportsCount ?? this.reportsCount,
     );
   }
 }

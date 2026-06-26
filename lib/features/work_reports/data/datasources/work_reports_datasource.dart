@@ -7,6 +7,7 @@ import 'package:monitor/core/constants/api_constants.dart';
 
 abstract class WorkReportsDataSource {
   Future<WorkReportsResponse> getWorkReports({
+    int? projectId,
     String? search,
     String? dateFrom,
     String? dateTo,
@@ -69,7 +70,7 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
       final original = data;
       final replaced = data.replaceAll('127.0.0.1', '10.0.2.2');
       if (original != replaced) {
-        print('🔄 [URL_REPLACE] Replaced: $original -> $replaced');
+        // print('🔄 [URL_REPLACE] Replaced: $original -> $replaced');
       }
       return replaced;
     } else if (data is Map) {
@@ -85,6 +86,7 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
 
   @override
   Future<WorkReportsResponse> getWorkReports({
+    int? projectId,
     String? search,
     String? dateFrom,
     String? dateTo,
@@ -102,8 +104,13 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
     if (perPage != null) queryParams['per_page'] = perPage;
     if (page != null) queryParams['page'] = page;
 
+    // Use specific endpoint for project if provided, otherwise the general one
+    final endpoint = projectId != null
+        ? '${ApiConstants.workReportsEndpoint}/project/$projectId'
+        : ApiConstants.workReportsEndpoint;
+
     final response = await dio.get(
-      '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}',
+      '${ApiConstants.baseUrl}$endpoint',
       queryParameters: queryParams,
     );
 
@@ -139,7 +146,7 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
     List<Map<String, dynamic>> photos,
   ) async {
     try {
-      print('🔍 [CREATE] Starting createWorkReport for project: $projectId, employee: $employeeId');
+      // print('🔍 [CREATE] Starting createWorkReport for project: $projectId, employee: $employeeId');
 
       final Map<String, dynamic> mapData = {
         'project_id': projectId.toString(),
@@ -159,18 +166,18 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
         // Only send if it's a new base64 signature, not an existing URL
         if (!supervisorSignature.startsWith('http://') && !supervisorSignature.startsWith('https://')) {
           mapData['supervisor_signature'] = supervisorSignature;
-          print('🔍 [CREATE] Added new supervisor_signature as base64 string');
+          // print('🔍 [CREATE] Added new supervisor_signature as base64 string');
         } else {
-          print('🔍 [CREATE] Supervisor signature is existing URL, not sending');
+          // print('🔍 [CREATE] Supervisor signature is existing URL, not sending');
         }
       }
       if (managerSignature != null) {
         // Only send if it's a new base64 signature, not an existing URL
         if (!managerSignature.startsWith('http://') && !managerSignature.startsWith('https://')) {
           mapData['manager_signature'] = managerSignature;
-          print('🔍 [CREATE] Added new manager_signature as base64 string');
+          // print('🔍 [CREATE] Added new manager_signature as base64 string');
         } else {
-          print('🔍 [CREATE] Manager signature is existing URL, not sending');
+          // print('🔍 [CREATE] Manager signature is existing URL, not sending');
         }
       }
 
@@ -202,27 +209,27 @@ class WorkReportsDataSourceImpl implements WorkReportsDataSource {
         }
       }
 
-      print('🔍 [CREATE] FormData files count: ${formData.files.length}');
-      print('📡 [CREATE] Sending POST to: ${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}');
+      // print('🔍 [CREATE] FormData files count: ${formData.files.length}');
+      // print('📡 [CREATE] Sending POST to: ${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}');
 
       final response = await dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.workReportsEndpoint}',
         data: formData,
       );
 
-      print('✅ [CREATE] Response status: ${response.statusCode}');
+      // print('✅ [CREATE] Response status: ${response.statusCode}');
 
       final replacedData = _replaceUrls(response.data);
       return WorkReport.fromJson(replacedData['data']);
     } on DioException catch (e) {
-      print("❌ [CREATE] ERROR DIO: ${e.message}");
+      // print("❌ [CREATE] ERROR DIO: ${e.message}");
       if (e.response != null) {
-        print("❌ [CREATE] Response status: ${e.response?.statusCode}");
-        print("❌ [CREATE] Response data: ${e.response?.data}");
+        // print("❌ [CREATE] Response status: ${e.response?.statusCode}");
+        // print("❌ [CREATE] Response data: ${e.response?.data}");
       }
       rethrow;
     } catch (e) {
-      print("❌ [CREATE] ERROR: $e");
+      // print("❌ [CREATE] ERROR: $e");
       rethrow;
     }
   }

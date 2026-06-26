@@ -5,7 +5,8 @@ import '../../../settings/providers/connectivity_provider.dart';
 import '../../../settings/services/connectivity_service.dart';
 
 class ReportsFabMenu extends ConsumerStatefulWidget {
-  const ReportsFabMenu({super.key});
+  final int? projectId;
+  const ReportsFabMenu({super.key, this.projectId});
 
   @override
   ConsumerState<ReportsFabMenu> createState() => _ReportsFabMenuState();
@@ -41,9 +42,13 @@ class _ReportsFabMenuState extends ConsumerState<ReportsFabMenu> {
           const SizedBox(height: 12),
           _FabOption(
             icon: Icons.cloud_upload_outlined,
-            label: 'NUBE',
+            label: 'SUBIR REPORTE',
             enabled: isOnline,
-            onTap: isOnline ? () => context.go('/work-reports/create?type=cloud') : null,
+            onTap: isOnline
+                ? () => context.go(
+                    '/work-reports/create?type=cloud${widget.projectId != null ? '&projectId=${widget.projectId}' : ''}',
+                  )
+                : null,
           ),
           const SizedBox(height: 12),
         ],
@@ -79,16 +84,24 @@ class _FabOption extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: enabled ? theme.colorScheme.surface : theme.colorScheme.surface.withOpacity(0.5),
+            color: enabled
+                ? theme.colorScheme.surface
+                : theme.colorScheme.surface.withOpacity(0.5),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: enabled ? theme.colorScheme.outline : theme.colorScheme.outline.withOpacity(0.5)),
+            border: Border.all(
+              color: enabled
+                  ? theme.colorScheme.outline
+                  : theme.colorScheme.outline.withOpacity(0.5),
+            ),
           ),
           child: Text(
             label,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 12,
-              color: enabled ? null : theme.colorScheme.onSurface.withOpacity(0.5),
+              color: enabled
+                  ? null
+                  : theme.colorScheme.onSurface.withOpacity(0.5),
             ),
           ),
         ),
@@ -97,18 +110,19 @@ class _FabOption extends StatelessWidget {
           mini: true,
           heroTag: label,
           onPressed: enabled ? onTap : null,
-          backgroundColor: enabled ? null : theme.colorScheme.surface.withOpacity(0.5),
-          foregroundColor: enabled ? null : theme.colorScheme.onSurface.withOpacity(0.5),
+          backgroundColor: enabled
+              ? null
+              : theme.colorScheme.surface.withOpacity(0.5),
+          foregroundColor: enabled
+              ? null
+              : theme.colorScheme.onSurface.withOpacity(0.5),
           child: Icon(icon),
         ),
       ],
     );
 
     if (!enabled) {
-      return Tooltip(
-        message: "Requiere conexión a internet",
-        child: button,
-      );
+      return Tooltip(message: "Requiere conexión a internet", child: button);
     }
 
     return button;
