@@ -1,12 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-// Asegúrate de que las rutas a tus archivos sean correctas
-import '../../features/auth/presentation/providers/auth_provider.dart';
-import '../../features/settings/providers/connectivity_preferences_provider.dart';
-import '../../features/settings/providers/connectivity_provider.dart';
-import '../../features/settings/presentation/widgets/connectivity_indicator.dart';
 import '../theme_config.dart';
 
 class AppLayout extends StatefulWidget {
@@ -64,95 +57,8 @@ class _AppLayoutState extends State<AppLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentPath = _routerDelegate.currentConfiguration.uri.path;
-    final bool showHeader = !currentPath.startsWith('/work-reports');
-
     return Scaffold(
       backgroundColor: _kBgColor,
-      appBar: showHeader
-          ? AppBar(
-              backgroundColor: _kBarColor, // Fondo sólido técnico
-              elevation: 0,
-              titleSpacing: 0,
-              // Borde inferior en el AppBar para separar del contenido
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(1),
-                child: Container(color: AppTheme.border.withOpacity(0.3), height: 1),
-              ),
-              title: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: SvgPicture.asset(
-                  'assets/images/svg/logo.svg',
-                  height: 24,
-                  width: 24,
-                ),
-              ),
-              actions: [
-                Consumer(
-                  builder: (context, ref, child) {
-                    final preferences = ref.watch(
-                      connectivityPreferencesNotifierProvider,
-                    );
-                    final connectivityAsync = ref.watch(connectionStatusProvider);
-
-                    // Lógica de visualización mantenida
-                    final bool isEnabled = preferences.isEnabled;
-                    final int displayModeIndex = preferences.displayMode;
-
-                    ConnectivityDisplayMode mode;
-                    switch (displayModeIndex) {
-                      case 0:
-                        mode = ConnectivityDisplayMode.iconOnly;
-                        break;
-                      case 1:
-                        mode = ConnectivityDisplayMode.iconWithText;
-                        break;
-                      case 2:
-                        mode = ConnectivityDisplayMode.dotOnly;
-                        break;
-                      case 3:
-                        mode = ConnectivityDisplayMode.badge;
-                        break;
-                      default:
-                        mode = ConnectivityDisplayMode.iconOnly;
-                    }
-
-                    if (!isEnabled) {
-                      return const Padding(
-                        padding: EdgeInsets.only(right: 16.0),
-                        child: _ProfileIcon(iconSize: 20),
-                      );
-                    }
-
-                    return connectivityAsync.when(
-                      data: (status) => Padding(
-                        padding: const EdgeInsets.only(right: 16.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ConnectivityIndicator(
-                              mode: mode,
-                              showWhenOnline: preferences.showWhenOnline,
-                            ),
-                            const SizedBox(width: 16),
-                            const _ProfileIcon(iconSize: 20),
-                          ],
-                        ),
-                      ),
-                      loading: () => const Padding(
-                        padding: EdgeInsets.only(right: 16.0),
-                        child: _ProfileIcon(iconSize: 20),
-                      ),
-                      error: (_, __) => const Padding(
-                        padding: EdgeInsets.only(right: 16.0),
-                        child: _ProfileIcon(iconSize: 20),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            )
-          : null,
       body: widget.child,
 
       // Reemplazo de SalomonBottomBar por implementación Industrial
@@ -162,7 +68,7 @@ class _AppLayoutState extends State<AppLayout> {
         backgroundColor: _kBarColor,
         borderColor: _kBorderColor,
         items: [
-          _IndustrialBarItem(icon: Icons.grid_view, label: "INICIO"),
+          _IndustrialBarItem(icon: Icons.camera_alt, label: "CÁMARA"),
           _IndustrialBarItem(
             icon: Icons.table_chart_outlined,
             label: "REPORTES",
@@ -189,7 +95,6 @@ class _IndustrialBottomBar extends StatelessWidget {
   final Color borderColor;
 
   const _IndustrialBottomBar({
-    super.key,
     required this.currentIndex,
     required this.onTap,
     required this.items,
@@ -245,7 +150,9 @@ class _IndustrialBottomBar extends StatelessWidget {
                       Icon(
                         item.icon,
                         size: 20,
-                        color: isSelected ? activeColor : AppTheme.textSecondary,
+                        color: isSelected
+                            ? activeColor
+                            : AppTheme.textSecondary,
                       ),
                       Flexible(
                         child: ClipRect(
@@ -292,129 +199,4 @@ class _IndustrialBarItem {
   final IconData icon;
   final String label;
   _IndustrialBarItem({required this.icon, required this.label});
-}
-
-// -----------------------------------------------------------------------------
-// PROFILE ICON (Tu código industrial integrado)
-// -----------------------------------------------------------------------------
-
-enum Menu { itemOne, itemTwo, itemThree }
-
-class _ProfileIcon extends ConsumerWidget {
-  final double iconSize;
-
-  const _ProfileIcon({this.iconSize = 20});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Colores del sistema usando AppTheme
-    final borderColor = AppTheme.border;
-    final menuBgColor = AppTheme.surface;
-    final textColor = AppTheme.textPrimary;
-
-    return Theme(
-      data: Theme.of(context).copyWith(
-        popupMenuTheme: PopupMenuThemeData(
-          color: menuBgColor,
-          textStyle: TextStyle(color: textColor),
-          enableFeedback: true,
-          // Eliminamos shape por defecto del theme para controlarlo abajo
-        ),
-      ),
-      child: PopupMenuButton<Menu>(
-        // TRIGGER
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            border: Border.all(color: borderColor),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Icon(
-            Icons.person_outline,
-            size: iconSize,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-
-        // MENÚ FLOTANTE
-        elevation: 0,
-        offset: const Offset(0, 45),
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: borderColor, width: 1),
-          borderRadius: BorderRadius.circular(4),
-        ),
-
-        // LÓGICA
-        onSelected: (Menu item) {
-          switch (item) {
-            case Menu.itemOne:
-              GoRouter.of(context).go('/profile');
-              break;
-            case Menu.itemTwo:
-              GoRouter.of(context).go('/settings');
-              break;
-            case Menu.itemThree:
-              ref.read(authProvider.notifier).logout();
-              break;
-          }
-        },
-
-        // ITEMS
-        itemBuilder: (BuildContext context) => <PopupMenuEntry<Menu>>[
-          _buildMenuItem(
-            value: Menu.itemOne,
-            text: 'PERFIL',
-            icon: Icons.badge_outlined,
-          ),
-          const PopupMenuDivider(height: 1),
-          _buildMenuItem(
-            value: Menu.itemTwo,
-            text: 'CONFIGURACIÓN',
-            icon: Icons.settings_outlined,
-          ),
-          const PopupMenuDivider(height: 1),
-          _buildMenuItem(
-            value: Menu.itemThree,
-            text: 'CERRAR SESIÓN',
-            icon: Icons.power_settings_new,
-            isDestructive: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  PopupMenuItem<Menu> _buildMenuItem({
-    required Menu value,
-    required String text,
-    required IconData icon,
-    bool isDestructive = false,
-  }) {
-    final color = isDestructive ? AppTheme.error : AppTheme.textPrimary;
-
-    return PopupMenuItem<Menu>(
-      value: value,
-      height: 40,
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 18,
-            color: color.withOpacity(isDestructive ? 1 : 0.7),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

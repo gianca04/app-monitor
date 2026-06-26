@@ -8,7 +8,9 @@ import 'package:monitor/features/settings/providers/connectivity_preferences_pro
 import 'package:monitor/features/settings/domain/entities/connectivity_preferences.dart';
 import 'package:monitor/core/theme_config.dart';
 import 'package:monitor/core/widgets/industrial_tile.dart';
-
+import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:monitor/features/camera/presentation/screens/watermark_editor_screen.dart';
 // Constantes del sistema de diseño Industrial
 const kIndustrialBg = AppTheme.background;
 const kIndustrialSurface = AppTheme.surface;
@@ -73,6 +75,8 @@ class SettingsScreen extends ConsumerWidget {
           // Sección de General
           _buildSectionHeader(context, 'SISTEMA'),
           const SizedBox(height: 12),
+          const _StorageSettingsSection(),
+          const SizedBox(height: 32),
 
           // Sección de Información
           _buildSectionHeader(context, 'ACERCA DE'),
@@ -586,6 +590,134 @@ class SettingsScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _StorageSettingsSection extends StatefulWidget {
+  const _StorageSettingsSection({Key? key}) : super(key: key);
+
+  @override
+  State<_StorageSettingsSection> createState() => _StorageSettingsSectionState();
+}
+
+class _StorageSettingsSectionState extends State<_StorageSettingsSection> {
+  String _photosPath = 'Por defecto';
+  String _pdfPath = 'Por defecto';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPaths();
+  }
+
+  Future<void> _loadPaths() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _photosPath = prefs.getString('photos_path') ?? 'Por defecto';
+      _pdfPath = prefs.getString('pdf_path') ?? 'Por defecto';
+    });
+  }
+
+  Future<void> _pickDirectory(String key) async {
+    String? selectedDirectory = await FilePicker.getDirectoryPath();
+    if (selectedDirectory != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, selectedDirectory);
+      _loadPaths();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kIndustrialSurface,
+        borderRadius: BorderRadius.circular(kIndustrialRadius),
+        border: Border.all(color: kIndustrialBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+        _buildIndustrialTileLocal(
+          icon: Icons.folder_outlined,
+          title: 'Ruta de Fotografías',
+          subtitle: _photosPath,
+          trailing: const Icon(Icons.edit, color: AppTheme.primaryAccent, size: 20),
+          onTap: () => _pickDirectory('photos_path'),
+        ),
+        const Divider(height: 1, color: kIndustrialBorder),
+        _buildIndustrialTileLocal(
+          icon: Icons.picture_as_pdf_outlined,
+          title: 'Ruta de Reportes PDF',
+          subtitle: _pdfPath,
+          trailing: const Icon(Icons.edit, color: AppTheme.primaryAccent, size: 20),
+          onTap: () => _pickDirectory('pdf_path'),
+        ),
+        const Divider(height: 1, color: kIndustrialBorder),
+        _buildIndustrialTileLocal(
+          icon: Icons.branding_watermark_outlined,
+          title: 'Editor de Marca de Agua',
+          subtitle: 'Personalizar posición y tamaño',
+          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WatermarkEditorScreen()),
+            );
+          },
+        ),
+      ],
+     ),
+    );
+  }
+
+  Widget _buildIndustrialTileLocal({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.textSecondary, size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) trailing,
+          ],
+        ),
+      ),
     );
   }
 }
