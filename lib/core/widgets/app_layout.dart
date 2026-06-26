@@ -64,97 +64,95 @@ class _AppLayoutState extends State<AppLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final location = _routerDelegate.currentConfiguration.uri.path;
-    final shouldHideLayout = location.startsWith('/work-reports');
-
-    if (shouldHideLayout) {
-      return widget.child;
-    }
+    final String currentPath = _routerDelegate.currentConfiguration.uri.path;
+    final bool showHeader = !currentPath.startsWith('/work-reports');
 
     return Scaffold(
       backgroundColor: _kBgColor,
-      appBar: AppBar(
-        backgroundColor: _kBarColor, // Fondo sólido técnico
-        elevation: 0,
-        titleSpacing: 0,
-        // Borde inferior en el AppBar para separar del contenido
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: AppTheme.border.withOpacity(0.3), height: 1),
-        ),
-        title: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: SvgPicture.asset(
-            'assets/images/svg/logo.svg',
-            height: 24,
-            width: 24,
-          ),
-        ),
-        actions: [
-          Consumer(
-            builder: (context, ref, child) {
-              final preferences = ref.watch(
-                connectivityPreferencesNotifierProvider,
-              );
-              final connectivityAsync = ref.watch(connectionStatusProvider);
+      appBar: showHeader
+          ? AppBar(
+              backgroundColor: _kBarColor, // Fondo sólido técnico
+              elevation: 0,
+              titleSpacing: 0,
+              // Borde inferior en el AppBar para separar del contenido
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(color: AppTheme.border.withOpacity(0.3), height: 1),
+              ),
+              title: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: SvgPicture.asset(
+                  'assets/images/svg/logo.svg',
+                  height: 24,
+                  width: 24,
+                ),
+              ),
+              actions: [
+                Consumer(
+                  builder: (context, ref, child) {
+                    final preferences = ref.watch(
+                      connectivityPreferencesNotifierProvider,
+                    );
+                    final connectivityAsync = ref.watch(connectionStatusProvider);
 
-              // Lógica de visualización mantenida
-              final bool isEnabled = preferences.isEnabled;
-              final int displayModeIndex = preferences.displayMode;
+                    // Lógica de visualización mantenida
+                    final bool isEnabled = preferences.isEnabled;
+                    final int displayModeIndex = preferences.displayMode;
 
-              ConnectivityDisplayMode mode;
-              switch (displayModeIndex) {
-                case 0:
-                  mode = ConnectivityDisplayMode.iconOnly;
-                  break;
-                case 1:
-                  mode = ConnectivityDisplayMode.iconWithText;
-                  break;
-                case 2:
-                  mode = ConnectivityDisplayMode.dotOnly;
-                  break;
-                case 3:
-                  mode = ConnectivityDisplayMode.badge;
-                  break;
-                default:
-                  mode = ConnectivityDisplayMode.iconOnly;
-              }
+                    ConnectivityDisplayMode mode;
+                    switch (displayModeIndex) {
+                      case 0:
+                        mode = ConnectivityDisplayMode.iconOnly;
+                        break;
+                      case 1:
+                        mode = ConnectivityDisplayMode.iconWithText;
+                        break;
+                      case 2:
+                        mode = ConnectivityDisplayMode.dotOnly;
+                        break;
+                      case 3:
+                        mode = ConnectivityDisplayMode.badge;
+                        break;
+                      default:
+                        mode = ConnectivityDisplayMode.iconOnly;
+                    }
 
-              if (!isEnabled) {
-                return const Padding(
-                  padding: EdgeInsets.only(right: 16.0),
-                  child: _ProfileIcon(iconSize: 20),
-                );
-              }
+                    if (!isEnabled) {
+                      return const Padding(
+                        padding: EdgeInsets.only(right: 16.0),
+                        child: _ProfileIcon(iconSize: 20),
+                      );
+                    }
 
-              return connectivityAsync.when(
-                data: (status) => Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ConnectivityIndicator(
-                        mode: mode,
-                        showWhenOnline: preferences.showWhenOnline,
+                    return connectivityAsync.when(
+                      data: (status) => Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ConnectivityIndicator(
+                              mode: mode,
+                              showWhenOnline: preferences.showWhenOnline,
+                            ),
+                            const SizedBox(width: 16),
+                            const _ProfileIcon(iconSize: 20),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 16),
-                      const _ProfileIcon(iconSize: 20),
-                    ],
-                  ),
+                      loading: () => const Padding(
+                        padding: EdgeInsets.only(right: 16.0),
+                        child: _ProfileIcon(iconSize: 20),
+                      ),
+                      error: (_, __) => const Padding(
+                        padding: EdgeInsets.only(right: 16.0),
+                        child: _ProfileIcon(iconSize: 20),
+                      ),
+                    );
+                  },
                 ),
-                loading: () => const Padding(
-                  padding: EdgeInsets.only(right: 16.0),
-                  child: _ProfileIcon(iconSize: 20),
-                ),
-                error: (_, __) => const Padding(
-                  padding: EdgeInsets.only(right: 16.0),
-                  child: _ProfileIcon(iconSize: 20),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+              ],
+            )
+          : null,
       body: widget.child,
 
       // Reemplazo de SalomonBottomBar por implementación Industrial
