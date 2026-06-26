@@ -371,7 +371,7 @@ class _SignatureSheetContentState extends State<_SignatureSheetContent> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _points.isEmpty ? null : _saveSignature,
+                    onPressed: _saveSignature,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryAccent,
                       foregroundColor: Colors.black,
@@ -401,7 +401,10 @@ class _SignatureSheetContentState extends State<_SignatureSheetContent> {
   }
 
   Future<void> _saveSignature() async {
-    if (_points.isEmpty) return;
+    if (_points.isEmpty) {
+      Navigator.of(context).pop('');
+      return;
+    }
 
     final navigator = Navigator.of(context);
     final recorder = ui.PictureRecorder();
