@@ -52,8 +52,8 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
     if (widget.extra != null && widget.extra!['success'] == true) {
       final message = widget.extra!['message'] ?? 'Operación exitosa';
       IndustrialFeedback.showSuccess(
-        message: message.toUpperCase(),
-        onDismiss: () {},
+        context,
+        message: message,
       );
       // Force refresh if needed, although loadWorkReports is called in init
       ref.read(workReportsProvider.notifier).loadWorkReports();

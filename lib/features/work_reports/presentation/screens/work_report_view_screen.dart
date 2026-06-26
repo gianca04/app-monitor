@@ -43,52 +43,18 @@ class WorkReportViewScreen extends ConsumerWidget {
     
     final filename = 'reporte_trabajo_$id.pdf';
     
-    // Mostrar notificación de inicio de descarga
+    // Mostrar notificación de inicio de descarga en la barra de estado
     await NotificationService().showDownloadStartNotification(filename: filename);
 
-    bool dialogOpened = false;
-    bool downloadFinished = false;
-    BuildContext? dialogContext;
-
-    // Mostrar diálogo de progreso
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogCtx) {
-        dialogContext = dialogCtx;
-        dialogOpened = true;
-        if (downloadFinished) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (dialogContext != null && dialogContext!.mounted) {
-              Navigator.of(dialogContext!).pop();
-            }
-          });
-        }
-        return AlertDialog(
-          backgroundColor: Theme.of(dialogCtx).cardTheme.color,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                color: Theme.of(dialogCtx).colorScheme.primary,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Descargando PDF...',
-                style: TextStyle(color: Theme.of(dialogCtx).colorScheme.onSurface),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    if (context.mounted) {
+      IndustrialFeedback.showInfo(
+        context,
+        message: 'Descargando PDF...',
+        duration: const Duration(seconds: 2),
+      );
+    }
 
     final file = await pdfNotifier.downloadPdf(id);
-    downloadFinished = true;
-
-    if (dialogOpened && dialogContext != null && dialogContext!.mounted) {
-      Navigator.of(dialogContext!).pop(); // Cerrar diálogo de progreso usando su propio contexto
-    }
 
     if (file != null && context.mounted) {
       // Mostrar notificación de éxito en la barra de estado
@@ -97,44 +63,13 @@ class WorkReportViewScreen extends ConsumerWidget {
         filePath: file.path,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: AppTheme.inputFill,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.kRadius),
-            side: const BorderSide(color: AppTheme.border),
-          ),
-          content: Row(
-            children: [
-              const Icon(
-                Icons.check_circle_outline,
-                color: AppTheme.success,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'REPORTE PDF DESCARGADO'.toUpperCase(),
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 5),
-          action: SnackBarAction(
-            label: 'ABRIR',
-            textColor: AppTheme.primaryAccent,
-            onPressed: () async {
-              await OpenFile.open(file.path);
-            },
-          ),
-        ),
+      IndustrialFeedback.showSuccess(
+        context,
+        message: 'REPORTE PDF DESCARGADO',
+        actionLabel: 'ABRIR',
+        onAction: () async {
+          await OpenFile.open(file.path);
+        },
       );
     } else {
       // Cancelar la notificación de descarga activa en caso de error
@@ -142,37 +77,9 @@ class WorkReportViewScreen extends ConsumerWidget {
       
       if (context.mounted) {
         final pdfState = ref.read(workReportPdfProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppTheme.inputFill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.kRadius),
-              side: const BorderSide(color: AppTheme.error),
-            ),
-            content: Row(
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: AppTheme.error,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    (pdfState.error ?? 'ERROR AL DESCARGAR EL PDF').toUpperCase(),
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            duration: const Duration(seconds: 5),
-          ),
+        IndustrialFeedback.showError(
+          context,
+          message: pdfState.error ?? 'ERROR AL DESCARGAR EL PDF',
         );
       }
     }
@@ -264,8 +171,8 @@ class WorkReportViewScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         IndustrialFeedback.showError(
+          context,
           message: 'ERROR AL ELIMINAR: $e',
-          onDismiss: () {},
         );
       }
     }

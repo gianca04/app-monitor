@@ -41,12 +41,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.response != null && previous?.response == null) {
         IndustrialFeedback.showSuccess(
+          context,
           message: 'LOGIN EXITOSO: CREDENCIALES VERIFICADAS',
-          onDismiss: () {},
         );
 
         // 3. Navegación
         context.go('/home');
+      }
+
+      if (next.error != null && next.error != previous?.error) {
+        IndustrialFeedback.showError(
+          context,
+          message: next.error!,
+        );
       }
     });
 
@@ -357,87 +364,6 @@ class _SignInFormState extends State<_SignInForm> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                 ),
-
-                if (widget.error != null) ...[
-                  const SizedBox(height: 24),
-
-                  Container(
-                    // ELIMINAMOS padding general para controlar mejor el header vs contenido
-                    clipBehavior: Clip.antiAlias, // Asegura bordes duros
-                    decoration: BoxDecoration(
-                      color: AppTheme.error.withOpacity(0.05),
-                      // Borde completo, no solo a la izquierda, para dar sensación de "caja" o "consola"
-                      border: Border.all(
-                        color: AppTheme.error.withOpacity(0.5),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // 1. HEADER INDUSTRIAL (Tipo etiqueta de advertencia)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                AppTheme.error, // Fondo sólido para el header
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons
-                                    .warning_amber_sharp, // Usamos la versión SHARP (puntiaguda)
-                                color: Colors
-                                    .white, // Contraste máximo sobre el rojo/error
-                                size: 14,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "ERROR", // Texto decorativo técnico
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontFamily:
-                                      'monospace', // Clave para el look industrial
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // 2. CUERPO DEL MENSAJE
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // El mensaje de error real
-                              Expanded(
-                                child: Text(
-                                  widget.error!
-                                      .toUpperCase(), // Mayúsculas para más impacto
-                                  style: TextStyle(
-                                    color: AppTheme.error,
-                                    fontFamily: 'monospace', // Look terminal
-                                    fontSize: 12,
-                                    height: 1.4,
-                                    letterSpacing: 0.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
