@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart' as fp;
 import '../../../../core/theme_config.dart';
 import '../../../../features/photos/presentation/widgets/image_viewer.dart';
 import '../../../../features/photos/presentation/widgets/image_preview_modal.dart';
 import '../../../../core/widgets/modern_bottom_modal.dart';
+import '../../../../features/camera/application/services/location_service.dart';
 import '../../data/models/work_report.dart';
 
 // Constantes de diseño (reutilizadas para consistencia)
@@ -369,7 +373,9 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
           child: Text(
             description.isEmpty ? 'Sin descripción' : description,
             style: TextStyle(
-              color: description.isEmpty ? AppTheme.textSecondary.withOpacity(0.6) : AppTheme.textPrimary,
+              color: description.isEmpty
+                  ? AppTheme.textSecondary.withOpacity(0.6)
+                  : AppTheme.textPrimary,
               fontSize: 12,
             ),
             maxLines: 3,
@@ -384,7 +390,11 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.add_a_photo_outlined, color: AppTheme.textSecondary, size: 32),
+        const Icon(
+          Icons.add_a_photo_outlined,
+          color: AppTheme.textSecondary,
+          size: 32,
+        ),
         const SizedBox(height: 8),
         const Text(
           'Sin Evidencia',
@@ -405,7 +415,11 @@ class _IndustrialPhotoEntryState extends State<IndustrialPhotoEntry> {
                 ),
                 child: const Text(
                   'SELECCIONAR',
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -535,8 +549,8 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
 
   Future<void> _pickImage() async {
     final theme = Theme.of(context);
-    // Show Sheet for Camera/Gallery
-    final source = await showModalBottomSheet<ImageSource>(
+    // Show Sheet for all Image options
+    final source = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -546,20 +560,42 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(Icons.camera_alt, color: theme.colorScheme.primary),
+              leading: Icon(Icons.camera, color: theme.colorScheme.primary),
               title: Text(
-                'Tomar Foto',
+                'Cámara Monitor',
                 style: TextStyle(color: theme.colorScheme.onSurface),
               ),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              onTap: () => Navigator.pop(ctx, 'custom_camera'),
             ),
             ListTile(
-              leading: Icon(Icons.photo_library, color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.camera_alt_outlined,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(
+                'Cámara Nativa',
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+              onTap: () => Navigator.pop(ctx, 'native_camera'),
+            ),
+            ListTile(
+              leading: Icon(Icons.folder, color: theme.colorScheme.primary),
+              title: Text(
+                'Carpeta Local',
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+              onTap: () => Navigator.pop(ctx, 'local_folder'),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.photo_library,
+                color: theme.colorScheme.primary,
+              ),
               title: Text(
                 'Galería',
                 style: TextStyle(color: theme.colorScheme.onSurface),
               ),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
           ],
         ),
@@ -567,14 +603,48 @@ class _PhotoEditModalContentState extends State<_PhotoEditModalContent> {
     );
 
     if (source != null) {
-      final picker = ImagePicker();
-      final picked = await picker.pickImage(source: source);
-      if (picked != null) {
-        final bytes = await picked.readAsBytes();
-        setState(() {
-          _currentFile = picked;
-          _currentBytes = bytes;
-        });
+      if (source == 'custom_camera') {
+        // Navigate to Custom Camera
+        final result = await context.push<String>('/camera');
+        if (result != null && result.isNotEmpty) {
+          final file = File(result);
+          final bytes = await file.readAsBytes();
+          setState(() {
+            _currentFile = XFile(result);
+            _currentBytes = bytes;
+          });
+        }
+      } else if (source == 'local_folder') {
+        // FilePicker plugin for files
+        final result = await fp.FilePicker.pickFiles(type: fp.FileType.image);
+        if (result != null && result.files.single.path != null) {
+          final file = File(result.files.single.path!);
+          final bytes = await file.readAsBytes();
+          setState(() {
+            _currentFile = XFile(file.path);
+            _currentBytes = bytes;
+          });
+        }
+      } else {
+        // Native camera and gallery using image_picker
+        final picker = ImagePicker();
+        final imgSource = source == 'gallery'
+            ? ImageSource.gallery
+            : ImageSource.camera;
+
+        if (imgSource == ImageSource.camera) {
+          // Forzar la actualización de ubicación al usar la cámara nativa
+          await LocationService().forceUpdate();
+        }
+
+        final picked = await picker.pickImage(source: imgSource);
+        if (picked != null) {
+          final bytes = await picked.readAsBytes();
+          setState(() {
+            _currentFile = picked;
+            _currentBytes = bytes;
+          });
+        }
       }
     }
   }

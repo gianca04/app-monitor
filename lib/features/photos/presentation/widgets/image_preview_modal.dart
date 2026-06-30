@@ -74,10 +74,10 @@ class ImagePreviewModal extends StatelessWidget {
         body: Column(
           children: [
             Expanded(
-              child: Center(
-                child: InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 8.0,
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 8.0,
+                child: Center(
                   child: ImageViewer(
                     url: imageUrl,
                     width: MediaQuery.of(context).size.width,

@@ -11,6 +11,8 @@ import 'package:monitor/core/widgets/industrial_tile.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:monitor/features/camera/presentation/screens/watermark_editor_screen.dart';
+import 'package:monitor/core/constants/api_constants.dart';
+
 // Constantes del sistema de diseño Industrial
 const kIndustrialBg = AppTheme.background;
 const kIndustrialSurface = AppTheme.surface;
@@ -604,6 +606,7 @@ class _StorageSettingsSection extends StatefulWidget {
 class _StorageSettingsSectionState extends State<_StorageSettingsSection> {
   String _photosPath = 'Por defecto';
   String _pdfPath = 'Por defecto';
+  String _apiUrl = 'Por defecto';
 
   @override
   void initState() {
@@ -616,7 +619,48 @@ class _StorageSettingsSectionState extends State<_StorageSettingsSection> {
     setState(() {
       _photosPath = prefs.getString('photos_path') ?? 'Por defecto';
       _pdfPath = prefs.getString('pdf_path') ?? 'Por defecto';
+      _apiUrl = prefs.getString('api_base_url') ?? ApiConstants.baseUrl;
     });
+  }
+
+  Future<void> _editApiUrl() async {
+    final controller = TextEditingController(text: _apiUrl);
+    final newUrl = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: kIndustrialSurface,
+          title: const Text('Servidor API', style: TextStyle(color: AppTheme.textPrimary)),
+          content: TextField(
+            controller: controller,
+            style: const TextStyle(color: AppTheme.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'https://...',
+              hintStyle: TextStyle(color: Colors.grey.shade500),
+              enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: kIndustrialBorder)),
+              focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: kIndustrialAccent)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, controller.text),
+              child: const Text('Guardar', style: TextStyle(color: kIndustrialAccent)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newUrl != null && newUrl.trim().isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('api_base_url', newUrl.trim());
+      ApiConstants.baseUrl = newUrl.trim();
+      _loadPaths();
+    }
   }
 
   Future<void> _pickDirectory(String key) async {
@@ -639,6 +683,14 @@ class _StorageSettingsSectionState extends State<_StorageSettingsSection> {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
+        _buildIndustrialTileLocal(
+          icon: Icons.cloud_outlined,
+          title: 'Servidor API',
+          subtitle: _apiUrl,
+          trailing: const Icon(Icons.edit, color: AppTheme.primaryAccent, size: 20),
+          onTap: () => _editApiUrl(),
+        ),
+        const Divider(height: 1, color: kIndustrialBorder),
         _buildIndustrialTileLocal(
           icon: Icons.folder_outlined,
           title: 'Ruta de Fotografías',

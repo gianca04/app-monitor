@@ -14,7 +14,7 @@ import '../../features/Positions/presentation/screens/position_form_screen.dart'
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/projects/presentation/screens/projects_list_screen.dart';
-
+import '../../features/camera/presentation/screens/camera_screen.dart';
 GoRouter appRouter(WidgetRef ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -32,7 +32,7 @@ GoRouter appRouter(WidgetRef ref) {
         return '/';
       }
       if (isLoggedIn && isLoginRoute) {
-        return '/home';
+        return '/work-reports';
       }
       return null;
     },
@@ -44,6 +44,10 @@ GoRouter appRouter(WidgetRef ref) {
           GoRoute(
             path: '/home',
             builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/camera',
+            builder: (context, state) => const CameraScreen(),
           ),
           GoRoute(
             path: '/work-reports',

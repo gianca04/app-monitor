@@ -24,7 +24,7 @@ class _AppLayoutState extends State<AppLayout> {
   @override
   void initState() {
     super.initState();
-    _paths = ['/home', '/work-reports', '/profile', '/settings'];
+    _paths = ['/work-reports', '/home', '/profile', '/settings'];
     final router = GoRouter.of(context);
     _routerDelegate = router.routerDelegate;
     _routerDelegate.addListener(_onRouteChange);
@@ -48,8 +48,8 @@ class _AppLayoutState extends State<AppLayout> {
   }
 
   int _getIndexFromLocation(String location) {
-    if (location == '/home') return 0;
-    if (location.startsWith('/work-reports')) return 1;
+    if (location.startsWith('/work-reports')) return 0;
+    if (location == '/home') return 1;
     if (location.startsWith('/profile')) return 2;
     if (location.startsWith('/settings')) return 3;
     return 0;
@@ -68,11 +68,11 @@ class _AppLayoutState extends State<AppLayout> {
         backgroundColor: _kBarColor,
         borderColor: _kBorderColor,
         items: [
-          _IndustrialBarItem(icon: Icons.camera_alt, label: "CÁMARA"),
           _IndustrialBarItem(
             icon: Icons.table_chart_outlined,
             label: "REPORTES",
           ),
+          _IndustrialBarItem(icon: Icons.camera_alt, label: "CÁMARA"),
           _IndustrialBarItem(icon: Icons.person_outline, label: "PERFIL"),
           _IndustrialBarItem(icon: Icons.tune, label: "AJUSTES"),
         ],

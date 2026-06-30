@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'location_service.dart';
 
 /// Servicio de marca de agua optimizado usando dart:ui Canvas (GPU-acelerado).
 /// Reemplaza el procesamiento lento con el paquete `image` (Dart puro, CPU).
@@ -38,9 +39,11 @@ class WatermarkService {
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
       _cachedLogo = frame.image;
-      debugPrint('✅ Logo cacheado: ${_cachedLogo!.width}x${_cachedLogo!.height}');
+      // debugPrint(
+      //   '✅ Logo cacheado: ${_cachedLogo!.width}x${_cachedLogo!.height}',
+      // );
     } catch (e) {
-      debugPrint('⚠️ Error cargando logo: $e');
+      // debugPrint('⚠️ Error cargando logo: $e');
     }
   }
 
@@ -62,15 +65,15 @@ class WatermarkService {
     _cachedPhotosPath = photosPath;
 
     _cachedLayout = {
-      'logo_x': prefs.getDouble('wm_logo_x') ?? 0.05,
-      'logo_y': prefs.getDouble('wm_logo_y') ?? 0.05,
+      'logo_x': prefs.getDouble('wm_logo_x') ?? 0.04888569730586374,
+      'logo_y': prefs.getDouble('wm_logo_y') ?? 0.03871862040876778,
       'logo_scale': prefs.getDouble('wm_logo_scale') ?? 1.0,
-      'time_x': prefs.getDouble('wm_time_x') ?? 0.05,
-      'time_y': prefs.getDouble('wm_time_y') ?? 0.85,
+      'time_x': prefs.getDouble('wm_time_x') ?? 0.04359275950871635,
+      'time_y': prefs.getDouble('wm_time_y') ?? 0.8919667320793845,
       'time_scale': prefs.getDouble('wm_time_scale') ?? 1.0,
-      'loc_x': prefs.getDouble('wm_location_x') ?? 0.05,
-      'loc_y': prefs.getDouble('wm_location_y') ?? 0.70,
-      'loc_scale': prefs.getDouble('wm_location_scale') ?? 1.0,
+      'loc_x': prefs.getDouble('wm_location_x') ?? 0.04749281893819335,
+      'loc_y': prefs.getDouble('wm_location_y') ?? 0.7902510367298579,
+      'loc_scale': prefs.getDouble('wm_location_scale') ?? 1.1296037946428565,
     };
   }
 
@@ -139,7 +142,12 @@ class WatermarkService {
       // Dibujar la imagen recortada
       canvas.drawImageRect(
         originalImage,
-        ui.Rect.fromLTWH(srcX.toDouble(), srcY.toDouble(), srcWidth.toDouble(), srcHeight.toDouble()),
+        ui.Rect.fromLTWH(
+          srcX.toDouble(),
+          srcY.toDouble(),
+          srcWidth.toDouble(),
+          srcHeight.toDouble(),
+        ),
         ui.Rect.fromLTWH(0, 0, srcWidth.toDouble(), srcHeight.toDouble()),
         ui.Paint(),
       );
@@ -159,8 +167,18 @@ class WatermarkService {
 
         canvas.drawImageRect(
           _cachedLogo!,
-          ui.Rect.fromLTWH(0, 0, _cachedLogo!.width.toDouble(), _cachedLogo!.height.toDouble()),
-          ui.Rect.fromLTWH(logoX, logoY, logoTargetWidth.toDouble(), logoTargetHeight.toDouble()),
+          ui.Rect.fromLTWH(
+            0,
+            0,
+            _cachedLogo!.width.toDouble(),
+            _cachedLogo!.height.toDouble(),
+          ),
+          ui.Rect.fromLTWH(
+            logoX,
+            logoY,
+            logoTargetWidth.toDouble(),
+            logoTargetHeight.toDouble(),
+          ),
           ui.Paint()..filterQuality = ui.FilterQuality.high,
         );
       }
@@ -194,7 +212,12 @@ class WatermarkService {
         final lineHeight = 20.0 * scale;
         // Ajuste en Y para centrar la línea
         canvas.drawRect(
-          ui.Rect.fromLTWH(lineX, posY + (timeFontSize - lineHeight) / 2, lineWidth, lineHeight),
+          ui.Rect.fromLTWH(
+            lineX,
+            posY + (timeFontSize - lineHeight) / 2,
+            lineWidth,
+            lineHeight,
+          ),
           ui.Paint()..color = const ui.Color(0xFFFFC107), // Amber
         );
 
@@ -207,14 +230,29 @@ class WatermarkService {
           fontSize: dateFontSize,
           color: const ui.Color(0xFFFFFFFF),
         );
-        canvas.drawParagraph(dateParagraph, ui.Offset(dateX, posY + (timeFontSize - (dateFontSize * 2 + 4 * scale)) / 2));
+        canvas.drawParagraph(
+          dateParagraph,
+          ui.Offset(
+            dateX,
+            posY + (timeFontSize - (dateFontSize * 2 + 4 * scale)) / 2,
+          ),
+        );
 
         final dayParagraph = _buildParagraph(
           dayStr,
           fontSize: dateFontSize,
           color: const ui.Color(0xFFFFFFFF),
         );
-        canvas.drawParagraph(dayParagraph, ui.Offset(dateX, posY + (timeFontSize - (dateFontSize * 2 + 4 * scale)) / 2 + dateFontSize + (4 * scale)));
+        canvas.drawParagraph(
+          dayParagraph,
+          ui.Offset(
+            dateX,
+            posY +
+                (timeFontSize - (dateFontSize * 2 + 4 * scale)) / 2 +
+                dateFontSize +
+                (4 * scale),
+          ),
+        );
       }
 
       // 6. Dibujar Ubicación
@@ -222,11 +260,11 @@ class WatermarkService {
         final scale = layout['loc_scale']! * globalScale;
         final posX = layout['loc_x']! * srcWidth;
         var posY = layout['loc_y']! * srcHeight;
-        
+
         final cityFontSize = 10.0 * scale; // Base 10
 
         final cityParagraph = _buildParagraph(
-          city,
+          city, // Contiene nombre, calle y/o ciudad
           fontSize: cityFontSize,
           color: const ui.Color(0xFFFFFFFF),
           fontWeight: ui.FontWeight.bold,
@@ -235,10 +273,22 @@ class WatermarkService {
 
         posY += cityFontSize + (2 * scale); // Base padding
 
+        final coordinates = LocationService().currentCoordinates;
+        if (coordinates.isNotEmpty) {
+          final coordFontSize = 8.0 * scale; // Base 8 (como en live preview)
+          final coordParagraph = _buildParagraph(
+            coordinates,
+            fontSize: coordFontSize,
+            color: const ui.Color(0xFFFFFFFF),
+          );
+          canvas.drawParagraph(coordParagraph, ui.Offset(posX, posY));
+          posY += coordFontSize + (2 * scale);
+        }
+
         final empresaFontSize = 9.0 * scale; // Base 9
 
         final empresaParagraph = _buildParagraph(
-          'Empresa: SAT INDUSTRIALES',
+          'SAT INDUSTRIALES',
           fontSize: empresaFontSize,
           color: const ui.Color(0xFFFFFFFF),
         );
@@ -248,10 +298,12 @@ class WatermarkService {
       // 7. Finalizar y exportar
       final picture = recorder.endRecording();
       final finalImage = await picture.toImage(srcWidth, srcHeight);
-      final byteData = await finalImage.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await finalImage.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
 
       if (byteData == null) {
-        debugPrint('❌ Error: toByteData retornó null');
+        // debugPrint('❌ Error: toByteData retornó null');
         return null;
       }
 
@@ -262,7 +314,7 @@ class WatermarkService {
       await newFile.create(recursive: true);
       await newFile.writeAsBytes(byteData.buffer.asUint8List());
 
-      debugPrint('✅ Foto con marca de agua guardada: $newPath');
+      // debugPrint('✅ Foto con marca de agua guardada: $newPath');
 
       // Liberar recursos
       originalImage.dispose();
@@ -270,8 +322,8 @@ class WatermarkService {
 
       return newFile;
     } catch (e, st) {
-      debugPrint('❌ Error en watermark: $e');
-      debugPrint('$st');
+      // debugPrint('❌ Error en watermark: $e');
+      // debugPrint('$st');
       return null;
     }
   }
@@ -290,14 +342,20 @@ class WatermarkService {
         maxLines: 1,
       ),
     );
-    builder.pushStyle(ui.TextStyle(
-      color: color,
-      fontSize: fontSize,
-      fontWeight: fontWeight,
-      shadows: const [
-        ui.Shadow(blurRadius: 4, color: ui.Color(0xAA000000), offset: ui.Offset(1, 1)),
-      ],
-    ));
+    builder.pushStyle(
+      ui.TextStyle(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        shadows: const [
+          ui.Shadow(
+            blurRadius: 4,
+            color: ui.Color(0xAA000000),
+            offset: ui.Offset(1, 1),
+          ),
+        ],
+      ),
+    );
     builder.addText(text);
     builder.pop();
 

@@ -38,15 +38,33 @@ class LocationService {
     });
   }
 
+  /// Coordenadas actuales formateadas.
+  String get currentCoordinates {
+    if (_currentPosition == null) return '';
+    return '${_currentPosition!.latitude.toStringAsFixed(5)}, ${_currentPosition!.longitude.toStringAsFixed(5)}';
+  }
+
   /// Actualiza la posición GPS y la ciudad.
   Future<void> _updateLocation() async {
     try {
-      _currentPosition = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
+      try {
+        _currentPosition = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 10),
+          ),
+        );
+      } on TimeoutException {
+        // debugPrint('⚠️ Timeout obteniendo GPS actual, intentando última ubicación conocida...');
+        _currentPosition = await Geolocator.getLastKnownPosition() ?? _currentPosition;
+      } catch (e) {
+        // debugPrint('⚠️ Error en getCurrentPosition: $e');
+        _currentPosition = await Geolocator.getLastKnownPosition() ?? _currentPosition;
+      }
+
+      if (_currentPosition == null) {
+        throw Exception('No se pudo obtener ninguna ubicación GPS (ni actual ni cacheada)');
+      }
 
       final placemarks = await placemarkFromCoordinates(
         _currentPosition!.latitude,
@@ -54,16 +72,29 @@ class LocationService {
       );
 
       if (placemarks.isNotEmpty) {
-        _currentCity = placemarks.first.locality ??
-            placemarks.first.subAdministrativeArea ??
-            'Ubicación desconocida';
+        final p = placemarks.first;
+        
+        List<String> parts = [];
+        if (p.name != null && p.name!.isNotEmpty && p.name != p.street) parts.add(p.name!);
+        if (p.street != null && p.street!.isNotEmpty) parts.add(p.street!);
+        if (p.subLocality != null && p.subLocality!.isNotEmpty) parts.add(p.subLocality!);
+        if (p.locality != null && p.locality!.isNotEmpty) parts.add(p.locality!);
+        
+        // Evitar redundancias
+        parts = parts.toSet().toList();
+        
+        // Tomamos hasta las 2 partes más específicas (ej: Tienda Plaza Vea, Curumuy)
+        _currentCity = parts.take(2).join(', ');
+        if (_currentCity.isEmpty) {
+           _currentCity = p.subAdministrativeArea ?? 'Ubicación desconocida';
+        }
       }
 
-      debugPrint('📍 GPS actualizado: $_currentCity '
-          '(${_currentPosition!.latitude.toStringAsFixed(4)}, '
-          '${_currentPosition!.longitude.toStringAsFixed(4)})');
+      // debugPrint('📍 GPS actualizado: $_currentCity '
+      //     '(${_currentPosition!.latitude.toStringAsFixed(4)}, '
+      //     '${_currentPosition!.longitude.toStringAsFixed(4)})');
     } catch (e) {
-      debugPrint('⚠️ Error actualizando GPS: $e');
+      // debugPrint('⚠️ Fallo global actualizando GPS: $e');
       if (_currentCity == 'Obteniendo GPS...') {
         _currentCity = 'Ubicación no disponible';
       }

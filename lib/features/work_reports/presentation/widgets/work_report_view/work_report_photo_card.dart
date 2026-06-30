@@ -28,14 +28,10 @@ class WorkReportPhotoCard extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () => _showFullScreenPhoto(context, url, title, description),
-            child: InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: ImageViewer(
-                url: url,
-                width: MediaQuery.of(context).size.width,
-                fit: BoxFit.fitWidth,
-              ),
+            child: ImageViewer(
+              url: url,
+              width: MediaQuery.of(context).size.width,
+              fit: BoxFit.fitWidth,
             ),
           ),
           if (description != null && description.isNotEmpty) ...[

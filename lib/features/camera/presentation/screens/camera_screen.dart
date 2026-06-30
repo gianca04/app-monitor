@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +18,8 @@ class CameraScreen extends StatefulWidget {
   State<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver {
+class _CameraScreenState extends State<CameraScreen>
+    with WidgetsBindingObserver {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   List<CameraDescription> _backCameras = [];
@@ -39,17 +42,17 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   // Current lens direction
   CameraLensDirection _currentLensDirection = CameraLensDirection.back;
 
-
   // Focus & Exposure UI
   Offset? _focusPoint;
   bool _showFocusReticle = false;
+  Timer? _focusTimer;
 
   // Watermark state & Live overlay
   final LocationService _locationService = LocationService();
   final WatermarkService _watermarkService = WatermarkService();
   Timer? _clockTimer;
   DateTime _currentTime = DateTime.now();
-  
+
   Map<String, double>? _wmLayout;
   bool _wmLayoutLoaded = false;
 
@@ -57,15 +60,18 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Iniciar servicios
     _locationService.initialize();
     _watermarkService.preload();
     _loadWatermarkLayout();
-    
+
     // Reloj para la marca de agua en vivo
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() { _currentTime = DateTime.now(); });
+      if (mounted)
+        setState(() {
+          _currentTime = DateTime.now();
+        });
     });
 
     _initialize();
@@ -75,15 +81,15 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _wmLayout = {
-        'logo_x': prefs.getDouble('wm_logo_x') ?? 0.05,
-        'logo_y': prefs.getDouble('wm_logo_y') ?? 0.05,
+        'logo_x': prefs.getDouble('wm_logo_x') ?? 0.04888569730586374,
+        'logo_y': prefs.getDouble('wm_logo_y') ?? 0.03871862040876778,
         'logo_scale': prefs.getDouble('wm_logo_scale') ?? 1.0,
-        'time_x': prefs.getDouble('wm_time_x') ?? 0.05,
-        'time_y': prefs.getDouble('wm_time_y') ?? 0.85,
+        'time_x': prefs.getDouble('wm_time_x') ?? 0.04359275950871635,
+        'time_y': prefs.getDouble('wm_time_y') ?? 0.8919667320793845,
         'time_scale': prefs.getDouble('wm_time_scale') ?? 1.0,
-        'loc_x': prefs.getDouble('wm_location_x') ?? 0.05,
-        'loc_y': prefs.getDouble('wm_location_y') ?? 0.70,
-        'loc_scale': prefs.getDouble('wm_location_scale') ?? 1.0,
+        'loc_x': prefs.getDouble('wm_location_x') ?? 0.04749281893819335,
+        'loc_y': prefs.getDouble('wm_location_y') ?? 0.7902510367298579,
+        'loc_scale': prefs.getDouble('wm_location_scale') ?? 1.1296037946428565,
       };
       _wmLayoutLoaded = true;
     });
@@ -93,6 +99,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _clockTimer?.cancel();
+    _focusTimer?.cancel();
     _locationService.dispose();
     _controller?.dispose();
     super.dispose();
@@ -116,7 +123,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     if (!hasPermissions) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Se requieren permisos de cámara y ubicación.')),
+          const SnackBar(
+            content: Text('Se requieren permisos de cámara y ubicación.'),
+          ),
         );
       }
       return;
@@ -138,23 +147,23 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           .where((c) => c.lensDirection == CameraLensDirection.back)
           .toList();
 
-      debugPrint('=== CÁMARAS DETECTADAS ===');
-      debugPrint('Total cámaras: ${_cameras.length}');
-      debugPrint('Cámaras traseras: ${_backCameras.length}');
-      for (int i = 0; i < _cameras.length; i++) {
-        debugPrint('  [$i] ${_cameras[i].name} - ${_cameras[i].lensDirection} - sensorOrientation: ${_cameras[i].sensorOrientation}');
-      }
+      // debugPrint('=== CÁMARAS DETECTADAS ===');
+      // debugPrint('Total cámaras: ${_cameras.length}');
+      // debugPrint('Cámaras traseras: ${_backCameras.length}');
+      // for (int i = 0; i < _cameras.length; i++) {
+      //   debugPrint(
+      //     '  [$i] ${_cameras[i].name} - ${_cameras[i].lensDirection} - sensorOrientation: ${_cameras[i].sensorOrientation}',
+      //   );
+      // }
 
-      // Start with first back camera
+      // Start with first back cameras
       final backCamera = _backCameras.isNotEmpty
           ? _backCameras.first
           : _cameras.first;
 
-
-
       await _initCameraController(backCamera);
     } catch (e) {
-      debugPrint('Error inicializando cámara: $e');
+      // debugPrint('Error inicializando cámara: $e');
     }
   }
 
@@ -174,21 +183,24 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
       _minZoom = await cameraController.getMinZoomLevel();
       _maxZoom = await cameraController.getMaxZoomLevel();
-      _currentZoom = _minZoom;
+      _currentZoom = 1.0;
+      await cameraController.setZoomLevel(_currentZoom);
 
       _minExposure = await cameraController.getMinExposureOffset();
       _maxExposure = await cameraController.getMaxExposureOffset();
+      _currentExposure = 0.0.clamp(_minExposure, _maxExposure);
+      await cameraController.setExposureOffset(_currentExposure);
 
       _currentLensDirection = description.lensDirection;
 
       // Build zoom presets based on actual device capabilities
       _buildZoomPresets();
 
-      debugPrint('=== CONTROLADOR INICIALIZADO ===');
-      debugPrint('Cámara: ${description.name}');
-      debugPrint('Zoom min: $_minZoom, max: $_maxZoom');
-      debugPrint('Exposure min: $_minExposure, max: $_maxExposure');
-      debugPrint('Resolución: ${cameraController.value.previewSize}');
+      // debugPrint('=== CONTROLADOR INICIALIZADO ===');
+      // debugPrint('Cámara: ${description.name}');
+      // debugPrint('Zoom min: $_minZoom, max: $_maxZoom');
+      // debugPrint('Exposure min: $_minExposure, max: $_maxExposure');
+      // debugPrint('Resolución: ${cameraController.value.previewSize}');
 
       if (mounted) {
         setState(() {
@@ -197,7 +209,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         });
       }
     } on CameraException catch (e) {
-      debugPrint('Error al inicializar controlador: $e');
+      // debugPrint('Error al inicializar controlador: $e');
     }
   }
 
@@ -278,7 +290,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         _flashMode = nextMode;
       });
     } catch (e) {
-      debugPrint('Error al cambiar flash: $e');
+      // debugPrint('Error al cambiar flash: $e');
     }
   }
 
@@ -292,8 +304,19 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         _currentZoom = clampedZoom;
       });
     } catch (e) {
-      debugPrint('Error al ajustar zoom: $e');
+      // debugPrint('Error al ajustar zoom: $e');
     }
+  }
+
+  void _resetFocusTimer() {
+    _focusTimer?.cancel();
+    _focusTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _showFocusReticle = false;
+        });
+      }
+    });
   }
 
   void _onTapToFocus(TapDownDetails details, BoxConstraints constraints) async {
@@ -309,39 +332,27 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       _showFocusReticle = true;
     });
 
+    _resetFocusTimer();
+
     try {
       await _controller!.setFocusPoint(offset);
       await _controller!.setExposurePoint(offset);
-    } catch (e) {
-      debugPrint('Error al establecer punto de enfoque: $e');
-    }
 
-    Future.delayed(const Duration(seconds: 2), () {
+      // Reiniciar exposición a 0
+      final defaultExposure = 0.0.clamp(_minExposure, _maxExposure);
+      await _controller!.setExposureOffset(defaultExposure);
       if (mounted) {
         setState(() {
-          _showFocusReticle = false;
+          _currentExposure = defaultExposure;
         });
       }
-    });
-  }
-
-  void _onVerticalDragExposure(DragUpdateDetails details) async {
-    if (_controller == null || !_isCameraInitialized) return;
-
-    double delta = -details.primaryDelta! / 50.0;
-    double newExposure = _currentExposure + delta;
-    newExposure = newExposure.clamp(_minExposure, _maxExposure);
-
-    try {
-      await _controller!.setExposureOffset(newExposure);
-      setState(() {
-        _currentExposure = newExposure;
-        _showFocusReticle = true;
-      });
     } catch (e) {
-      debugPrint('Error al ajustar exposición: $e');
+      // debugPrint('Error al establecer punto de enfoque: $e');
     }
   }
+
+  // El slider de exposición vertical ha sido removido
+  // Se utilizará el slider en el TopBar.
 
   void _onScaleZoom(ScaleUpdateDetails details) {
     if (_controller == null || !_isCameraInitialized) return;
@@ -350,7 +361,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   }
 
   Future<void> _takePicture() async {
-    if (_controller == null || !_controller!.value.isInitialized || _isProcessing) {
+    if (_controller == null ||
+        !_controller!.value.isInitialized ||
+        _isProcessing) {
       return;
     }
 
@@ -372,7 +385,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         _showImagePreview(watermarkedFile);
       }
     } catch (e) {
-      debugPrint('Error al tomar foto: $e');
+      // debugPrint('Error al tomar foto: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al capturar la imagen.')),
@@ -390,18 +403,37 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   void _showImagePreview(File image) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
         backgroundColor: Colors.black,
         contentPadding: EdgeInsets.zero,
         content: Stack(
           children: [
             Image.file(image, fit: BoxFit.contain),
+            // Retake (Close)
             Positioned(
               top: 10,
-              right: 10,
+              left: 10,
               child: IconButton(
                 icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+            // Accept (Check)
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: FloatingActionButton(
+                backgroundColor: Colors.teal,
+                child: const Icon(Icons.check, color: Colors.white),
+                onPressed: () {
+                  // Cerrar el modal actual
+                  Navigator.pop(ctx);
+                  // Regresar la foto a la vista que abrió la cámara
+                  if (context.mounted && context.canPop()) {
+                    context.pop(image.path);
+                  }
+                },
               ),
             ),
           ],
@@ -425,7 +457,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
               ),
               const SizedBox(height: 16),
               Text(
-                _isSwitchingCamera ? 'Cambiando cámara...' : 'Iniciando cámara...',
+                _isSwitchingCamera
+                    ? 'Cambiando cámara...'
+                    : 'Iniciando cámara...',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
               ),
             ],
@@ -463,39 +497,65 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
             icon: _flashMode == FlashMode.auto
                 ? Icons.flash_auto
                 : _flashMode == FlashMode.always
-                    ? Icons.flash_on
-                    : Icons.flash_off,
+                ? Icons.flash_on
+                : Icons.flash_off,
             onTap: _toggleFlash,
             label: _flashMode == FlashMode.auto
                 ? 'AUTO'
                 : _flashMode == FlashMode.always
-                    ? 'ON'
-                    : 'OFF',
+                ? 'ON'
+                : 'OFF',
           ),
-          // Exposure indicator
-          if (_currentExposure != 0.0)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.wb_sunny_outlined, size: 16, color: Colors.amber.shade700),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${_currentExposure > 0 ? "+" : ""}${_currentExposure.toStringAsFixed(1)}',
-                    style: TextStyle(
-                      color: Colors.grey.shade800,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+
+          // Slider de exposición
+          if (_minExposure < _maxExposure)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.brightness_low,
+                      size: 16,
+                      color: Colors.grey,
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: Slider(
+                        value: _currentExposure.clamp(
+                          _minExposure,
+                          _maxExposure,
+                        ),
+                        min: _minExposure,
+                        max: _maxExposure,
+                        activeColor: Colors.amber,
+                        inactiveColor: Colors.grey.shade300,
+                        onChanged: (value) {
+                          if (_controller == null) return;
+
+                          // 1. Actualizar el slider visualmente al instante
+                          setState(() {
+                            _currentExposure = value;
+                            _showFocusReticle = true;
+                          });
+                          _resetFocusTimer();
+
+                          // 2. Enviar el ajuste a la cámara en background (sin bloquear)
+                          _controller!.setExposureOffset(value).catchError((e) {
+                            // debugPrint('Error al ajustar exposición: $e');
+                          });
+                        },
+                      ),
+                    ),
+                    const Icon(
+                      Icons.brightness_high,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
               ),
             ),
+
           // Switch camera
           if (_cameras.length > 1)
             _buildTopButton(
@@ -509,7 +569,11 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     );
   }
 
-  Widget _buildTopButton({required IconData icon, required VoidCallback onTap, String? label}) {
+  Widget _buildTopButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    String? label,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -609,10 +673,14 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                         onTapDown: (details) {
                           _onTapToFocus(
                             details,
-                            BoxConstraints.tight(Size(viewportWidth * scale, viewportHeight * scale)),
+                            BoxConstraints.tight(
+                              Size(
+                                viewportWidth * scale,
+                                viewportHeight * scale,
+                              ),
+                            ),
                           );
                         },
-                        onVerticalDragUpdate: _onVerticalDragExposure,
                         onScaleUpdate: _onScaleZoom,
                         child: Stack(
                           fit: StackFit.expand,
@@ -627,8 +695,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                             ),
                             if (_showFocusReticle && _focusPoint != null)
                               Positioned(
-                                left: _focusPoint!.dx - 35,
-                                top: _focusPoint!.dy - 35,
+                                left:
+                                    _focusPoint!.dx -
+                                    35, // Centrado horizontal sobre el círculo (70/2)
+                                top:
+                                    _focusPoint!.dy -
+                                    60, // Centrado vertical sobre el contenedor total (120/2)
                                 child: _buildFocusReticle(),
                               ),
                           ],
@@ -641,7 +713,10 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                     IgnorePointer(
                       child: Stack(
                         fit: StackFit.expand,
-                        children: _buildLiveWatermark(viewportWidth, viewportHeight),
+                        children: _buildLiveWatermark(
+                          viewportWidth,
+                          viewportHeight,
+                        ),
                       ),
                     ),
                 ],
@@ -655,7 +730,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
   List<Widget> _buildLiveWatermark(double width, double height) {
     if (_wmLayout == null) return [];
-    
+
     // Scale proporcional a una pantalla móvil estándar (375px)
     double baseScale = width / 375.0;
 
@@ -725,8 +800,22 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(dateStr, style: const TextStyle(color: Colors.white, fontSize: 8, shadows: [Shadow(blurRadius: 2, color: Colors.black)])),
-            Text(dayStr, style: const TextStyle(color: Colors.white, fontSize: 8, shadows: [Shadow(blurRadius: 2, color: Colors.black)])),
+            Text(
+              dateStr,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+              ),
+            ),
+            Text(
+              dayStr,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+              ),
+            ),
           ],
         ),
       ],
@@ -747,8 +836,20 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
             shadows: [Shadow(blurRadius: 2, color: Colors.black)],
           ),
         ),
+        if (_locationService.currentCoordinates.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            _locationService.currentCoordinates,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 8,
+              shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+            ),
+          ),
+        ],
+        const SizedBox(height: 2),
         const Text(
-          'Empresa: SAT INDUSTRIALES',
+          'SAT INDUSTRIALES',
           style: TextStyle(
             color: Colors.white,
             fontSize: 9,
@@ -768,7 +869,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         height: 70,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.amber, width: 2),
+          border: Border.all(color: Colors.amber, width: 1.5),
         ),
         child: Center(
           child: Container(
@@ -817,7 +918,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                           child: Text(
                             preset.label,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.grey.shade700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey.shade700,
                               fontWeight: FontWeight.bold,
                               fontSize: isSelected ? 13 : 11,
                             ),
@@ -850,7 +953,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                       width: _isProcessing ? 45 : 62,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _isProcessing ? Colors.grey.shade300 : Colors.grey.shade800,
+                        color: _isProcessing
+                            ? Colors.grey.shade300
+                            : Colors.grey.shade800,
                       ),
                       child: _isProcessing
                           ? const Padding(
