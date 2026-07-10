@@ -40,11 +40,13 @@ class WorkReportViewScreen extends ConsumerWidget {
 
     // Solicitar permiso de notificaciones antes de la descarga
     await NotificationService().requestPermissions();
-    
+
     final filename = 'reporte_trabajo_$id.pdf';
-    
+
     // Mostrar notificación de inicio de descarga en la barra de estado
-    await NotificationService().showDownloadStartNotification(filename: filename);
+    await NotificationService().showDownloadStartNotification(
+      filename: filename,
+    );
 
     if (context.mounted) {
       IndustrialFeedback.showInfo(
@@ -74,7 +76,7 @@ class WorkReportViewScreen extends ConsumerWidget {
     } else {
       // Cancelar la notificación de descarga activa en caso de error
       await NotificationService().cancelDownloadNotification();
-      
+
       if (context.mounted) {
         final pdfState = ref.read(workReportPdfProvider);
         IndustrialFeedback.showError(
@@ -182,10 +184,7 @@ class WorkReportViewScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        IndustrialFeedback.showError(
-          context,
-          message: 'ERROR AL ELIMINAR: $e',
-        );
+        IndustrialFeedback.showError(context, message: 'ERROR AL ELIMINAR: $e');
       }
     }
   }
@@ -415,12 +414,10 @@ class WorkReportViewScreen extends ConsumerWidget {
                               ),
                             },
                           ),
-                          if (state.report!.supervisorSignature != null || state.report!.managerSignature != null) ...[
+                          if (state.report!.supervisorSignature != null ||
+                              state.report!.managerSignature != null) ...[
                             const SizedBox(height: 16),
-                            const Divider(
-                              color: Colors.white10,
-                              height: 1,
-                            ),
+                            const Divider(color: Colors.white10, height: 1),
                             const SizedBox(height: 16),
                             WorkReportSectionHeader(
                               theme: theme,
@@ -439,7 +436,8 @@ class WorkReportViewScreen extends ConsumerWidget {
                                       onTap: () {}, // Solo lectura
                                     ),
                                   ),
-                                if (state.report!.supervisorSignature != null && state.report!.managerSignature != null)
+                                if (state.report!.supervisorSignature != null &&
+                                    state.report!.managerSignature != null)
                                   const SizedBox(width: 12),
                                 if (state.report!.managerSignature != null)
                                   Expanded(

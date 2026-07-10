@@ -13,6 +13,7 @@ import '../../../photos/domain/usecases/create_photo_usecase.dart';
 import '../../../photos/domain/usecases/update_photo_usecase.dart';
 import '../../../photos/domain/usecases/delete_photo_usecase.dart';
 import '../../../photos/data/repositories/photos_repository_impl.dart';
+import 'package:monitor/core/error/dio_error_handler.dart';
 import '../../../photos/data/datasources/photos_datasource.dart';
 
 // Providers para dependencias
@@ -80,12 +81,13 @@ class WorkReportsState {
     int? currentPage,
     bool? hasMorePages,
     int? total,
+    bool clearError = false,
   }) {
     return WorkReportsState(
       reports: reports ?? this.reports,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       search: search ?? this.search,
       projectId: projectId ?? this.projectId,
       dateFrom: dateFrom ?? this.dateFrom,
@@ -120,7 +122,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     if (mounted) {
       state = state.copyWith(
         isLoading: true,
-        error: null,
+        clearError: true,
         reports: [],
         currentPage: 1,
         hasMorePages: true,
@@ -146,29 +148,14 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
           total: response.pagination?.total,
         );
       }
-    } on DioException catch (e) {
-      String errorMessage;
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
-      } else if (e.type == DioExceptionType.badResponse) {
-        errorMessage = 'Error del servidor. Inténtalo más tarde.';
-      } else {
-        errorMessage = 'Error al cargar los reportes. Por favor, intenta nuevamente.';
-      }
-      if (mounted) {
-        state = state.copyWith(
-          isLoading: false,
-          error: errorMessage,
-        );
-      }
     } catch (e) {
       if (mounted) {
         state = state.copyWith(
           isLoading: false,
-          error: 'Error al cargar los reportes. Por favor, intenta nuevamente.',
+          error: DioErrorHandler.getErrorMessage(
+            e,
+            defaultMessage: 'Error al cargar los reportes. Por favor, intenta nuevamente.',
+          ),
         );
       }
     }
@@ -177,7 +164,7 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
   Future<void> loadMoreWorkReports() async {
     if (!mounted || state.isLoadingMore || !state.hasMorePages) return;
 
-    state = state.copyWith(isLoadingMore: true, error: null);
+    state = state.copyWith(isLoadingMore: true, clearError: true);
     try {
       final response = await getWorkReportsUseCase(
         projectId: state.projectId,
@@ -200,29 +187,14 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
           total: response.pagination?.total,
         );
       }
-    } on DioException catch (e) {
-      String errorMessage;
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
-      } else if (e.type == DioExceptionType.badResponse) {
-        errorMessage = 'Error del servidor. Inténtalo más tarde.';
-      } else {
-        errorMessage = 'Error al cargar más reportes. Por favor, intenta nuevamente.';
-      }
-      if (mounted) {
-        state = state.copyWith(
-          isLoadingMore: false,
-          error: errorMessage,
-        );
-      }
     } catch (e) {
       if (mounted) {
         state = state.copyWith(
           isLoadingMore: false,
-          error: 'Error al cargar más reportes. Por favor, intenta nuevamente.',
+          error: DioErrorHandler.getErrorMessage(
+            e,
+            defaultMessage: 'Error al cargar más reportes. Por favor, intenta nuevamente.',
+          ),
         );
       }
     }
@@ -234,22 +206,15 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
 
       await loadWorkReports();
       return newReport;
-    } on DioException catch (e) {
-      String errorMessage;
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
-      } else if (e.type == DioExceptionType.badResponse) {
-        errorMessage = 'Error del servidor. Inténtalo más tarde.';
-      } else {
-        errorMessage = 'Error al crear el reporte. Por favor, intenta nuevamente.';
-      }
-      if (mounted) state = state.copyWith(error: errorMessage);
-      rethrow;
     } catch (e) {
-      if (mounted) state = state.copyWith(error: 'Error al crear el reporte. Por favor, intenta nuevamente.');
+      if (mounted) {
+        state = state.copyWith(
+          error: DioErrorHandler.getErrorMessage(
+            e,
+            defaultMessage: 'Error al crear el reporte. Por favor, intenta nuevamente.',
+          ),
+        );
+      }
       rethrow;
     }
   }
@@ -258,22 +223,15 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
     try {
       await updateWorkReportUseCase(id, projectId, employeeId, name, reportDate, startTime, endTime, description, tools, personnel, materials, suggestions, supervisorSignature, managerSignature);
       await loadWorkReports();
-    } on DioException catch (e) {
-      String errorMessage;
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
-      } else if (e.type == DioExceptionType.badResponse) {
-        errorMessage = 'Error del servidor. Inténtalo más tarde.';
-      } else {
-        errorMessage = 'Error al actualizar el reporte. Por favor, intenta nuevamente.';
-      }
-      if (mounted) state = state.copyWith(error: errorMessage);
-      rethrow; // Para que el formulario pueda manejar el error
     } catch (e) {
-      if (mounted) state = state.copyWith(error: 'Error al actualizar el reporte. Por favor, intenta nuevamente.');
+      if (mounted) {
+        state = state.copyWith(
+          error: DioErrorHandler.getErrorMessage(
+            e,
+            defaultMessage: 'Error al actualizar el reporte. Por favor, intenta nuevamente.',
+          ),
+        );
+      }
       rethrow;
     }
   }
@@ -283,22 +241,15 @@ class WorkReportsNotifier extends StateNotifier<WorkReportsState> {
       final response = await deleteWorkReportUseCase(id);
       await loadWorkReports();
       return response;
-    } on DioException catch (e) {
-      String errorMessage;
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
-      } else if (e.type == DioExceptionType.badResponse) {
-        errorMessage = 'Error del servidor. Inténtalo más tarde.';
-      } else {
-        errorMessage = 'Error al eliminar el reporte. Por favor, intenta nuevamente.';
-      }
-      if (mounted) state = state.copyWith(error: errorMessage);
-      rethrow;
     } catch (e) {
-      if (mounted) state = state.copyWith(error: 'Error al eliminar el reporte. Por favor, intenta nuevamente.');
+      if (mounted) {
+        state = state.copyWith(
+          error: DioErrorHandler.getErrorMessage(
+            e,
+            defaultMessage: 'Error al eliminar el reporte. Por favor, intenta nuevamente.',
+          ),
+        );
+      }
       rethrow;
     }
   }
@@ -358,11 +309,12 @@ class WorkReportState {
     WorkReport? report,
     bool? isLoading,
     String? error,
+    bool clearError = false,
   }) {
     return WorkReportState(
       report: report ?? this.report,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
@@ -373,25 +325,18 @@ class WorkReportNotifier extends StateNotifier<WorkReportState> {
   WorkReportNotifier(this.getWorkReportUseCase) : super(WorkReportState());
 
   Future<void> loadWorkReport(int id) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final report = await getWorkReportUseCase(id);
       state = state.copyWith(isLoading: false, report: report);
-    } on DioException catch (e) {
-      String errorMessage;
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
-      } else if (e.type == DioExceptionType.badResponse) {
-        errorMessage = 'Error del servidor. Inténtalo más tarde.';
-      } else {
-        errorMessage = 'Error al cargar el reporte. Por favor, intenta nuevamente.';
-      }
-      state = state.copyWith(isLoading: false, error: errorMessage);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Error al cargar el reporte. Por favor, intenta nuevamente.');
+      state = state.copyWith(
+        isLoading: false,
+        error: DioErrorHandler.getErrorMessage(
+          e,
+          defaultMessage: 'Error al cargar el reporte. Por favor, intenta nuevamente.',
+        ),
+      );
     }
   }
 }

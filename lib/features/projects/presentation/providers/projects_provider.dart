@@ -6,6 +6,7 @@ import '../../data/models/quick_search_response.dart';
 import '../../data/datasources/projects_datasource_impl.dart';
 import '../../data/repositories/projects_repository_impl.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import 'package:monitor/core/error/dio_error_handler.dart';
 
 // Providers para dependencias
 final projectsDataSourceProvider = Provider((ref) => ProjectsDatasourceImpl(ref.watch(authenticatedDioProvider)));
@@ -38,12 +39,13 @@ class ProjectsState {
     String? error,
     int? currentPage,
     bool? hasMorePages,
+    bool clearError = false,
   }) {
     return ProjectsState(
       projects: projects ?? this.projects,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       currentPage: currentPage ?? this.currentPage,
       hasMorePages: hasMorePages ?? this.hasMorePages,
     );
@@ -60,7 +62,7 @@ class ProjectsNotifier extends StateNotifier<ProjectsState> {
   Future<void> loadProjects() async {
     state = state.copyWith(
       isLoading: true,
-      error: null,
+      clearError: true,
       projects: const [],
       currentPage: 1,
       hasMorePages: true,
@@ -74,14 +76,20 @@ class ProjectsNotifier extends StateNotifier<ProjectsState> {
         hasMorePages: response.pagination?.hasMorePages ?? false,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        error: DioErrorHandler.getErrorMessage(
+          e,
+          defaultMessage: 'Error al cargar los proyectos. Por favor, intenta nuevamente.',
+        ),
+      );
     }
   }
 
   Future<void> loadMoreProjects() async {
     if (state.isLoading || state.isLoadingMore || !state.hasMorePages) return;
 
-    state = state.copyWith(isLoadingMore: true);
+    state = state.copyWith(isLoadingMore: true, clearError: true);
     try {
       final nextPage = state.currentPage;
       final response = await getProjectsUseCase(page: nextPage);
@@ -92,7 +100,13 @@ class ProjectsNotifier extends StateNotifier<ProjectsState> {
         hasMorePages: response.pagination?.hasMorePages ?? false,
       );
     } catch (e) {
-      state = state.copyWith(isLoadingMore: false, error: e.toString());
+      state = state.copyWith(
+        isLoadingMore: false,
+        error: DioErrorHandler.getErrorMessage(
+          e,
+          defaultMessage: 'Error al cargar más proyectos. Por favor, intenta nuevamente.',
+        ),
+      );
     }
   }
 }
@@ -113,11 +127,12 @@ class QuickSearchState {
     List<ProjectQuick>? results,
     bool? isLoading,
     String? error,
+    bool clearError = false,
   }) {
     return QuickSearchState(
       results: results ?? this.results,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
@@ -128,12 +143,18 @@ class QuickSearchNotifier extends StateNotifier<QuickSearchState> {
   QuickSearchNotifier(this.quickSearchUseCase) : super(QuickSearchState());
 
   Future<void> search(String query) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final response = await quickSearchUseCase(query);
       state = state.copyWith(isLoading: false, results: response.data);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        error: DioErrorHandler.getErrorMessage(
+          e,
+          defaultMessage: 'Error al buscar proyectos. Por favor, intenta nuevamente.',
+        ),
+      );
     }
   }
 }

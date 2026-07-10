@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:monitor/core/widgets/industrial_feedback.dart';
+import 'package:monitor/core/widgets/industrial_error_state.dart';
 import '../../../../core/theme_config.dart';
 import '../providers/projects_provider.dart';
 import '../widgets/project_list_item.dart';
@@ -120,7 +121,10 @@ class _ProjectsListScreenState extends ConsumerState<ProjectsListScreen> {
       body: projectsState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : projectsState.error != null
-              ? Center(child: Text('Error: ${projectsState.error}'))
+              ? IndustrialErrorState(
+                  error: projectsState.error!,
+                  onRetry: () => ref.read(projectsProvider.notifier).loadProjects(),
+                )
               : filteredProjects.isEmpty
                   ? const Center(child: Text('No se encontraron proyectos.'))
                   : ListView.separated(

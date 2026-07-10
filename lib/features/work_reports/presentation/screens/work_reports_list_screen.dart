@@ -13,6 +13,7 @@ import 'package:monitor/core/widgets/modern_bottom_modal.dart';
 import 'package:monitor/core/theme_config.dart';
 
 import 'package:monitor/core/widgets/industrial_feedback.dart';
+import 'package:monitor/core/widgets/industrial_error_state.dart';
 
 class WorkReportsListScreen extends ConsumerStatefulWidget {
   final int? projectId;
@@ -128,11 +129,7 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // IBM Carbon Top Accent Bar (stretched to edges)
-            Container(
-              height: 4.0,
-              width: double.infinity,
-              color: AppTheme.primaryAccent,
-            ),
+            Container(height: 4.0, width: double.infinity),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -285,6 +282,8 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
                 },
               )
             : null,
+        title: const Text(''),
+        /*
         title: TextField(
           controller: _searchController,
           decoration: InputDecoration(
@@ -326,6 +325,7 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
           ),
           style: TextStyle(color: theme.textTheme.bodyMedium?.color),
         ),
+        */
         actions: [
           // Selector de elementos por página
           IconButton(
@@ -336,11 +336,12 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
                       ref.read(workReportsProvider.notifier).loadWorkReports(),
             tooltip: 'RECARGAR',
           ),
-          IconButton(
+          /*IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () => _showDateFilterDialog(context, ref),
             tooltip: 'FILTRAR',
           ),
+        */
         ],
       ),
       body: Stack(
@@ -350,18 +351,30 @@ class _WorkReportsListScreenState extends ConsumerState<WorkReportsListScreen> {
               child: CircularProgressIndicator(color: colorScheme.primary),
             ),
           if (!state.isLoading)
-            state.reports.isEmpty
+            state.error != null
                 ? Column(
                     children: [
                       if (project != null)
                         _buildProjectHeader(context, project),
                       Expanded(
-                        child: empty_state.ReportsEmptyState(
-                          error: state.error,
+                        child: IndustrialErrorState(
+                          error: state.error!,
+                          onRetry: () =>
+                              ref.read(workReportsProvider.notifier).loadWorkReports(),
                         ),
                       ),
                     ],
                   )
+                : state.reports.isEmpty
+                    ? Column(
+                        children: [
+                          if (project != null)
+                            _buildProjectHeader(context, project),
+                          const Expanded(
+                            child: empty_state.ReportsEmptyState(),
+                          ),
+                        ],
+                      )
                 : ListView.separated(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(15.0),
