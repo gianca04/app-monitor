@@ -17,23 +17,35 @@ final quickSearchProjectsUseCaseProvider = Provider((ref) => QuickSearchProjects
 class ProjectsState {
   final List<Project> projects;
   final bool isLoading;
+  final bool isLoadingMore;
   final String? error;
+  final int currentPage;
+  final bool hasMorePages;
 
   ProjectsState({
     this.projects = const [],
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.error,
+    this.currentPage = 1,
+    this.hasMorePages = true,
   });
 
   ProjectsState copyWith({
     List<Project>? projects,
     bool? isLoading,
+    bool? isLoadingMore,
     String? error,
+    int? currentPage,
+    bool? hasMorePages,
   }) {
     return ProjectsState(
       projects: projects ?? this.projects,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: error ?? this.error,
+      currentPage: currentPage ?? this.currentPage,
+      hasMorePages: hasMorePages ?? this.hasMorePages,
     );
   }
 }
@@ -46,12 +58,41 @@ class ProjectsNotifier extends StateNotifier<ProjectsState> {
   }
 
   Future<void> loadProjects() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      projects: const [],
+      currentPage: 1,
+      hasMorePages: true,
+    );
     try {
-      final projects = await getProjectsUseCase();
-      state = state.copyWith(isLoading: false, projects: projects);
+      final response = await getProjectsUseCase(page: 1);
+      state = state.copyWith(
+        isLoading: false,
+        projects: response.data ?? [],
+        currentPage: 2,
+        hasMorePages: response.pagination?.hasMorePages ?? false,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMoreProjects() async {
+    if (state.isLoading || state.isLoadingMore || !state.hasMorePages) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final nextPage = state.currentPage;
+      final response = await getProjectsUseCase(page: nextPage);
+      state = state.copyWith(
+        isLoadingMore: false,
+        projects: [...state.projects, ...?response.data],
+        currentPage: nextPage + 1,
+        hasMorePages: response.pagination?.hasMorePages ?? false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
 }

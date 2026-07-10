@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:monitor/core/widgets/industrial_feedback.dart';
 import '../../../../core/theme_config.dart';
 import '../providers/projects_provider.dart';
 import '../widgets/project_list_item.dart';
@@ -14,6 +15,7 @@ class ProjectsListScreen extends ConsumerStatefulWidget {
 
 class _ProjectsListScreenState extends ConsumerState<ProjectsListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
 
   @override
@@ -24,20 +26,48 @@ class _ProjectsListScreenState extends ConsumerState<ProjectsListScreen> {
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
+    _scrollController.addListener(_onScroll);
     // Ensure projects are loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(projectsProvider.notifier).loadProjects();
     });
   }
 
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      ref.read(projectsProvider.notifier).loadMoreProjects();
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<ProjectsState>(projectsProvider, (previous, next) {
+      if (previous != null) {
+        if (previous.isLoading && !next.isLoading && next.error == null) {
+          final count = next.projects.length;
+          IndustrialFeedback.showSuccess(
+            context,
+            message: 'Se cargaron $count proyectos',
+          );
+        } else if (previous.isLoadingMore && !next.isLoadingMore && next.error == null) {
+          final loadedMoreCount = next.projects.length - previous.projects.length;
+          if (loadedMoreCount > 0) {
+            IndustrialFeedback.showSuccess(
+              context,
+              message: 'Se cargaron $loadedMoreCount proyectos más',
+            );
+          }
+        }
+      }
+    });
+
     final projectsState = ref.watch(projectsProvider);
     final theme = Theme.of(context);
 
@@ -94,10 +124,17 @@ class _ProjectsListScreenState extends ConsumerState<ProjectsListScreen> {
               : filteredProjects.isEmpty
                   ? const Center(child: Text('No se encontraron proyectos.'))
                   : ListView.separated(
+                      controller: _scrollController,
                       padding: const EdgeInsets.all(16.0),
-                      itemCount: filteredProjects.length,
+                      itemCount: filteredProjects.length + (projectsState.isLoadingMore ? 1 : 0),
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
+                        if (index == filteredProjects.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16.0),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
                         final project = filteredProjects[index];
                         return ProjectListItem(
                           project: project,

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'projects_datasource.dart';
 import '../models/project.dart';
+import '../models/projects_response.dart';
 import '../models/quick_search_response.dart';
 import 'package:monitor/core/constants/api_constants.dart';
 
@@ -10,20 +11,18 @@ class ProjectsDatasourceImpl implements ProjectsDatasource {
   ProjectsDatasourceImpl(this.dio);
 
   @override
-  Future<List<Project>> getProjects() async {
+  Future<ProjectsResponse> getProjects({int page = 1, int perPage = 15}) async {
     try {
-      final response = await dio.get('${ApiConstants.baseUrl}${ApiConstants.projectsEndpoint}');
+      final response = await dio.get(
+        '${ApiConstants.baseUrl}${ApiConstants.projectsEndpoint}',
+        queryParameters: {
+          'page': page,
+          'per_page': perPage,
+        },
+      );
       
-      // Imprimir por consola para visualizar el JSON recibido
-      // print('🚀 [PROJECTS JSON]: ${response.data}');
-
-      // Adaptar según la estructura de respuesta del backend de Laravel
-      // Usualmente viene paginado o envuelto en "data"
-      final List<dynamic> dataList = response.data['data'] ?? response.data;
-      
-      return dataList.map((json) => Project.fromJson(json)).toList();
+      return ProjectsResponse.fromJson(response.data);
     } catch (e) {
-      // print('❌ [PROJECTS ERROR]: $e');
       rethrow;
     }
   }

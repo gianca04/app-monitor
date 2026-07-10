@@ -1,6 +1,7 @@
 import '../../domain/repositories/projects_repository.dart';
 import '../datasources/projects_datasource_impl.dart';
 import '../models/project.dart';
+import '../models/projects_response.dart';
 import '../models/quick_search_response.dart';
 
 class ProjectsRepositoryImpl implements ProjectsRepository {
@@ -9,8 +10,8 @@ class ProjectsRepositoryImpl implements ProjectsRepository {
   ProjectsRepositoryImpl(this.datasource);
 
   @override
-  Future<List<Project>> getProjects() async {
-    return await datasource.getProjects();
+  Future<ProjectsResponse> getProjects({int page = 1, int perPage = 15}) async {
+    return await datasource.getProjects(page: page, perPage: perPage);
   }
 
   @override
